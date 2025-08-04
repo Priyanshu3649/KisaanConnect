@@ -90,6 +90,13 @@ export default function RegisterPage() {
                 title: "Failed to Send OTP",
                 description: error.message || "An error occurred while sending OTP. Please try again.",
             });
+            // Reset reCAPTCHA on error
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.render().then((widgetId) => {
+                // @ts-ignore
+                grecaptcha.reset(widgetId);
+                });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -134,13 +141,13 @@ export default function RegisterPage() {
                 title: "Registration Successful!",
                 description: "Your account has been created.",
             });
-            router.push('/dashboard');
+router.push('/dashboard');
         } catch (error: any) {
             console.error("Error during registration:", error);
             toast({
                 variant: "destructive",
                 title: "Registration Failed",
-                description: "The OTP is incorrect or another error occurred.",
+                description: (error as any).code === 'auth/invalid-verification-code' ? 'The OTP is incorrect. Please try again.' : 'An unexpected error occurred.',
             });
         } finally {
             setIsLoading(false);
@@ -160,7 +167,7 @@ export default function RegisterPage() {
         <Card className="w-full max-w-lg bg-card/80 backdrop-blur-sm border-border/50">
          <form onSubmit={handleRegister} ref={formRef}>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
+            <CardTitle>Create an Account</CardTitle>
             <CardDescription>Fill in your details below to get started.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -205,7 +212,7 @@ export default function RegisterPage() {
             
             {!isOtpSent ? (
               <div className="md:col-span-2">
-                <Button onClick={handleGenerateOtp} disabled={!phone || isLoading} className="w-full">
+                <Button onClick={handleGenerateOtp} disabled={!phone || isLoading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Generate OTP
                 </Button>
@@ -218,7 +225,7 @@ export default function RegisterPage() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}} disabled={!isOtpSent || !otp || isLoading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={!isOtpSent || !otp || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Register
             </Button>

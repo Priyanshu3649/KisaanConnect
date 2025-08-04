@@ -1,4 +1,4 @@
-// src/app/dashboard/help-feedback/page.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -42,7 +42,7 @@ export default function HelpFeedbackPage() {
             
             toast({
                 title: "Submission Successful",
-                description: result.confirmationMessage,
+                description: `${result.confirmationMessage} Your ticket ID is ${result.ticketId}.`,
             });
 
             // Reset form
@@ -114,7 +114,7 @@ export default function HelpFeedbackPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button type="submit" disabled={isLoading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

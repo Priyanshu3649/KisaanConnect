@@ -13,7 +13,7 @@ import { Leaf } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { auth } from '@/lib/firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 
 // Extend window type to include recaptchaVerifier
 declare global {
@@ -44,13 +44,25 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'size': 'invisible',
-      'callback': (response: any) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
+    // Redirect if user is already logged in
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push('/dashboard');
       }
     });
-  }, []);
+    
+    // Setup reCAPTCHA
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        }
+      });
+    }
+
+    return () => unsubscribe();
+  }, [router]);
 
   const handleSendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -81,6 +93,13 @@ export default function LoginPage() {
         title: "Failed to Send OTP",
         description: error.message || "An error occurred. Please try again.",
       });
+       // Reset reCAPTCHA on error
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.render().then((widgetId) => {
+          // @ts-ignore
+          grecaptcha.reset(widgetId);
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +118,7 @@ export default function LoginPage() {
     try {
       const confirmationResult = window.confirmationResult;
       if (!confirmationResult) {
-          throw new Error("No confirmation result found.");
+          throw new Error("No confirmation result found. Please request OTP again.");
       }
       await confirmationResult.confirm(otp);
       toast({
@@ -134,7 +153,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.code === 'auth/invalid-credential' ? 'Invalid email or password.' : 'An unexpected error occurred.',
+        description: (error as any).code === 'auth/invalid-credential' ? 'Invalid email or password.' : 'An unexpected error occurred.',
       });
     } finally {
         setIsLoading(false);
@@ -204,12 +223,12 @@ export default function LoginPage() {
                   </div>
                 )}
                  {!otpSent ? (
-                    <Button onClick={handleSendOtp} className="w-full" disabled={isLoading || !phone} style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}}>
+                    <Button onClick={handleSendOtp} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading || !phone}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Send OTP
                     </Button>
                 ) : (
-                    <Button onClick={handlePhoneLogin} className="w-full" disabled={isLoading || !otp} style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}}>
+                    <Button onClick={handlePhoneLogin} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading || !otp}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Login with OTP
                     </Button>
@@ -225,7 +244,7 @@ export default function LoginPage() {
                         <Label htmlFor="password">Password</Label>
                         <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading || !email || !password} style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}}>
+                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading || !email || !password}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Login with Email
                     </Button>

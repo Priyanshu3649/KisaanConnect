@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -23,6 +24,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "./ui/skeleton";
 
 interface UserData {
     name: string;
@@ -31,7 +33,7 @@ interface UserData {
 }
 
 export default function UserNav() {
-  const [user] = useAuthState(auth);
+  const [user, loading] = useAuthState(auth);
   const [userData, setUserData] = useState<UserData | null>(null);
   const router = useRouter();
 
@@ -42,6 +44,15 @@ export default function UserNav() {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setUserData(userDoc.data() as UserData);
+        } else {
+            // Handle case where user exists in Auth but not in Firestore
+            // This can happen with social logins if Firestore doc creation fails
+            const fallbackData: UserData = {
+                name: user.displayName || "Kisaan User",
+                email: user.email || user.phoneNumber || "No contact info",
+                photoURL: user.photoURL || ""
+            };
+            setUserData(fallbackData);
         }
       }
     };
@@ -54,12 +65,21 @@ export default function UserNav() {
   };
 
   const getInitials = (name: string) => {
-    if (!name) return "";
+    if (!name) return "KU";
     const names = name.split(' ');
-    if (names.length > 1) {
+    if (names.length > 1 && names[0] && names[names.length - 1]) {
         return names[0][0] + names[names.length - 1][0];
     }
-    return name.substring(0, 2);
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  if (loading) {
+    return (
+        <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-9 w-9 rounded-full" />
+        </div>
+    )
   }
 
   return (
@@ -76,8 +96,8 @@ export default function UserNav() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={userData?.photoURL || "https://placehold.co/100x100.png"} alt={userData?.name || ""} data-ai-hint="farmer portrait" />
-              <AvatarFallback>{getInitials(userData?.name || '')}</AvatarFallback>
+              <AvatarImage src={userData?.photoURL || user?.photoURL || ""} alt={userData?.name || "User Avatar"} data-ai-hint="farmer portrait" />
+              <AvatarFallback>{getInitials(userData?.name || user?.displayName || '')}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -86,13 +106,13 @@ export default function UserNav() {
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{userData?.name || "Kisaan User"}</p>
               <p className="text-xs leading-none text-muted-foreground">
-                {userData?.email || user?.phoneNumber || "No contact info"}
+                {userData?.email || user?.email || user?.phoneNumber || "No contact info"}
               </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-             <Link href="/dashboard/help-feedback" passHref>
+             <Link href="/dashboard/help-feedback">
                 <DropdownMenuItem>
                     <HelpCircle className="mr-2 h-4 w-4" />
                     <span>Help & Feedback</span>
