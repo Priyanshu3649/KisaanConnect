@@ -35,8 +35,13 @@ const navItems = [
 
 const AppHeader = () => {
   const getPageTitle = (path: string) => {
-    if (path.startsWith('/dashboard/help-feedback')) return "Help & Feedback";
-    const item = navItems.find((item) => path.startsWith(item.href));
+    if (path === '/dashboard/help-feedback') return "Help & Feedback";
+    // For the dashboard itself, we need to check for an exact match
+    if (path === '/dashboard') {
+        return "Dashboard";
+    }
+    // For other pages, we can use startsWith
+    const item = navItems.find((item) => item.href !== '/dashboard' && path.startsWith(item.href));
     return item ? item.label : "Dashboard";
   };
   const pathname = usePathname();
@@ -75,7 +80,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       tooltip={item.label}
                       className={cn(
                         "rounded-full !w-12 !h-12 flex items-center justify-center transition-colors duration-200",
-                        pathname.startsWith(item.href) && "bg-primary text-primary-foreground hover:bg-primary/90"
+                        pathname === item.href && "bg-primary text-primary-foreground hover:bg-primary/90"
                       )}
                     >
                       <item.icon className="h-5 w-5" />

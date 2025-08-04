@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Languages, LogOut, Settings, User as UserIcon, HelpCircle } from "lucide-react";
+import { Bell, Languages, LogOut, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -92,18 +92,6 @@ export default function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem asChild>
-                <Link href="/dashboard/profile">
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-                 <Link href="/dashboard/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                 </Link>
-            </DropdownMenuItem>
              <DropdownMenuItem asChild>
                  <Link href="/dashboard/help-feedback">
                     <HelpCircle className="mr-2 h-4 w-4" />
