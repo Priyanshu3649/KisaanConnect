@@ -16,6 +16,7 @@ import { DollarSign, Leaf, Tractor, Wheat } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/context/translation-context";
 
 interface UserData {
   name?: string;
@@ -65,11 +66,10 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const { t } = useTranslation();
 
-  // Real-time listener for recent diagnoses
   const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5)) : null;
   const [recentDiagnoses, diagnosesLoading] = useCollectionData(diagnosesQuery, { idField: 'id' });
-
 
   useEffect(() => {
     if (authLoading) return;
@@ -81,20 +81,19 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       setIsDataLoading(true);
       try {
-        // Fetch user's name
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setUserData(userDoc.data() as UserData);
         }
 
-        // In a real app, you would fetch this data from Firestore.
-        // For this prototype, we'll use placeholder data that simulates a real fetch.
+        const activeDiagnosesCount = recentDiagnoses?.filter(d => d.status === 'Active').length || 0;
+        
         const data: DashboardData = {
             totalRevenue: 45231.89,
             revenueChange: 20.1,
-            activeDiagnosesCount: recentDiagnoses?.filter(d => d.status === 'Active').length || 0,
-            resolvedThisWeek: 1, // This would require more complex querying
+            activeDiagnosesCount: activeDiagnosesCount,
+            resolvedThisWeek: 1, 
             cropVarieties: 12,
             cropChange: 2,
             activeRentalsCount: 2,
@@ -118,6 +117,11 @@ export default function DashboardPage() {
   
   const isLoading = authLoading || isDataLoading;
 
+  const getGreeting = () => {
+    const name = userData?.name || t('userNav.user');
+    return `${t('login.welcome')} ${name}!`;
+  };
+
   if (isLoading) {
       return (
           <AppLayout>
@@ -138,7 +142,7 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <PageHeader
-        title={`Hello, ${userData?.name || 'Farmer'}!`}
+        title={getGreeting()}
         description="Here's a summary of your farm's activity."
       />
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -282,6 +286,13 @@ export default function DashboardPage() {
                     <TableCell className="text-right">{rental.due}</TableCell>
                   </TableRow>
                 ))}
+                {(!dashboardData || dashboardData.activeRentals.length === 0) && (
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-center h-24">
+                            No active rentals.
+                        </TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

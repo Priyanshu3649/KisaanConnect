@@ -1,89 +1,43 @@
 
 "use client";
 
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import {
-  LayoutDashboard,
-  Leaf,
-  Tractor,
-  Warehouse,
-  Coins,
-  BookOpenCheck,
-  LifeBuoy,
-  Languages,
-} from "lucide-react";
-import UserNav from "@/components/user-nav";
-import BottomNav from "./bottom-nav";
-import { useTranslation } from "@/context/translation-context";
+import Sidebar from "@/components/sidebar";
+import AppHeader from "@/components/app-header";
+import MobileHeader from "./mobile-header";
 import VoiceNavigator from "./voice-navigator";
-import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
-  { href: "/dashboard/crop-diagnosis", icon: Leaf, labelKey: "cropDiagnosis" },
-  { href: "/dashboard/mandi-prices", icon: Warehouse, labelKey: "mandiPrices" },
-  { href: "/dashboard/equipment-rentals", icon: Tractor, labelKey: "equipmentRentals" },
-  { href: "/dashboard/scheme-navigator", icon: Coins, labelKey: "schemeNavigator" },
-  { href: "/dashboard/organics-support", icon: BookOpenCheck, labelKey: "organicsSupport" },
-  { href: "/dashboard/help-feedback", icon: LifeBuoy, labelKey: "helpAndFeedback" },
+  { href: "/dashboard", icon: "LayoutDashboard", labelKey: "dashboard" },
+  { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "cropDiagnosis" },
+  { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "mandiPrices" },
+  { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "equipmentRentals" },
+  { href: "/dashboard/scheme-navigator", icon: "Coins", labelKey: "schemeNavigator" },
+  { href: "/dashboard/organics-support", icon: "BookOpenCheck", labelKey: "organicsSupport" },
+  { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "helpAndFeedback" },
 ];
 
-
-const AppHeader = () => {
-  const { t, setLanguage, language } = useTranslation();
-  const pathname = usePathname();
-  const currentNavItem = navItems.find(item => pathname.startsWith(item.href));
-  const pageTitle = currentNavItem ? t(`nav.${currentNavItem.labelKey}`) : "KisaanConnect";
-
-  return (
-    <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
-        <Link href="/dashboard" className="flex items-center gap-2 font-headline font-bold text-primary">
-            <Leaf className="h-8 w-8" />
-            <span className="text-2xl hidden sm:inline-block">KisaanConnect</span>
-        </Link>
-        <div className="flex-1 text-center hidden md:block">
-            <h1 className="font-headline text-2xl font-bold tracking-tight">{pageTitle}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <Languages className="h-5 w-5" />
-                        <span className="sr-only">Change Language</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setLanguage('en')} disabled={language === 'en'}>
-                        English
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLanguage('hi')} disabled={language === 'hi'}>
-                        हिंदी
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            <UserNav />
-        </div>
-    </header>
-  );
-};
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen w-full bg-background">
-      <AppHeader />
-      <main className="block p-4 lg:p-6 bg-secondary/30 pb-24 md:pb-6">
-          {children}
-      </main>
-      <BottomNav navItems={navItems} />
+      {isMobile ? (
+        <>
+          <MobileHeader navItems={navItems} />
+          <main className="p-4 bg-secondary/30 min-h-screen">{children}</main>
+        </>
+      ) : (
+        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+          <Sidebar navItems={navItems} />
+          <div className="flex flex-col">
+            <AppHeader />
+            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30">
+              {children}
+            </main>
+          </div>
+        </div>
+      )}
       <VoiceNavigator />
     </div>
   );

@@ -60,7 +60,9 @@ const VoiceNavigator = () => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         setIsProcessing(false);
-        toast({ variant: "destructive", title: t('voice.micError'), description: t('voice.checkPermissions') });
+        if (event.error !== 'no-speech') {
+            toast({ variant: "destructive", title: t('voice.micError'), description: t('voice.checkPermissions') });
+        }
       };
 
       recognition.onend = () => {
@@ -80,15 +82,19 @@ const VoiceNavigator = () => {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+      } catch(e) {
+        console.error("Error starting recognition:", e);
+        toast({ variant: "destructive", title: "Already Listening", description: "The microphone is already active." });
+      }
     }
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 md:bottom-6 md:right-6">
+    <div className="fixed bottom-6 right-6 z-50">
       <Button
-        isIconOnly
-        size="lg"
+        size="icon"
         className={`rounded-full h-16 w-16 shadow-lg transition-all duration-300 ${isListening ? 'bg-red-500 hover:bg-red-600 scale-110' : 'bg-primary hover:bg-primary/90'}`}
         onClick={handleMicClick}
         disabled={isProcessing}
