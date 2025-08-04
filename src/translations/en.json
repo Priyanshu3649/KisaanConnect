@@ -154,7 +154,7 @@
     "cropDiagnosis.failedTitle": "Diagnosis Failed",
     "cropDiagnosis.failedDesc": "An error occurred while analyzing the image.",
     
-    "mandi.pageDescription": "Real-time market prices for various crops (per quintal).",
+    "mandi.pageDescription": "Real-time market prices for various crops.",
     "mandi.selectMarket": "Select a market",
     "mandi.allMarkets": "All Markets",
     "mandi.cropVariety": "Crop (Variety)",

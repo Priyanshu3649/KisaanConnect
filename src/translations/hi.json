@@ -154,7 +154,7 @@
     "cropDiagnosis.failedTitle": "निदान विफल",
     "cropDiagnosis.failedDesc": "छवि का विश्लेषण करते समय एक त्रुटि हुई।",
 
-    "mandi.pageDescription": "विभिन्न फसलों के वास्तविक समय के बाजार मूल्य (प्रति क्विंटल)।",
+    "mandi.pageDescription": "विभिन्न फसलों के वास्तविक समय के बाजार मूल्य।",
     "mandi.selectMarket": "एक बाजार चुनें",
     "mandi.allMarkets": "सभी बाजार",
     "mandi.cropVariety": "फसल (किस्म)",

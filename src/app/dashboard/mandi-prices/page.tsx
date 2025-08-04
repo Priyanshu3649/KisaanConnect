@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import {
@@ -20,32 +20,55 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
+import { Loader2, TrendingUp } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
-import { getMandiPrices, type CropPrice } from "@/ai/flows/mandi-prices";
+import { getMandiPrices, type MandiPriceRecord } from "@/ai/flows/mandi-prices";
 import { useToast } from "@/hooks/use-toast";
 
-const markets = ["All Markets", "Pune", "Nashik", "Indore", "Ludhiana", "Nagpur", "Aurangabad", "Kolhapur"];
-
-const recommendationColors: { [key: string]: string } = {
-  "Sell Now": "bg-red-500",
-  "Hold": "bg-yellow-500",
-  "Good Price": "bg-green-500",
+const commodities = ["Potato", "Onion", "Tomato", "Wheat", "Soybean", "Cotton"];
+const states: { [key: string]: string[] } = {
+  "Maharashtra": ["Pune", "Nashik", "Nagpur", "Aurangabad"],
+  "Madhya Pradesh": ["Indore"],
+  "Punjab": ["Ludhiana"],
+  "Karnataka": ["Bangalore"],
 };
+const allStates = Object.keys(states);
+
 
 export default function MandiPricesPage() {
   const { t } = useTranslation();
-  const [selectedMarket, setSelectedMarket] = useState("All Markets");
-  const [mandiData, setMandiData] = useState<CropPrice[]>([]);
+  const [selectedCommodity, setSelectedCommodity] = useState("Potato");
+  const [selectedState, setSelectedState] = useState("Maharashtra");
+  const [selectedMarket, setSelectedMarket] = useState("Pune");
+  
+  const [mandiData, setMandiData] = useState<MandiPriceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const availableMarkets = useMemo(() => states[selectedState] || [], [selectedState]);
+
+  useEffect(() => {
+    // When state changes, if the current market isn't valid for the new state, reset it.
+    if (!availableMarkets.includes(selectedMarket)) {
+      setSelectedMarket(availableMarkets[0]);
+    }
+  }, [selectedState, availableMarkets, selectedMarket]);
+
+
   useEffect(() => {
     const fetchPrices = async () => {
+      if (!selectedCommodity || !selectedState || !selectedMarket) {
+        setMandiData([]);
+        return;
+      };
+
       setIsLoading(true);
       try {
-        const data = await getMandiPrices({ market: selectedMarket });
+        const data = await getMandiPrices({ 
+          commodity: selectedCommodity,
+          state: selectedState,
+          market: selectedMarket 
+        });
         setMandiData(data);
       } catch (error) {
         console.error("Failed to fetch mandi prices:", error);
@@ -60,7 +83,7 @@ export default function MandiPricesPage() {
     };
 
     fetchPrices();
-  }, [selectedMarket, toast]);
+  }, [selectedCommodity, selectedState, selectedMarket, toast]);
 
   return (
     <AppLayout>
@@ -68,32 +91,56 @@ export default function MandiPricesPage() {
         title={t('nav.mandiPrices')}
         description={t('mandi.pageDescription')}
       >
-        <Select value={selectedMarket} onValueChange={setSelectedMarket} disabled={isLoading}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t('mandi.selectMarket')} />
-          </SelectTrigger>
-          <SelectContent>
-            {markets.map(market => (
-              <SelectItem key={market} value={market}>{market === "All Markets" ? t('mandi.allMarkets') : market}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2 flex-wrap">
+            <Select value={selectedCommodity} onValueChange={setSelectedCommodity} disabled={isLoading}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Select Commodity" />
+              </SelectTrigger>
+              <SelectContent>
+                {commodities.map(item => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedState} onValueChange={setSelectedState} disabled={isLoading}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Select State" />
+              </SelectTrigger>
+              <SelectContent>
+                {allStates.map(item => (
+                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedMarket} onValueChange={setSelectedMarket} disabled={isLoading}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder={t('mandi.selectMarket')} />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMarkets.map(market => (
+                  <SelectItem key={market} value={market}>{market}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+        </div>
       </PageHeader>
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('mandi.cropVariety')}</TableHead>
-                <TableHead>{t('mandi.market')}</TableHead>
-                <TableHead className="text-right">{t('mandi.price')}</TableHead>
-                <TableHead>{t('mandi.recommendation')}</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Commodity</TableHead>
+                <TableHead>Market</TableHead>
+                <TableHead className="text-right">Min Price (₹)</TableHead>
+                <TableHead className="text-right">Max Price (₹)</TableHead>
+                <TableHead className="text-right font-semibold text-foreground">Model Price (₹)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-48 text-center">
+                  <TableCell colSpan={6} className="h-48 text-center">
                     <div className="flex justify-center items-center gap-2">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         <span className="text-muted-foreground">Fetching latest prices...</span>
@@ -101,31 +148,24 @@ export default function MandiPricesPage() {
                   </TableCell>
                 </TableRow>
               ) : mandiData.length > 0 ? (
-                mandiData.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <div className="font-medium">{item.crop}</div>
-                      <div className="text-sm text-muted-foreground">{item.variety}</div>
-                    </TableCell>
-                    <TableCell>{item.market}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                          {item.price.toLocaleString('en-IN')}
-                          {item.trend === 'up' && <ArrowUp className="h-4 w-4 text-green-500"/>}
-                          {item.trend === 'down' && <ArrowDown className="h-4 w-4 text-red-500"/>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge style={{ backgroundColor: recommendationColors[item.recommendation] }} className="text-white">
-                        {t(`mandi.reco.${item.recommendation.replace(' ', '')}` as any)}
-                      </Badge>
-                    </TableCell>
+                mandiData.map((item) => (
+                  <TableRow key={item['S.No']}>
+                    <TableCell className="text-muted-foreground">{item.Date}</TableCell>
+                    <TableCell className="font-medium">{item.Commodity}</TableCell>
+                    <TableCell>{item.City}</TableCell>
+                    <TableCell className="text-right">{parseInt(item['Min Prize']).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-right">{parseInt(item['Max Prize']).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-right font-bold text-primary">{parseInt(item['Model Prize']).toLocaleString('en-IN')}</TableCell>
                   </TableRow>
                 ))
               ) : (
                  <TableRow>
-                    <TableCell colSpan={4} className="h-48 text-center">
-                        <p className="text-muted-foreground">No data available for this market.</p>
+                    <TableCell colSpan={6} className="h-48 text-center">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <TrendingUp className="h-10 w-10" />
+                            <p>No data available for this selection.</p>
+                            <p className="text-xs">Please select a valid commodity, state, and market.</p>
+                        </div>
                     </TableCell>
                 </TableRow>
               )}

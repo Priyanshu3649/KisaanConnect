@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview A mock service for fetching live Mandi (market) prices.
+ * @fileOverview A service for fetching live Mandi (market) prices, structured to mirror the Agmarknet API.
  *
  * - getMandiPrices - A function that returns simulated real-time market prices.
  * - GetMandiPricesInput - The input type for the getMandiPrices function.
@@ -10,40 +10,57 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { subDays, format } from 'date-fns';
 
-const CropPriceSchema = z.object({
-  crop: z.string().describe('The name of the crop.'),
-  variety: z.string().describe('The variety of the crop.'),
-  price: z.number().describe('The price per quintal in INR.'),
-  market: z.string().describe('The market where the price was recorded.'),
-  trend: z.enum(['up', 'down', 'stable']).describe('The price trend.'),
-  recommendation: z
-    .enum(['Sell Now', 'Hold', 'Good Price'])
-    .describe('A recommendation for the farmer.'),
+const MandiPriceRecordSchema = z.object({
+  'S.No': z.string(),
+  City: z.string(),
+  Commodity: z.string(),
+  'Min Prize': z.string(),
+  'Max Prize': z.string(),
+  'Model Prize': z.string(),
+  Date: z.string(),
 });
 
 const GetMandiPricesInputSchema = z.object({
-  market: z.string().describe('The market to fetch prices for. "All Markets" fetches for all available markets.'),
+  commodity: z.string().describe('The commodity to fetch prices for (e.g., "Potato").'),
+  state: z.string().describe('The state to fetch prices for (e.g., "Karnataka").'),
+  market: z.string().describe('The market to fetch prices for (e.g., "Bangalore").'),
 });
 export type GetMandiPricesInput = z.infer<typeof GetMandiPricesInputSchema>;
 
-const GetMandiPricesOutputSchema = z.array(CropPriceSchema);
+const GetMandiPricesOutputSchema = z.array(MandiPriceRecordSchema);
 export type GetMandiPricesOutput = z.infer<typeof GetMandiPricesOutputSchema>;
-export type CropPrice = z.infer<typeof CropPriceSchema>;
+export type MandiPriceRecord = z.infer<typeof MandiPriceRecordSchema>;
 
 
-const allMockData: CropPrice[] = [
-  { crop: "Tomato", variety: "Desi", price: 2500 + Math.floor(Math.random() * 500) - 250, market: "Pune", trend: "up", recommendation: "Sell Now" },
-  { crop: "Onion", variety: "Red", price: 1800 + Math.floor(Math.random() * 300) - 150, market: "Nashik", trend: "down", recommendation: "Hold" },
-  { crop: "Potato", variety: "Jyoti", price: 2200 + Math.floor(Math.random() * 200) - 100, market: "Indore", trend: "up", recommendation: "Good Price" },
-  { crop: "Wheat", variety: "Lokwan", price: 2100 + Math.floor(Math.random() * 100) - 50, market: "Ludhiana", trend: "stable", recommendation: "Hold" },
-  { crop: "Soybean", variety: "JS-335", price: 4500 + Math.floor(Math.random() * 600) - 300, market: "Nagpur", trend: "up", recommendation: "Sell Now" },
-  { crop: "Cotton", variety: "BT", price: 5500 + Math.floor(Math.random() * 400) - 200, market: "Aurangabad", trend: "down", recommendation: "Hold" },
-  { crop: "Sugarcane", variety: "Co-86032", price: 320 + Math.floor(Math.random() * 50) - 25, market: "Kolhapur", trend: "stable", recommendation: "Good Price" },
-  { crop: "Tomato", variety: "Hybrid", price: 2800 + Math.floor(Math.random() * 400) - 200, market: "Nashik", trend: "up", recommendation: "Sell Now" },
-  { crop: "Onion", variety: "White", price: 2000 + Math.floor(Math.random() * 350) - 175, market: "Pune", trend: "up", recommendation: "Good Price" },
-];
+// This function generates realistic mock data based on the input.
+const generateMockData = (input: GetMandiPricesInput): MandiPriceRecord[] => {
+    if (input.commodity === 'None' || input.state === 'None' || input.market === 'None') {
+        return [];
+    }
 
+    const data: MandiPriceRecord[] = [];
+    const basePrice = 2000 + (input.commodity.length * 100) % 500;
+    
+    for (let i = 0; i < 8; i++) {
+        const date = subDays(new Date(), Math.floor(i / 2));
+        const min = basePrice - 200 + Math.floor(Math.random() * 200);
+        const max = min + 200 + Math.floor(Math.random() * 200);
+        const model = Math.floor((min + max) / 2);
+
+        data.push({
+            'S.No': (i + 1).toString(),
+            City: input.market,
+            Commodity: input.commodity,
+            'Min Prize': min.toString(),
+            'Max Prize': max.toString(),
+            'Model Prize': model.toString(),
+            Date: format(date, 'dd MMM yyyy'),
+        });
+    }
+    return data;
+}
 
 export async function getMandiPrices(input: GetMandiPricesInput): Promise<GetMandiPricesOutput> {
   return getMandiPricesFlow(input);
@@ -57,23 +74,33 @@ const getMandiPricesFlow = ai.defineFlow(
     outputSchema: GetMandiPricesOutputSchema,
   },
   async (input) => {
-    // In a real application, you would replace this mock implementation
-    // with a call to the Agmarknet API.
+    // DEVELOPER: When your API is deployed to a public URL, replace the mock implementation below
+    // with a real fetch call.
     //
-    // Example:
-    // const response = await fetch(`https://api.agmarknet.gov.in/v1/...?market=${input.market}`, {
-    //   headers: { 'Authorization': `Bearer ${process.env.AGMARKNET_API_KEY}` }
-    // });
-    // const data = await response.json();
-    // return data.prices;
-    
+    // 1. Replace the line `const data = generateMockData(input);`
+    // 2. Uncomment the following block and update the URL:
+    /*
+    const publicApiUrl = `https://your-deployed-api.com/request?commodity=${input.commodity}&state=${input.state}&market=${input.market}`;
+    try {
+        const response = await fetch(publicApiUrl);
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch from real API:", error);
+        // Fallback to empty array or re-throw error
+        return [];
+    }
+    */
+
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (input.market === 'All Markets') {
-      return allMockData;
-    }
+    // Generate mock data that matches the API structure
+    const data = generateMockData(input);
     
-    return allMockData.filter(item => item.market === input.market);
+    return data;
   }
 );
