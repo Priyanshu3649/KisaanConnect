@@ -10,9 +10,17 @@ import {
   Warehouse,
   Coins,
   BookOpenCheck,
+  LifeBuoy,
+  LucideIcon
 } from "lucide-react";
 import UserNav from "@/components/user-nav";
 import BottomNav from "./bottom-nav";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -21,6 +29,7 @@ const navItems = [
   { href: "/dashboard/equipment-rentals", icon: Tractor, label: "Equipment Rentals" },
   { href: "/dashboard/scheme-navigator", icon: Coins, label: "Scheme Navigator" },
   { href: "/dashboard/organics-support", icon: BookOpenCheck, label: "Organics Support" },
+  { href: "/dashboard/help-feedback", icon: LifeBuoy, label: "Help & Feedback" },
 ];
 
 const pageTitles: { [key: string]: string } = {
@@ -38,55 +47,27 @@ const AppHeader = () => {
   const pageTitle = pageTitles[pathname] || "KisaanConnect";
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
-        <Link href="/dashboard" className="flex items-center gap-2 font-headline font-bold text-primary md:hidden">
-            <Leaf className="h-6 w-6" />
-            <span className="text-lg">KisaanConnect</span>
+    <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
+        <Link href="/dashboard" className="flex items-center gap-2 font-headline font-bold text-primary">
+            <Leaf className="h-8 w-8" />
+            <span className="text-2xl hidden sm:inline-block">KisaanConnect</span>
         </Link>
-        <div className="w-full flex-1 md:text-center">
-            <h1 className="font-headline text-xl font-semibold hidden md:block">{pageTitle}</h1>
+        <div className="flex-1 text-center hidden md:block">
+            <h1 className="font-headline text-2xl font-bold tracking-tight">{pageTitle}</h1>
         </div>
         <UserNav />
     </header>
   );
 };
 
-const DesktopSidebar = () => {
-    const pathname = usePathname();
-    return (
-        <aside className="hidden md:flex md:flex-col w-20 border-r bg-background">
-            <Link href="/dashboard" className="flex items-center justify-center h-16">
-              <Leaf className="h-8 w-8 text-primary" />
-              <span className="sr-only">KisaanConnect</span>
-            </Link>
-            <nav className="flex flex-col items-center gap-4 px-2 mt-4">
-                 {navItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex h-12 w-12 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground ${pathname === item.href ? 'bg-primary text-primary-foreground' : ''}`}
-                    >
-                        <item.icon className="h-5 w-5" />
-                        <span className="sr-only">{item.label}</span>
-                    </Link>
-                ))}
-            </nav>
-        </aside>
-    )
-}
-
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[80px_1fr]">
-        <DesktopSidebar />
-        <div className="flex flex-col">
-          <AppHeader />
-          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30">
-              {children}
-          </main>
-        </div>
+    <div className="flex min-h-screen w-full flex-col">
+        <AppHeader />
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30 pb-20 md:pb-6">
+            {children}
+        </main>
         <BottomNav navItems={navItems} />
     </div>
   );

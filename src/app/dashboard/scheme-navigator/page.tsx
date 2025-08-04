@@ -1,151 +1,108 @@
+
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Coins, Loader2, Mic, Sparkles, Volume2, User } from "lucide-react";
-import { schemeNavigator, type SchemeNavigatorOutput } from "@/ai/flows/scheme-navigator";
-import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Coins, CheckCircle, FileText } from "lucide-react";
+
+const schemes = [
+    {
+        title: "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+        description: "A central sector scheme with 100% funding from the Government of India. It provides income support to all landholding farmer families.",
+        eligibility: [
+            "All landholding farmer families.",
+            "Family is defined as husband, wife and minor children.",
+            "Must have cultivable land.",
+        ],
+        application: "Registration is done through the PM-KISAN portal (pmkisan.gov.in) or through Common Service Centres (CSCs). Requires Aadhaar, land records, and bank account details.",
+    },
+    {
+        title: "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
+        description: "Provides comprehensive insurance coverage against crop failure, helping to stabilize the income of farmers.",
+        eligibility: [
+            "All farmers including sharecroppers and tenant farmers growing notified crops in notified areas are eligible.",
+            "Loanee farmers are enrolled automatically by banks.",
+        ],
+        application: "Non-loanee farmers can enroll through the National Crop Insurance Portal (NCIP), nearest bank branch, or authorized insurance company.",
+    },
+    {
+        title: "Kisan Credit Card (KCC) Scheme",
+        description: "A scheme to provide farmers with timely access to credit for their cultivation and other needs.",
+        eligibility: [
+            "All farmers – individuals/joint borrowers who are owner cultivators.",
+            "Tenant farmers, oral lessees & sharecroppers.",
+            "Self Help Groups (SHGs) or Joint Liability Groups (JLGs) of farmers.",
+        ],
+        application: "Apply at any commercial bank, regional rural bank, or cooperative bank by filling out a simple one-page form. Requires land documents and a passport-sized photograph.",
+    },
+    {
+        title: "National Mission for Sustainable Agriculture (NMSA)",
+        description: "Aims to enhance agricultural productivity especially in rainfed areas focusing on integrated farming, water use efficiency, and soil health management.",
+        eligibility: [
+            "Open to all farmers.",
+            "Focus on small and marginal farmers.",
+            "Specific components may have additional criteria.",
+        ],
+        application: "Implemented by State Agriculture Departments. Farmers can contact their local Krishi Vigyan Kendra (KVK) or district agriculture office for details and application forms.",
+    }
+];
 
 export default function SchemeNavigatorPage() {
-  const [query, setQuery] = useState("");
-  const [result, setResult] = useState<SchemeNavigatorOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const { toast } = useToast();
+    const [selectedScheme, setSelectedScheme] = useState<(typeof schemes)[0] | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!query) {
-      toast({
-        variant: "destructive",
-        title: "Missing Query",
-        description: "Please enter a question about government schemes.",
-      });
-      return;
-    }
-    setIsLoading(true);
-    setResult(null);
-
-    try {
-      const navigatorResult = await schemeNavigator({ query });
-      setResult(navigatorResult);
-      if (audioRef.current) {
-        audioRef.current.src = navigatorResult.audio;
-        audioRef.current.play();
-      }
-    } catch (error) {
-      console.error("Scheme navigation failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Navigation Failed",
-        description: "An error occurred while fetching scheme information.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <AppLayout>
-      <PageHeader
-        title="Scheme Navigator"
-        description="Ask questions about government subsidies and get instant answers."
-      />
-      <div className="grid gap-8 md:grid-cols-1">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ask a Question</CardTitle>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="relative">
-                <Textarea
-                  id="query"
-                  placeholder="e.g., 'What subsidies are available for drip irrigation in Maharashtra?'"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  rows={3}
-                  className="pr-12"
-                />
-                <Button type="button" variant="ghost" size="icon" className="absolute top-1/2 -translate-y-1/2 right-2">
-                  <Mic className="h-5 w-5" />
-                  <span className="sr-only">Use voice input</span>
-                </Button>
-              </div>
-              <Button type="submit" disabled={isLoading || !query} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Finding Schemes...
-                  </>
-                ) : (
-                  "Get Answer"
-                )}
-              </Button>
-            </CardContent>
-          </form>
-        </Card>
-
-        <div className="space-y-4">
-          <h2 className="font-headline text-2xl font-semibold">AI Generated Response</h2>
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center h-48 text-center border-2 border-dashed rounded-lg">
-              <Loader2 className="w-12 h-12 mb-4 text-muted-foreground animate-spin" />
-              <p className="text-muted-foreground">Our AI is searching for the best schemes for you...</p>
+    return (
+        <AppLayout>
+            <PageHeader
+                title="Scheme Navigator"
+                description="Explore government subsidies and check your eligibility."
+            />
+            <div className="space-y-6">
+                {schemes.map((scheme, index) => (
+                    <Dialog key={index}>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="font-headline text-xl flex items-start gap-3">
+                                    <Coins className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                                    <span>{scheme.title}</span>
+                                </CardTitle>
+                                <CardDescription className="pl-9">{scheme.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="pl-9 flex gap-4">
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" onClick={() => setSelectedScheme(scheme)}>
+                                        <CheckCircle className="mr-2"/>
+                                        Check Eligibility
+                                    </Button>
+                                </DialogTrigger>
+                            </CardContent>
+                        </Card>
+                        {selectedScheme && (
+                             <DialogContent className="sm:max-w-[625px]">
+                                <DialogHeader>
+                                    <DialogTitle className="font-headline text-2xl">{selectedScheme.title}</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                    <div className="space-y-2">
+                                        <h3 className="font-semibold flex items-center gap-2"><CheckCircle className="h-5 w-5 text-primary"/> Eligibility Criteria</h3>
+                                        <ul className="list-disc list-inside space-y-1 text-muted-foreground pl-2">
+                                            {selectedScheme.eligibility.map((item, i) => <li key={i}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="font-semibold flex items-center gap-2"><FileText className="h-5 w-5 text-primary"/> How to Apply</h3>
+                                        <p className="text-muted-foreground">{selectedScheme.application}</p>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        )}
+                    </Dialog>
+                ))}
             </div>
-          )}
-          {!isLoading && result ? (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Your Query</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="italic text-muted-foreground">"{query}"</p>
-                </CardContent>
-              </Card>
-              <Alert className="bg-card">
-                <Volume2 className="h-5 w-5 text-primary" />
-                <AlertTitle>Voice Answer</AlertTitle>
-                <AlertDescription>
-                  <audio ref={audioRef} controls className="w-full mt-2" src={result.audio}>
-                    Your browser does not support the audio element.
-                  </audio>
-                </AlertDescription>
-              </Alert>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="whitespace-pre-wrap">{result.summary}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">Reasoning</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="whitespace-pre-wrap text-muted-foreground">{result.reasoning}</p>
-
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-             !isLoading && (
-                <div className="flex flex-col items-center justify-center h-48 text-center border-2 border-dashed rounded-lg">
-                    <Coins className="w-12 h-12 mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Your answer will appear here.</p>
-                </div>
-            )
-          )}
-        </div>
-      </div>
-    </AppLayout>
-  );
+        </AppLayout>
+    );
 }
+
