@@ -60,18 +60,20 @@ const VoiceNavigator = () => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         setIsProcessing(false);
-        if (event.error !== 'no-speech') {
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
             toast({ variant: "destructive", title: t('voice.micError'), description: t('voice.checkPermissions') });
         }
       };
 
       recognition.onend = () => {
-        setIsListening(false);
+        if (isListening) {
+          setIsListening(false);
+        }
       };
 
       recognitionRef.current = recognition;
     }
-  }, [language, router, t, toast]);
+  }, [language, router, t, toast, isListening]);
 
   const handleMicClick = () => {
     if (!recognitionRef.current) {
@@ -81,12 +83,20 @@ const VoiceNavigator = () => {
     
     if (isListening) {
       recognitionRef.current.stop();
+      setIsListening(false);
     } else {
       try {
+        // Ensure language is up-to-date before starting
+        recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-US';
         recognitionRef.current.start();
       } catch(e) {
         console.error("Error starting recognition:", e);
-        toast({ variant: "destructive", title: "Already Listening", description: "The microphone is already active." });
+        // It's possible the service is already running, so don't show an error unless it's a new one.
+        if ((e as DOMException).name === 'InvalidStateError') {
+          // Ignore this error as it means it's already listening
+        } else {
+          toast({ variant: "destructive", title: t('voice.micError'), description: (e as Error).message });
+        }
       }
     }
   };

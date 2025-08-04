@@ -30,6 +30,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       ...navItems,
       { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
   ];
+  
+  // For the mobile bottom nav, we typically show fewer items.
+  // We'll show the main 6 here. Help/Feedback can be in the user menu.
+  const mobileNavItems = navItems;
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-background">
@@ -37,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-grow p-4 md:p-6 pb-20 md:pb-6">
         {children}
       </main>
-      {isMobile && <BottomNav navItems={navItems} />}
+      {isMobile && <BottomNav navItems={mobileNavItems} />}
       <VoiceNavigator />
     </div>
   );

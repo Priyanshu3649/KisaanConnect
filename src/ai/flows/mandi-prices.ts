@@ -56,7 +56,7 @@ const generateMockData = (input: GetMandiPricesInput): MandiPriceRecord[] => {
             'Min Prize': min.toString(),
             'Max Prize': max.toString(),
             'Model Prize': model.toString(),
-            Date: format(date, 'dd MMM yyyy'),
+            Date: format(date, 'yyyy-MM-dd'), // Use a standard, parseable date format
         });
     }
     return data;
@@ -87,6 +87,7 @@ const getMandiPricesFlow = ai.defineFlow(
             throw new Error(`API request failed with status ${response.status}`);
         }
         const data = await response.json();
+        // IMPORTANT: Ensure the 'Date' field from your API is in a standard format like 'yyyy-MM-dd'
         return data;
     } catch (error) {
         console.error("Failed to fetch from real API:", error);

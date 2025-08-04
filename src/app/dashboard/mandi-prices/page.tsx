@@ -64,6 +64,7 @@ export default function MandiPricesPage() {
     const fetchPrices = async () => {
       if (!selectedCommodity || !selectedState || !selectedMarket) {
         setMandiData([]);
+        setIsLoading(false);
         return;
       };
 
@@ -94,8 +95,10 @@ export default function MandiPricesPage() {
   const processedData = useMemo(() => {
     if (!mandiData || mandiData.length === 0) return [];
     
+    // Create a mutable copy for sorting
     const sortedData = [...mandiData].sort((a, b) => {
         try {
+            // Dates are in 'yyyy-MM-dd' format, which is safe for string comparison or direct Date instantiation
             return new Date(b.Date).getTime() - new Date(a.Date).getTime();
         } catch(e) {
             return 0;
@@ -175,7 +178,7 @@ export default function MandiPricesPage() {
               ) : processedData.length > 0 ? (
                 processedData.map((item) => (
                   <TableRow key={item['S.No']}>
-                    <TableCell className="text-muted-foreground">{item.Date}</TableCell>
+                    <TableCell className="text-muted-foreground">{new Date(item.Date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</TableCell>
                     <TableCell className="font-medium">{item.Commodity}</TableCell>
                     <TableCell className="text-right">{parseInt(item['Min Prize']).toLocaleString('en-IN')}</TableCell>
                     <TableCell className="text-right">{parseInt(item['Max Prize']).toLocaleString('en-IN')}</TableCell>
