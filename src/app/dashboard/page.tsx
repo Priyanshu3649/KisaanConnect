@@ -112,8 +112,10 @@ export default function DashboardPage() {
       }
     };
 
-    fetchDashboardData();
-  }, [user, authLoading, router, recentDiagnoses]);
+    if(!diagnosesLoading) {
+      fetchDashboardData();
+    }
+  }, [user, authLoading, router, recentDiagnoses, diagnosesLoading]);
   
   const isLoading = authLoading || isDataLoading;
 
@@ -245,7 +247,10 @@ export default function DashboardPage() {
                 {diagnosesLoading && (
                     <TableRow>
                         <TableCell colSpan={3} className="h-24 text-center">
-                            {t('profile.loadingDiagnoses')}
+                            <div className="flex justify-center items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <span>{t('profile.loadingDiagnoses')}</span>
+                            </div>
                         </TableCell>
                     </TableRow>
                 )}

@@ -7,12 +7,7 @@ import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/context/translation-context";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-
-interface NavItem {
-  href: string;
-  icon: keyof typeof LucideIcons;
-  labelKey: string;
-}
+import type { NavItem } from "./app-layout";
 
 interface BottomNavProps {
   navItems: NavItem[];
@@ -24,7 +19,7 @@ export default function BottomNav({ navItems }: BottomNavProps) {
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-accent border-t border-accent/50 text-accent-foreground">
-      <div className="grid h-full max-w-lg grid-cols-6 mx-auto font-medium">
+      <div className={`grid h-full max-w-lg grid-cols-${navItems.length} mx-auto font-medium`}>
         {navItems.map((item) => {
           const Icon = LucideIcons[item.icon] as React.ElementType;
           const isActive = pathname === item.href;
@@ -36,7 +31,7 @@ export default function BottomNav({ navItems }: BottomNavProps) {
                     href={item.href}
                     className={cn(
                         "inline-flex flex-col items-center justify-center px-2 sm:px-5 hover:bg-black/10 group",
-                        isActive ? "text-primary-foreground" : ""
+                        isActive ? "text-primary-foreground bg-black/10" : ""
                     )}
                   >
                     <Icon className="w-6 h-6 mb-1" />

@@ -15,20 +15,13 @@ import AlertMenu from "./alert-menu";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePathname } from "next/navigation";
+import type { NavItem } from "./app-layout"; // Import the type from app-layout
 
+interface AppHeaderProps {
+    navItems: NavItem[];
+}
 
-const navItems = [
-  { href: "/dashboard", icon: "User", labelKey: "nav.profile" },
-  { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
-  { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
-  { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
-  { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
-  { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
-  { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
-];
-
-
-export default function AppHeader() {
+export default function AppHeader({ navItems }: AppHeaderProps) {
   const { setLanguage, language, t } = useTranslation();
   const isMobile = useIsMobile();
   const pathname = usePathname();

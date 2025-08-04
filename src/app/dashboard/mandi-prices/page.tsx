@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Loader2, TrendingUp } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import { getMandiPrices, type MandiPriceRecord } from "@/ai/flows/mandi-prices";
 import { useToast } from "@/hooks/use-toast";
@@ -35,10 +35,9 @@ const states: { [key: string]: string[] } = {
 const allStates = Object.keys(states);
 
 const getPriceTrend = (currentPrice: number, prevPrice: number | null) => {
-    if (prevPrice === null) return 'stable';
+    if (prevPrice === null || currentPrice === prevPrice) return 'stable';
     if (currentPrice > prevPrice) return 'up';
-    if (currentPrice < prevPrice) return 'down';
-    return 'stable';
+    return 'down';
 };
 
 
@@ -55,7 +54,7 @@ export default function MandiPricesPage() {
   const availableMarkets = useMemo(() => states[selectedState] || [], [selectedState]);
 
   useEffect(() => {
-    if (!availableMarkets.includes(selectedMarket)) {
+    if (availableMarkets.length > 0 && !availableMarkets.includes(selectedMarket)) {
       setSelectedMarket(availableMarkets[0]);
     }
   }, [selectedState, availableMarkets, selectedMarket]);
@@ -83,6 +82,7 @@ export default function MandiPricesPage() {
           title: "Failed to load prices",
           description: "Could not fetch market data. Please try again later.",
         });
+        setMandiData([]); // Clear data on error
       } finally {
         setIsLoading(false);
       }
@@ -92,13 +92,16 @@ export default function MandiPricesPage() {
   }, [selectedCommodity, selectedState, selectedMarket, toast]);
   
   const processedData = useMemo(() => {
-    if (!mandiData) return [];
-    return mandiData.map((item, index) => {
-        const prevPriceRecord = mandiData[index + 1]; // Compare with the next item (previous day)
+    if (!mandiData || mandiData.length === 0) return [];
+    
+    const sortedData = [...mandiData].sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
+
+    return sortedData.map((item, index) => {
+        const prevPriceRecord = sortedData[index + 1]; // Compare with the next item (previous day)
         const prevPrice = prevPriceRecord ? parseInt(prevPriceRecord['Model Prize']) : null;
         const trend = getPriceTrend(parseInt(item['Model Prize']), prevPrice);
         return { ...item, trend };
-    }).reverse(); // Reverse to show latest date first
+    });
   }, [mandiData]);
 
 
