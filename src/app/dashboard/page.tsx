@@ -1,41 +1,124 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { doc, getDoc, collection, query, where, getDocs, limit } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { DollarSign, Leaf, Tractor, Wheat } from "lucide-react";
 import EarningsChart from "./earnings-chart";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const recentDiagnoses = [
-  { crop: "Tomato", disease: "Late Blight", status: "Active", progress: 75 },
-  { crop: "Potato", disease: "Early Blight", status: "Resolved", progress: 100 },
-  { crop: "Wheat", disease: "Rust", status: "Active", progress: 40 },
-];
-
-const activeRentals = [
-    { equipment: "John Deere Tractor", type: "Lending", due: "3 days" },
-    { equipment: "Power Tiller", type: "Borrowing", due: "5 days" },
-]
+interface UserData {
+  name?: string;
+}
+interface Diagnosis {
+    crop: string;
+    disease: string;
+    status: 'Active' | 'Resolved';
+    progress: number;
+}
+interface Rental {
+    equipment: string;
+    type: 'Lending' | 'Borrowing';
+    due: string;
+}
+interface DashboardData {
+    totalRevenue: number;
+    revenueChange: number;
+    activeDiagnosesCount: number;
+    resolvedThisWeek: number;
+    cropVarieties: number;
+    cropChange: number;
+    activeRentalsCount: number;
+    lendingCount: number;
+    borrowingCount: number;
+    recentDiagnoses: Diagnosis[];
+    activeRentals: Rental[];
+}
 
 export default function DashboardPage() {
+  const [user] = useAuthState(auth);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      };
+
+      setIsLoading(true);
+      try {
+        // Fetch user's name
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          setUserData(userDoc.data() as UserData);
+        }
+
+        // In a real app, you would fetch this data from Firestore.
+        // For this prototype, we'll use placeholder data.
+        const data: DashboardData = {
+            totalRevenue: 45231.89,
+            revenueChange: 20.1,
+            activeDiagnosesCount: 2,
+            resolvedThisWeek: 1,
+            cropVarieties: 12,
+            cropChange: 2,
+            activeRentalsCount: 2,
+            lendingCount: 1,
+            borrowingCount: 1,
+            recentDiagnoses: [
+                { crop: "Tomato", disease: "Late Blight", status: "Active", progress: 75 },
+                { crop: "Potato", disease: "Early Blight", status: "Resolved", progress: 100 },
+                { crop: "Wheat", disease: "Rust", status: "Active", progress: 40 },
+            ],
+            activeRentals: [
+                { equipment: "John Deere Tractor", type: "Lending", due: "3 days" },
+                { equipment: "Power Tiller", type: "Borrowing", due: "5 days" },
+            ]
+        };
+        setDashboardData(data);
+      } catch (error) {
+        console.error("Error fetching dashboard data: ", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user]);
+
+  if (isLoading) {
+      return (
+          <AppLayout>
+              <PageHeader
+                  title="Welcome Back!"
+                  description="Loading your farm's summary..."
+              />
+               <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
+               </div>
+          </AppLayout>
+      )
+  }
+
   return (
     <AppLayout>
       <PageHeader
-        title="Welcome Back, Farmer!"
+        title={`Hello, ${userData?.name || 'Farmer'}!`}
         description="Here's a summary of your farm's activity."
       />
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -45,9 +128,9 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹45,231.89</div>
+            <div className="text-2xl font-bold">₹{dashboardData?.totalRevenue.toLocaleString('en-IN') || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% from last month
+              +{dashboardData?.revenueChange || '0'}% from last month
             </p>
           </CardContent>
         </Card>
@@ -57,9 +140,9 @@ export default function DashboardPage() {
             <Leaf className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2</div>
+            <div className="text-2xl font-bold">+{dashboardData?.activeDiagnosesCount || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              1 resolved this week
+              {dashboardData?.resolvedThisWeek || '0'} resolved this week
             </p>
           </CardContent>
         </Card>
@@ -69,9 +152,9 @@ export default function DashboardPage() {
             <Wheat className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12 Varieties</div>
+            <div className="text-2xl font-bold">{dashboardData?.cropVarieties || '0'} Varieties</div>
             <p className="text-xs text-muted-foreground">
-              +2 since last season
+              +{dashboardData?.cropChange || '0'} since last season
             </p>
           </CardContent>
         </Card>
@@ -81,9 +164,9 @@ export default function DashboardPage() {
             <Tractor className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2 Active</div>
+            <div className="text-2xl font-bold">+{dashboardData?.activeRentalsCount || '0'} Active</div>
             <p className="text-xs text-muted-foreground">
-              1 lending, 1 borrowing
+              {dashboardData?.lendingCount || '0'} lending, {dashboardData?.borrowingCount || '0'} borrowing
             </p>
           </CardContent>
         </Card>
@@ -115,7 +198,7 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentDiagnoses.map((diag, index) => (
+                {dashboardData?.recentDiagnoses.map((diag, index) => (
                   <TableRow key={index}>
                     <TableCell>
                       <div className="font-medium">{diag.crop}</div>
@@ -155,7 +238,7 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeRentals.map((rental, index) => (
+                {dashboardData?.activeRentals.map((rental, index) => (
                   <TableRow key={index}>
                     <TableCell>
                       <div className="font-medium">{rental.equipment}</div>
