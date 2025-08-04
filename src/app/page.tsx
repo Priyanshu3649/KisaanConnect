@@ -40,6 +40,14 @@ export default function LoginPage() {
     }, 1000);
   };
 
+  const handleResendOtp = () => {
+    // Simulate resending OTP
+    toast({
+        title: "OTP Resent",
+        description: "A new OTP has been sent to your phone number.",
+    });
+  }
+
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background">
        <div className="absolute inset-0 bg-cover bg-center opacity-10" style={{backgroundImage: 'url(https://placehold.co/1920x1080.png)'}} data-ai-hint="farm landscape"></div>
@@ -63,6 +71,12 @@ export default function LoginPage() {
               <div className="grid gap-2">
                 <Label htmlFor="otp">One-Time Password (OTP)</Label>
                 <Input id="otp" type="password" required value={otp} onChange={(e) => setOtp(e.target.value)} />
+                 <p className="text-xs text-muted-foreground text-right">
+                    Didn&apos;t receive OTP?{" "}
+                    <button onClick={handleResendOtp} className="underline underline-offset-4 hover:text-primary">
+                        Resend
+                    </button>
+                </p>
               </div>
             )}
           </CardContent>
@@ -79,7 +93,7 @@ export default function LoginPage() {
             )}
 
              <p className="text-xs text-muted-foreground">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link href="/register" className="underline underline-offset-4 hover:text-primary">
                     Register here
                 </Link>
