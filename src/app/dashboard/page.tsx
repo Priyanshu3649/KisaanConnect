@@ -66,7 +66,7 @@ export default function DashboardPage() {
         }
 
         // In a real app, you would fetch this data from Firestore.
-        // For this prototype, we'll use placeholder data.
+        // For this prototype, we'll use placeholder data that simulates a real fetch.
         const data: DashboardData = {
             totalRevenue: 45231.89,
             revenueChange: 20.1,
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                       <div className="text-sm text-muted-foreground">{diag.disease}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={diag.status === 'Active' ? 'destructive' : 'default'} className="bg-accent text-accent-foreground">{diag.status}</Badge>
+                      <Badge variant={diag.status === 'Active' ? 'destructive' : 'default'}>{diag.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
