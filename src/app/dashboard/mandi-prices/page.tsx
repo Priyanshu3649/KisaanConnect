@@ -94,10 +94,16 @@ export default function MandiPricesPage() {
   const processedData = useMemo(() => {
     if (!mandiData || mandiData.length === 0) return [];
     
-    const sortedData = [...mandiData].sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
+    const sortedData = [...mandiData].sort((a, b) => {
+        try {
+            return new Date(b.Date).getTime() - new Date(a.Date).getTime();
+        } catch(e) {
+            return 0;
+        }
+    });
 
     return sortedData.map((item, index) => {
-        const prevPriceRecord = sortedData[index + 1]; // Compare with the next item (previous day)
+        const prevPriceRecord = sortedData[index + 1];
         const prevPrice = prevPriceRecord ? parseInt(prevPriceRecord['Model Prize']) : null;
         const trend = getPriceTrend(parseInt(item['Model Prize']), prevPrice);
         return { ...item, trend };

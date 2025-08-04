@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer } from "lucide-react";
+import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2 } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -51,7 +51,7 @@ const StatCardSkeleton = () => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <Skeleton className="h-5 w-2/4" />
-            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-4 rounded-full" />
         </CardHeader>
         <CardContent>
             <Skeleton className="h-8 w-3/4 mb-2" />
@@ -87,7 +87,7 @@ export default function DashboardPage() {
           setUserData(userDoc.data() as UserData);
         }
 
-        const activeDiagnosesCount = recentDiagnoses?.filter(d => d.status === 'Active').length || 0;
+        const activeDiagnosesCount = recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || 0;
         
         const data: DashboardData = {
             totalRevenue: 45231.89,
@@ -120,84 +120,83 @@ export default function DashboardPage() {
   const isLoading = authLoading || isDataLoading;
 
   const getGreeting = () => {
+    if (authLoading || !userData) {
+      return t('profile.loadingTitle');
+    }
     const name = userData?.name || t('userNav.user');
     return `${t('profile.hello')}, ${name}!`;
   };
 
-  if (isLoading) {
-      return (
-          <AppLayout>
-              <PageHeader
-                  title={t('profile.loadingTitle')}
-                  description={t('profile.loadingDesc')}
-              />
-               <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-               </div>
-          </AppLayout>
-      )
-  }
+  const pageDescription = isLoading ? t('profile.loadingDesc') : t('profile.pageDescription');
 
   return (
     <AppLayout>
       <PageHeader
         title={getGreeting()}
-        description={t('profile.pageDescription')}
+        description={pageDescription}
       />
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('profile.totalRevenue')}</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{dashboardData?.totalRevenue.toLocaleString('en-IN') || '0'}</div>
-            <p className="text-xs text-muted-foreground">
-              +{dashboardData?.revenueChange || '0'}% {t('profile.fromLastMonth')}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
-            <Leaf className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{dashboardData?.activeDiagnosesCount || '0'}</div>
-            <p className="text-xs text-muted-foreground">
-              {dashboardData?.resolvedThisWeek || '0'} {t('profile.resolvedThisWeek')}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('profile.cropsPlanted')}</CardTitle>
-            <Wheat className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboardData?.cropVarieties || '0'} {t('profile.varieties')}</div>
-            <p className="text-xs text-muted-foreground">
-              +{dashboardData?.cropChange || '0'} {t('profile.sinceLastSeason')}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('profile.equipmentRentals')}</CardTitle>
-            <Tractor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{dashboardData?.activeRentalsCount || '0'} {t('profile.active')}</div>
-            <p className="text-xs text-muted-foreground">
-              {dashboardData?.lendingCount || '0'} {t('profile.lending')}, {dashboardData?.borrowingCount || '0'} {t('profile.borrowing')}
-            </p>
-          </CardContent>
-        </Card>
+        {isLoading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('profile.totalRevenue')}</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">₹{dashboardData?.totalRevenue.toLocaleString('en-IN') || '0'}</div>
+                <p className="text-xs text-muted-foreground">
+                  +{dashboardData?.revenueChange || '0'}% {t('profile.fromLastMonth')}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
+                <Leaf className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">+{dashboardData?.activeDiagnosesCount || '0'}</div>
+                <p className="text-xs text-muted-foreground">
+                  {dashboardData?.resolvedThisWeek || '0'} {t('profile.resolvedThisWeek')}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('profile.cropsPlanted')}</CardTitle>
+                <Wheat className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dashboardData?.cropVarieties || '0'} {t('profile.varieties')}</div>
+                <p className="text-xs text-muted-foreground">
+                  +{dashboardData?.cropChange || '0'} {t('profile.sinceLastSeason')}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('profile.equipmentRentals')}</CardTitle>
+                <Tractor className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">+{dashboardData?.activeRentalsCount || '0'} {t('profile.active')}</div>
+                <p className="text-xs text-muted-foreground">
+                  {dashboardData?.lendingCount || '0'} {t('profile.lending')}, {dashboardData?.borrowingCount || '0'} {t('profile.borrowing')}
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 mt-8">
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
@@ -281,7 +280,7 @@ export default function DashboardPage() {
         </Card>
         </div>
       </div>
-       <div className="grid gap-4 md:gap-8">
+       <div className="grid gap-4 md:gap-8 mt-8">
         <Card>
           <CardHeader>
             <CardTitle>{t('profile.activeRentals')}</CardTitle>

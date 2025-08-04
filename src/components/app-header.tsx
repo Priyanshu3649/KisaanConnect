@@ -15,7 +15,7 @@ import AlertMenu from "./alert-menu";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePathname } from "next/navigation";
-import type { NavItem } from "./app-layout"; // Import the type from app-layout
+import type { NavItem } from "./app-layout";
 
 interface AppHeaderProps {
     navItems: NavItem[];
