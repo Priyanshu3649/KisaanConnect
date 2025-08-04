@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -9,6 +8,9 @@ import * as LucideIcons from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import { cn } from "@/lib/utils";
 import UserNav from "./user-nav";
+import { Languages } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
+import AlertMenu from "./alert-menu";
 
 interface NavItem {
   href: string;
@@ -23,13 +25,13 @@ interface MobileHeaderProps {
 
 export default function MobileHeader({ navItems }: MobileHeaderProps) {
   const pathname = usePathname();
-  const { t } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
   
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30 bg-background">
+    <header className="flex h-14 items-center justify-between gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30 bg-background">
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+          <Button variant="outline" size="icon" className="shrink-0">
             <LucideIcons.Menu className="h-5 w-5" />
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
@@ -37,7 +39,7 @@ export default function MobileHeader({ navItems }: MobileHeaderProps) {
         <SheetContent side="left" className="flex flex-col">
           <nav className="grid gap-2 text-lg font-medium">
             <Link
-              href="#"
+              href="/dashboard"
               className="flex items-center gap-2 text-lg font-semibold mb-4"
             >
               <LucideIcons.Leaf className="h-6 w-6 text-primary" />
@@ -56,7 +58,7 @@ export default function MobileHeader({ navItems }: MobileHeaderProps) {
                     )}
                     >
                     <Icon className="h-5 w-5" />
-                    {t(`nav.${item.labelKey}`)}
+                    {t(item.labelKey as any)}
                 </Link>
               )
             })}
@@ -64,12 +66,31 @@ export default function MobileHeader({ navItems }: MobileHeaderProps) {
         </SheetContent>
       </Sheet>
 
-      <div className="w-full flex-1">
+      <div className="flex-1 text-center">
          <h1 className="font-headline text-xl font-bold tracking-tight">
-            {t(`nav.${navItems.find(item => item.href === pathname)?.labelKey || 'dashboard'}`)}
+            {t(navItems.find(item => item.href === pathname)?.labelKey as any || 'nav.profile')}
          </h1>
       </div>
-      <UserNav />
+      <div className="flex items-center gap-1">
+        <AlertMenu />
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <Languages className="h-5 w-5" />
+                    <span className="sr-only">Change Language</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setLanguage('en')} disabled={language === 'en'}>
+                    English
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('hi')} disabled={language === 'hi'}>
+                    हिंदी
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+        <UserNav />
+      </div>
     </header>
   );
 }

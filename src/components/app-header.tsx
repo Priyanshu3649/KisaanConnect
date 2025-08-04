@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -11,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Languages } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import UserNav from "./user-nav";
+import AlertMenu from "./alert-menu";
 
 
 export default function AppHeader() {
@@ -21,6 +21,7 @@ export default function AppHeader() {
         <div className="w-full flex-1">
             {/* Optional: Add a global search bar here */}
         </div>
+        <AlertMenu />
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">

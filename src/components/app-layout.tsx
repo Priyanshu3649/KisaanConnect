@@ -1,4 +1,3 @@
-
 "use client";
 
 import Sidebar from "@/components/sidebar";
@@ -8,13 +7,13 @@ import VoiceNavigator from "./voice-navigator";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
-  { href: "/dashboard", icon: "LayoutDashboard", labelKey: "dashboard" },
-  { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "cropDiagnosis" },
-  { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "mandiPrices" },
-  { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "equipmentRentals" },
-  { href: "/dashboard/scheme-navigator", icon: "Coins", labelKey: "schemeNavigator" },
-  { href: "/dashboard/organics-support", icon: "BookOpenCheck", labelKey: "organicsSupport" },
-  { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "helpAndFeedback" },
+  { href: "/dashboard", icon: "User", labelKey: "nav.profile" },
+  { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
+  { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
+  { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
+  { href: "/dashboard/scheme-navigator", icon: "Coins", labelKey: "nav.schemeNavigator" },
+  { href: "/dashboard/organics-support", icon: "BookOpenCheck", labelKey: "nav.organicsSupport" },
+  { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

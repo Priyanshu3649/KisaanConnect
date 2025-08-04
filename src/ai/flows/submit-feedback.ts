@@ -1,4 +1,3 @@
-// src/ai/flows/submit-feedback.ts
 'use server';
 
 /**
@@ -16,6 +15,7 @@ const SubmitFeedbackInputSchema = z.object({
   type: z.string().describe('The type of feedback (e.g., "feedback", "bug", "feature").'),
   subject: z.string().describe('The subject line of the feedback.'),
   message: z.string().describe('The detailed feedback message from the user.'),
+  language: z.string().describe('The language for the response (e.g., "en" or "hi").'),
 });
 export type SubmitFeedbackInput = z.infer<typeof SubmitFeedbackInputSchema>;
 
@@ -45,7 +45,7 @@ const prompt = ai.definePrompt({
 
     Your task is to:
     1.  Generate a unique ticket ID for this submission. The ID should be in the format KC-FB-[8 random alphanumeric characters].
-    2.  Create a friendly, professional confirmation message for the user, acknowledging their submission.
+    2.  Create a friendly, professional confirmation message for the user, acknowledging their submission. The message must be in the specified language: {{language}}.
     
     Return the confirmation message and the ticket ID.`,
 });

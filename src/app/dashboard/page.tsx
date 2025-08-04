@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat } from "lucide-react";
+import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -119,15 +118,15 @@ export default function DashboardPage() {
 
   const getGreeting = () => {
     const name = userData?.name || t('userNav.user');
-    return `${t('login.welcome')} ${name}!`;
+    return `${t('profile.hello')}, ${name}!`;
   };
 
   if (isLoading) {
       return (
           <AppLayout>
               <PageHeader
-                  title="Welcome Back!"
-                  description="Loading your farm's summary..."
+                  title={t('profile.loadingTitle')}
+                  description={t('profile.loadingDesc')}
               />
                <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
                   <StatCardSkeleton />
@@ -143,54 +142,54 @@ export default function DashboardPage() {
     <AppLayout>
       <PageHeader
         title={getGreeting()}
-        description="Here's a summary of your farm's activity."
+        description={t('profile.pageDescription')}
       />
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('profile.totalRevenue')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{dashboardData?.totalRevenue.toLocaleString('en-IN') || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              +{dashboardData?.revenueChange || '0'}% from last month
+              +{dashboardData?.revenueChange || '0'}% {t('profile.fromLastMonth')}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Diagnoses</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
             <Leaf className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+{dashboardData?.activeDiagnosesCount || '0'}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboardData?.resolvedThisWeek || '0'} resolved this week
+              {dashboardData?.resolvedThisWeek || '0'} {t('profile.resolvedThisWeek')}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Crops Planted</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('profile.cropsPlanted')}</CardTitle>
             <Wheat className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData?.cropVarieties || '0'} Varieties</div>
+            <div className="text-2xl font-bold">{dashboardData?.cropVarieties || '0'} {t('profile.varieties')}</div>
             <p className="text-xs text-muted-foreground">
-              +{dashboardData?.cropChange || '0'} since last season
+              +{dashboardData?.cropChange || '0'} {t('profile.sinceLastSeason')}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Equipment Rentals</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('profile.equipmentRentals')}</CardTitle>
             <Tractor className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{dashboardData?.activeRentalsCount || '0'} Active</div>
+            <div className="text-2xl font-bold">+{dashboardData?.activeRentalsCount || '0'} {t('profile.active')}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboardData?.lendingCount || '0'} lending, {dashboardData?.borrowingCount || '0'} borrowing
+              {dashboardData?.lendingCount || '0'} {t('profile.lending')}, {dashboardData?.borrowingCount || '0'} {t('profile.borrowing')}
             </p>
           </CardContent>
         </Card>
@@ -198,34 +197,54 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle>Monthly Earnings</CardTitle>
-            <CardDescription>A summary of your earnings over the last 6 months.</CardDescription>
+            <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
+            <CardDescription>{t('profile.earningsDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <EarningsChart />
           </CardContent>
         </Card>
+        <div className="space-y-4">
+        <Card>
+            <CardHeader>
+                <CardTitle>{t('profile.weatherTitle')}</CardTitle>
+                <CardDescription>{t('profile.weatherDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Sun className="h-12 w-12 text-yellow-500" />
+                    <div>
+                        <div className="text-3xl font-bold">28°C</div>
+                        <div className="text-muted-foreground">{t('profile.weatherSunny')}</div>
+                    </div>
+                </div>
+                 <div className="flex flex-col items-end text-sm">
+                    <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: 32° / L: 22°</div>
+                    <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: 15%</div>
+                </div>
+            </CardContent>
+        </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Recent Crop Diagnoses</CardTitle>
+            <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
             <CardDescription>
-              Monitor the health of your crops.
+              {t('profile.diagnosesDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
              <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Crop</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Treatment</TableHead>
+                  <TableHead>{t('profile.diagnosesCrop')}</TableHead>
+                  <TableHead>{t('profile.diagnosesStatus')}</TableHead>
+                  <TableHead className="text-right">{t('profile.diagnosesTreatment')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {diagnosesLoading && (
                     <TableRow>
                         <TableCell colSpan={3} className="h-24 text-center">
-                            Loading diagnoses...
+                            {t('profile.loadingDiagnoses')}
                         </TableCell>
                     </TableRow>
                 )}
@@ -233,7 +252,7 @@ export default function DashboardPage() {
                   <TableRow key={diag.id}>
                     <TableCell className="font-medium">{diag.crop}</TableCell>
                     <TableCell>
-                      <Badge variant={diag.status === 'Active' ? 'destructive' : 'default'}>{diag.status}</Badge>
+                      <Badge variant={diag.status === 'Active' ? 'destructive' : 'default'}>{t(`profile.status${diag.status}` as any)}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -246,7 +265,7 @@ export default function DashboardPage() {
                  {!diagnosesLoading && (!recentDiagnoses || recentDiagnoses.length === 0) && (
                     <TableRow>
                         <TableCell colSpan={3} className="text-center h-24">
-                            No recent diagnoses found.
+                           {t('profile.noDiagnoses')}
                         </TableCell>
                     </TableRow>
                 )}
@@ -254,22 +273,23 @@ export default function DashboardPage() {
             </Table>
           </CardContent>
         </Card>
+        </div>
       </div>
        <div className="grid gap-4 md:gap-8">
         <Card>
           <CardHeader>
-            <CardTitle>Active Equipment Rentals</CardTitle>
+            <CardTitle>{t('profile.activeRentals')}</CardTitle>
             <CardDescription>
-              Keep track of equipment you're borrowing and lending.
+              {t('profile.rentalsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
              <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Equipment</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Due In</TableHead>
+                  <TableHead>{t('profile.rentalsEquipment')}</TableHead>
+                  <TableHead>{t('profile.rentalsType')}</TableHead>
+                  <TableHead className="text-right">{t('profile.rentalsDue')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -280,7 +300,7 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={rental.type === 'Lending' ? 'border-green-500 text-green-500' : 'border-blue-500 text-blue-500'}>
-                        {rental.type}
+                        {t(`profile.rentalType${rental.type}` as any)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{rental.due}</TableCell>
@@ -289,7 +309,7 @@ export default function DashboardPage() {
                 {(!dashboardData || dashboardData.activeRentals.length === 0) && (
                     <TableRow>
                         <TableCell colSpan={3} className="text-center h-24">
-                            No active rentals.
+                            {t('profile.noActiveRentals')}
                         </TableCell>
                     </TableRow>
                 )}

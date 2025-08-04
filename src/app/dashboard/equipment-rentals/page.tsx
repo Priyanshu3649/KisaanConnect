@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { MapPin } from "lucide-react";
+import { useTranslation } from "@/context/translation-context";
 
 const equipmentData = [
   { name: "Tractor", image: "https://placehold.co/600x400.png", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", available: true },
@@ -28,6 +29,7 @@ const equipmentData = [
 const locations = ["All Locations", ...Array.from(new Set(equipmentData.map(item => item.location)))];
 
 export default function EquipmentRentalsPage() {
+    const { t } = useTranslation();
     const [selectedLocation, setSelectedLocation] = useState("All Locations");
 
     const filteredData = selectedLocation === "All Locations"
@@ -37,16 +39,16 @@ export default function EquipmentRentalsPage() {
   return (
     <AppLayout>
       <PageHeader
-        title="Equipment Rentals"
-        description="Borrow or lend farm equipment with nearby farmers."
+        title={t('nav.equipmentRentals')}
+        description={t('equipmentRentals.pageDescription')}
       >
         <Select value={selectedLocation} onValueChange={setSelectedLocation}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select a location" />
+            <SelectValue placeholder={t('equipmentRentals.selectLocation')} />
           </SelectTrigger>
           <SelectContent>
             {locations.map(location => (
-              <SelectItem key={location} value={location}>{location}</SelectItem>
+              <SelectItem key={location} value={location}>{location === "All Locations" ? t('equipmentRentals.allLocations') : location}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -65,20 +67,20 @@ export default function EquipmentRentalsPage() {
                   data-ai-hint={item.hint}
                 />
                 <Badge className={`absolute top-2 right-2 border-none ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
-                  {item.available ? "Available" : "Rented"}
+                  {item.available ? t('equipmentRentals.available') : t('equipmentRentals.rented')}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="p-4">
               <CardTitle className="font-headline text-xl mb-2">{item.name}</CardTitle>
               <div className="text-muted-foreground text-sm space-y-2">
-                <p>Owner: {item.owner}</p>
+                <p>{t('equipmentRentals.owner')}: {item.owner}</p>
                 <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location}</p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between items-center p-4 pt-0">
-                <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/day</span></p>
-                <Button disabled={!item.available} className="bg-primary hover:bg-primary/90 text-primary-foreground">Rent Now</Button>
+                <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
+                <Button disabled={!item.available} className="bg-primary hover:bg-primary/90 text-primary-foreground">{t('equipmentRentals.rentNow')}</Button>
             </CardFooter>
           </Card>
         ))}

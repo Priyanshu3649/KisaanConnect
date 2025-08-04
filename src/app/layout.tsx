@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 import { TranslationProvider } from '@/context/translation-context';
+import { ThemeProvider } from '@/context/theme-provider';
 
 export const metadata: Metadata = {
   title: 'KisaanConnect',
@@ -23,10 +24,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("font-body antialiased", "min-h-screen bg-background font-sans")}>
-        <TranslationProvider>
-            {children}
-            <Toaster />
-        </TranslationProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <TranslationProvider>
+                {children}
+                <Toaster />
+            </TranslationProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

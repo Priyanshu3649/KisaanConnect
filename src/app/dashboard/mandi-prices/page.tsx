@@ -21,6 +21,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { useTranslation } from "@/context/translation-context";
 
 const mandiData = [
   { crop: "Tomato", variety: "Desi", price: 2500, market: "Pune", trend: "up", recommendation: "Sell Now" },
@@ -43,6 +44,7 @@ const recommendationColors: { [key: string]: string } = {
 };
 
 export default function MandiPricesPage() {
+  const { t } = useTranslation();
   const [selectedMarket, setSelectedMarket] = useState("All Markets");
 
   const filteredData = selectedMarket === "All Markets"
@@ -52,16 +54,16 @@ export default function MandiPricesPage() {
   return (
     <AppLayout>
       <PageHeader
-        title="Live Mandi Prices"
-        description="Real-time market prices for various crops (per quintal)."
+        title={t('nav.mandiPrices')}
+        description={t('mandi.pageDescription')}
       >
         <Select value={selectedMarket} onValueChange={setSelectedMarket}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select a market" />
+            <SelectValue placeholder={t('mandi.selectMarket')} />
           </SelectTrigger>
           <SelectContent>
             {markets.map(market => (
-              <SelectItem key={market} value={market}>{market}</SelectItem>
+              <SelectItem key={market} value={market}>{market === "All Markets" ? t('mandi.allMarkets') : market}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -71,10 +73,10 @@ export default function MandiPricesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Crop (Variety)</TableHead>
-                <TableHead>Market</TableHead>
-                <TableHead className="text-right">Price (₹)</TableHead>
-                <TableHead>Recommendation</TableHead>
+                <TableHead>{t('mandi.cropVariety')}</TableHead>
+                <TableHead>{t('mandi.market')}</TableHead>
+                <TableHead className="text-right">{t('mandi.price')}</TableHead>
+                <TableHead>{t('mandi.recommendation')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -94,7 +96,7 @@ export default function MandiPricesPage() {
                   </TableCell>
                   <TableCell>
                     <Badge style={{ backgroundColor: recommendationColors[item.recommendation] }} className="text-white">
-                      {item.recommendation}
+                      {t(`mandi.reco.${item.recommendation.replace(' ', '')}` as any)}
                     </Badge>
                   </TableCell>
                 </TableRow>

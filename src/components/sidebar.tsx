@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -27,7 +26,7 @@ export default function Sidebar({ navItems }: SidebarProps) {
     <div className="hidden border-r bg-muted/40 md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <Link href="/" className="flex items-center gap-2 font-headline font-bold text-primary">
+          <Link href="/dashboard" className="flex items-center gap-2 font-headline font-bold text-primary">
             <LucideIcons.Leaf className="h-8 w-8" />
             <span className="text-2xl">KisaanConnect</span>
           </Link>
@@ -47,7 +46,7 @@ export default function Sidebar({ navItems }: SidebarProps) {
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  {t(`nav.${item.labelKey}`)}
+                  {t(item.labelKey as any)}
                   {item.badge && (
                     <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                       {item.badge}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -16,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut, HelpCircle } from "lucide-react";
+import { LogOut, HelpCircle, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -26,6 +25,7 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "./ui/skeleton";
 import { useTranslation } from "@/context/translation-context";
+import { useTheme } from "next-themes";
 
 interface UserData {
     name: string;
@@ -38,6 +38,7 @@ export default function UserNav() {
   const [user, loading] = useAuthState(auth);
   const [userData, setUserData] = useState<UserData | null>(null);
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,47 +68,45 @@ export default function UserNav() {
   }
 
   return (
-    <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">{t('userNav.notifications')}</span>
+    <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+        <Avatar className="h-9 w-9">
+            <AvatarImage src={userData?.photoURL} alt={userData?.name || 'User'} />
+            <AvatarFallback>
+                {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+            </AvatarFallback>
+        </Avatar>
         </Button>
-        <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <Avatar className="h-9 w-9">
-                <AvatarImage src={userData?.photoURL} alt={userData?.name || 'User'} />
-                <AvatarFallback>
-                    {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
-                </AvatarFallback>
-            </Avatar>
-            </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{userData?.name || t('userNav.user')}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                {userData?.email || t('userNav.noEmail')}
-                </p>
-            </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-                <Link href="/dashboard/help-feedback">
-                    <DropdownMenuItem>
-                        <HelpCircle className="mr-2 h-4 w-4" />
-                        <span>{t('userNav.helpAndFeedback')}</span>
-                    </DropdownMenuItem>
-                </Link>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>{t('userNav.logout')}</span>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuLabel className="font-normal">
+        <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{userData?.name || t('userNav.user')}</p>
+            <p className="text-xs leading-none text-muted-foreground">
+            {userData?.email || t('userNav.noEmail')}
+            </p>
+        </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                <span>{t('userNav.toggleTheme')}</span>
             </DropdownMenuItem>
-        </DropdownMenuContent>
-        </DropdownMenu>
-    </div>
+            <Link href="/dashboard/help-feedback">
+                <DropdownMenuItem>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>{t('userNav.helpAndFeedback')}</span>
+                </DropdownMenuItem>
+            </Link>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>{t('userNav.logout')}</span>
+        </DropdownMenuItem>
+    </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

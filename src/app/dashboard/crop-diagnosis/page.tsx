@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useTranslation } from "@/context/translation-context";
 
 
 export default function CropDiagnosisPage() {
@@ -27,6 +28,7 @@ export default function CropDiagnosisPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [user] = useAuthState(auth);
+  const { t, language } = useTranslation();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -46,16 +48,16 @@ export default function CropDiagnosisPage() {
     if (!file || !description) {
       toast({
         variant: "destructive",
-        title: "Missing Information",
-        description: "Please upload a photo and provide a description.",
+        title: t('cropDiagnosis.missingInfoTitle'),
+        description: t('cropDiagnosis.missingInfoDesc'),
       });
       return;
     }
     if (!user) {
         toast({
             variant: "destructive",
-            title: "Not Logged In",
-            description: "You must be logged in to submit a diagnosis.",
+            title: t('cropDiagnosis.notLoggedInTitle'),
+            description: t('cropDiagnosis.notLoggedInDesc'),
         });
         return;
     }
@@ -70,6 +72,7 @@ export default function CropDiagnosisPage() {
         const diagnosisResult = await diagnoseCropDisease({
           photoDataUri,
           cropDescription: description,
+          language: language,
         });
         setResult(diagnosisResult);
 
@@ -90,8 +93,8 @@ export default function CropDiagnosisPage() {
         await addDoc(collection(db, "diagnoses"), diagnosisData);
 
         toast({
-            title: "Diagnosis Saved",
-            description: "Your crop diagnosis has been saved to your dashboard.",
+            title: t('cropDiagnosis.savedTitle'),
+            description: t('cropDiagnosis.savedDesc'),
         });
 
       };
@@ -99,16 +102,16 @@ export default function CropDiagnosisPage() {
         console.error("Error reading file:", error);
         toast({
           variant: "destructive",
-          title: "File Read Error",
-          description: "Could not read the selected file.",
+          title: t('cropDiagnosis.fileReadErrorTitle'),
+          description: t('cropDiagnosis.fileReadErrorDesc'),
         });
       };
     } catch (error) {
       console.error("Diagnosis failed:", error);
       toast({
         variant: "destructive",
-        title: "Diagnosis Failed",
-        description: "An error occurred while analyzing the image.",
+        title: t('cropDiagnosis.failedTitle'),
+        description: t('cropDiagnosis.failedDesc'),
       });
     } finally {
       setIsLoading(false);
@@ -118,27 +121,27 @@ export default function CropDiagnosisPage() {
   return (
     <AppLayout>
       <PageHeader
-        title="Crop Disease Diagnosis"
-        description="Upload an image of your crop to get an AI-powered diagnosis."
+        title={t('nav.cropDiagnosis')}
+        description={t('cropDiagnosis.pageDescription')}
       />
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <form onSubmit={handleSubmit}>
             <CardHeader>
-              <CardTitle>Submit for Analysis</CardTitle>
+              <CardTitle>{t('cropDiagnosis.submitTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="crop-image">Crop Image</Label>
+                <Label htmlFor="crop-image">{t('cropDiagnosis.imageLabel')}</Label>
                 <div className="flex items-center justify-center w-full">
                   <label htmlFor="crop-image-input" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary">
                       {previewUrl ? (
-                        <Image src={previewUrl} alt="Crop preview" width={192} height={192} className="h-full w-auto object-contain p-2" />
+                        <Image src={previewUrl} alt={t('cropDiagnosis.previewAlt')} width={192} height={192} className="h-full w-auto object-contain p-2" />
                       ) : (
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                            <p className="text-xs text-muted-foreground">PNG, JPG or WEBP (MAX. 5MB)</p>
+                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">{t('cropDiagnosis.clickToUpload')}</span> {t('cropDiagnosis.dragAndDrop')}</p>
+                            <p className="text-xs text-muted-foreground">{t('cropDiagnosis.fileTypes')}</p>
                         </div>
                       )}
                       <Input id="crop-image-input" type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
@@ -146,10 +149,10 @@ export default function CropDiagnosisPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('cropDiagnosis.descriptionLabel')}</Label>
                 <Textarea
                   id="description"
-                  placeholder="e.g., 'My tomato plants have yellow leaves with brown spots. The plant seems weak.'"
+                  placeholder={t('cropDiagnosis.descriptionPlaceholder')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
@@ -161,10 +164,10 @@ export default function CropDiagnosisPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing...
+                    {t('cropDiagnosis.analyzingButton')}
                   </>
                 ) : (
-                  "Diagnose Crop"
+                  t('cropDiagnosis.diagnoseButton')
                 )}
               </Button>
             </CardFooter>
@@ -172,11 +175,11 @@ export default function CropDiagnosisPage() {
         </Card>
 
         <div className="space-y-4">
-            <h2 className="font-headline text-2xl font-semibold">Diagnosis Result</h2>
+            <h2 className="font-headline text-2xl font-semibold">{t('cropDiagnosis.resultTitle')}</h2>
             {isLoading && (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg bg-card">
                     <Loader2 className="w-12 h-12 mb-4 text-muted-foreground animate-spin" />
-                    <p className="text-muted-foreground">AI is analyzing your crop. Please wait...</p>
+                    <p className="text-muted-foreground">{t('cropDiagnosis.loadingText')}</p>
                 </div>
             )}
             {!isLoading && result && (
@@ -185,17 +188,17 @@ export default function CropDiagnosisPage() {
                     {result.diseaseIdentification.isDiseased ? (
                         <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Disease Detected!</AlertTitle>
+                            <AlertTitle>{t('cropDiagnosis.diseaseDetected')}</AlertTitle>
                             <AlertDescription>
-                                Likely disease: <span className="font-bold">{result.diseaseIdentification.likelyDisease}</span>
+                                {t('cropDiagnosis.likelyDisease')}: <span className="font-bold">{result.diseaseIdentification.likelyDisease}</span>
                             </AlertDescription>
                         </Alert>
                     ) : (
                         <Alert variant="default" className="border-green-500/50 bg-green-500/10 text-foreground">
                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <AlertTitle className="text-green-400">Crop appears healthy!</AlertTitle>
+                            <AlertTitle className="text-green-400">{t('cropDiagnosis.healthy')}</AlertTitle>
                             <AlertDescription className="text-green-400/80">
-                                No significant disease detected based on the analysis.
+                                {t('cropDiagnosis.noDisease')}
                             </AlertDescription>
                         </Alert>
                     )}
@@ -203,14 +206,14 @@ export default function CropDiagnosisPage() {
                 {result.diseaseIdentification.isDiseased && (
                     <CardContent className="space-y-4">
                         <div>
-                            <Label>Confidence Level</Label>
+                            <Label>{t('cropDiagnosis.confidence')}</Label>
                             <div className="flex items-center gap-2">
                                 <Progress value={result.diseaseIdentification.confidenceLevel * 100} className="w-full" />
                                 <span className="font-mono text-sm">{(result.diseaseIdentification.confidenceLevel * 100).toFixed(0)}%</span>
                             </div>
                         </div>
                         <div>
-                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> Recommended Actions</h3>
+                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> {t('cropDiagnosis.recommendations')}</h3>
                             <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
                                 {result.recommendedActions.map((action, index) => (
                                     <li key={index}>{action}</li>
@@ -224,7 +227,7 @@ export default function CropDiagnosisPage() {
             {!isLoading && !result && (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg bg-card">
                     <Leaf className="w-12 h-12 mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Your diagnosis results will appear here.</p>
+                    <p className="text-muted-foreground">{t('cropDiagnosis.resultsPlaceholder')}</p>
                 </div>
             )}
         </div>

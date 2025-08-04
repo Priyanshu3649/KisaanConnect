@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -13,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send } from "lucide-react";
 import { submitFeedback } from "@/ai/flows/submit-feedback";
+import { useTranslation } from "@/context/translation-context";
 
 export default function HelpFeedbackPage() {
     const [feedbackType, setFeedbackType] = useState("feedback");
@@ -20,14 +20,15 @@ export default function HelpFeedbackPage() {
     const [message, setMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const { t, language } = useTranslation();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!subject || !message) {
             toast({
                 variant: "destructive",
-                title: "Missing Information",
-                description: "Please fill in the subject and message.",
+                title: t('help.missingInfoTitle'),
+                description: t('help.missingInfoDesc'),
             });
             return;
         }
@@ -38,11 +39,12 @@ export default function HelpFeedbackPage() {
                 type: feedbackType,
                 subject,
                 message,
+                language: language,
             });
             
             toast({
-                title: "Submission Successful",
-                description: `${result.confirmationMessage} Your ticket ID is ${result.ticketId}.`,
+                title: t('help.successTitle'),
+                description: `${result.confirmationMessage} ${t('help.ticketId')}: ${result.ticketId}.`,
             });
 
             // Reset form
@@ -54,8 +56,8 @@ export default function HelpFeedbackPage() {
             console.error("Feedback submission failed:", error);
             toast({
                 variant: "destructive",
-                title: "Submission Failed",
-                description: "An error occurred. Please try again.",
+                title: t('help.errorTitle'),
+                description: t('help.errorDesc'),
             });
         } finally {
             setIsLoading(false);
@@ -65,48 +67,48 @@ export default function HelpFeedbackPage() {
     return (
         <AppLayout>
             <PageHeader
-                title="Help & Feedback"
-                description="We'd love to hear from you. Let us know how we can improve."
+                title={t('nav.helpAndFeedback')}
+                description={t('help.pageDescription')}
             />
             <div className="flex justify-center">
                 <Card className="w-full max-w-2xl">
                     <form onSubmit={handleSubmit}>
                         <CardHeader>
-                            <CardTitle>Submit a Request</CardTitle>
+                            <CardTitle>{t('help.formTitle')}</CardTitle>
                             <CardDescription>
-                                Whether it's a bug report or a feature request, use this form to get in touch.
+                                {t('help.formDescription')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2 md:col-span-1">
-                                    <Label htmlFor="type">Type</Label>
+                                    <Label htmlFor="type">{t('help.typeLabel')}</Label>
                                     <Select value={feedbackType} onValueChange={setFeedbackType}>
                                         <SelectTrigger id="type">
-                                            <SelectValue placeholder="Select type" />
+                                            <SelectValue placeholder={t('help.selectType')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="feedback">Feedback</SelectItem>
-                                            <SelectItem value="bug">Bug Report</SelectItem>
-                                            <SelectItem value="feature">Feature Request</SelectItem>
+                                            <SelectItem value="feedback">{t('help.typeFeedback')}</SelectItem>
+                                            <SelectItem value="bug">{t('help.typeBug')}</SelectItem>
+                                            <SelectItem value="feature">{t('help.typeFeature')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
-                                    <Label htmlFor="subject">Subject</Label>
+                                    <Label htmlFor="subject">{t('help.subjectLabel')}</Label>
                                     <Input 
                                         id="subject" 
-                                        placeholder="e.g., Issue with login page" 
+                                        placeholder={t('help.subjectPlaceholder')}
                                         value={subject}
                                         onChange={(e) => setSubject(e.target.value)}
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="message">Message</Label>
+                                <Label htmlFor="message">{t('help.messageLabel')}</Label>
                                 <Textarea
                                     id="message"
-                                    placeholder="Please describe the issue or your feedback in detail..."
+                                    placeholder={t('help.messagePlaceholder')}
                                     rows={8}
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
@@ -118,12 +120,12 @@ export default function HelpFeedbackPage() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Submitting...
+                                        {t('help.submittingButton')}
                                     </>
                                 ) : (
                                     <>
                                         <Send className="mr-2 h-4 w-4" />
-                                        Submit
+                                        {t('help.submitButton')}
                                     </>
                                 )}
                             </Button>
