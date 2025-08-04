@@ -27,7 +27,7 @@ export default function BottomNav({ navItems }: BottomNavProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
 
-  // Filter out Help & Feedback from bottom nav
+  // Filter out Help & Feedback from bottom nav for a cleaner look
   const bottomNavItems = navItems.filter(item => item.href !== '/dashboard/help-feedback');
 
   return (
@@ -42,8 +42,8 @@ export default function BottomNav({ navItems }: BottomNavProps) {
                   <Link
                     href={item.href}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors",
-                      isActive ? "text-primary" : "hover:text-foreground"
+                      "flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors h-full",
+                      isActive ? "text-primary bg-primary/10" : "hover:text-foreground"
                     )}
                   >
                     <item.icon className="h-6 w-6" />

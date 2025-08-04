@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
@@ -39,7 +40,7 @@ const navItems = [
 const AppHeader = () => {
   const { t, setLanguage, language } = useTranslation();
   const pathname = usePathname();
-  const currentNavItem = navItems.find(item => item.href === pathname);
+  const currentNavItem = navItems.find(item => pathname.startsWith(item.href));
   const pageTitle = currentNavItem ? t(`nav.${currentNavItem.labelKey}`) : "KisaanConnect";
 
   return (
@@ -56,6 +57,7 @@ const AppHeader = () => {
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
                         <Languages className="h-5 w-5" />
+                        <span className="sr-only">Change Language</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -76,13 +78,13 @@ const AppHeader = () => {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-        <AppHeader />
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30 pb-20 md:pb-6">
-            {children}
-        </main>
-        <BottomNav navItems={navItems} />
-        <VoiceNavigator />
+    <div className="min-h-screen w-full bg-background">
+      <AppHeader />
+      <main className="block p-4 lg:p-6 bg-secondary/30 pb-24 md:pb-6">
+          {children}
+      </main>
+      <BottomNav navItems={navItems} />
+      <VoiceNavigator />
     </div>
   );
 }
