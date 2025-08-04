@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Languages, LogOut, HelpCircle } from "lucide-react";
+import { Bell, LogOut, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -44,15 +44,6 @@ export default function UserNav() {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setUserData(userDoc.data() as UserData);
-        } else {
-            // Handle case where user exists in Auth but not in Firestore
-            // This can happen with social logins if Firestore doc creation fails
-            const fallbackData: UserData = {
-                name: user.displayName || "Kisaan User",
-                email: user.email || user.phoneNumber || "No contact info",
-                photoURL: user.photoURL || ""
-            };
-            setUserData(fallbackData);
         }
       }
     };
@@ -64,68 +55,52 @@ export default function UserNav() {
     router.push('/');
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return "KU";
-    const names = name.split(' ');
-    if (names.length > 1 && names[0] && names[names.length - 1]) {
-        return names[0][0] + names[names.length - 1][0];
-    }
-    return name.substring(0, 2).toUpperCase();
-  }
-
   if (loading) {
-    return (
-        <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-9 w-9 rounded-full" />
-        </div>
-    )
+    return <Skeleton className="h-8 w-8 rounded-full" />;
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="ghost" size="icon">
-        <Languages className="h-5 w-5" />
-        <span className="sr-only">Change Language</span>
-      </Button>
-      <Button variant="ghost" size="icon">
-        <Bell className="h-5 w-5" />
-        <span className="sr-only">Notifications</span>
-      </Button>
-      <DropdownMenu>
+    <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Notifications</span>
+        </Button>
+        <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={userData?.photoURL || user?.photoURL || ""} alt={userData?.name || "User Avatar"} data-ai-hint="farmer portrait" />
-              <AvatarFallback>{getInitials(userData?.name || user?.displayName || '')}</AvatarFallback>
+                <AvatarImage src={userData?.photoURL} alt={userData?.name || 'User'} />
+                <AvatarFallback>
+                    {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+                </AvatarFallback>
             </Avatar>
-          </Button>
+            </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end" forceMount>
-          <DropdownMenuLabel className="font-normal">
+            <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{userData?.name || "Kisaan User"}</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                {userData?.email || user?.email || user?.phoneNumber || "No contact info"}
-              </p>
+                <p className="text-sm font-medium leading-none">{userData?.name || 'User'}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                {userData?.email || 'No email'}
+                </p>
             </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-             <Link href="/dashboard/help-feedback">
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+            <Link href="/dashboard/help-feedback">
                 <DropdownMenuItem>
                     <HelpCircle className="mr-2 h-4 w-4" />
                     <span>Help & Feedback</span>
                 </DropdownMenuItem>
-             </Link>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-          </DropdownMenuItem>
+            </Link>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+            </DropdownMenuItem>
         </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu>
     </div>
   );
 }

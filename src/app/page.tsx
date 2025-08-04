@@ -37,31 +37,36 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect if user is already logged in
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         router.push('/dashboard');
       }
     });
-    
-    // Setup reCAPTCHA
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-        }
-      });
-    }
 
     return () => unsubscribe();
   }, [router]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+            callback: () => {
+              // reCAPTCHA solved
+            },
+            'expired-callback': () => {
+              // Response expired. Ask user to solve reCAPTCHA again.
+            }
+        });
+        window.recaptchaVerifier.render().catch(err => console.error("Recaptcha render error", err));
+    }
+  }, []);
 
   const handleSendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -93,13 +98,10 @@ export default function LoginPage() {
         description: error.message || "An error occurred. Please try again.",
       });
        // Reset reCAPTCHA on error
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.render().then((widgetId) => {
-          // @ts-ignore
-          if (window.grecaptcha) {
-            window.grecaptcha.reset(widgetId);
-          }
-        });
+       // @ts-ignore
+      if (window.grecaptcha && window.recaptchaVerifier) {
+        // @ts-ignore
+        window.grecaptcha.reset(window.recaptchaVerifier.widgetId);
       }
     } finally {
       setIsLoading(false);
@@ -115,7 +117,7 @@ export default function LoginPage() {
   }
 
   const handlePhoneLogin = async () => {
-    setIsLoading(true);
+    setIsVerifying(true);
     try {
       const confirmationResult = window.confirmationResult;
       if (!confirmationResult) {
@@ -135,7 +137,7 @@ export default function LoginPage() {
         description: "The OTP you entered is incorrect. Please try again.",
       });
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
   }
 
@@ -229,8 +231,8 @@ export default function LoginPage() {
                       Send OTP
                     </Button>
                 ) : (
-                    <Button onClick={handlePhoneLogin} className="w-full" disabled={isLoading || !otp}>
-                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button onClick={handlePhoneLogin} className="w-full" disabled={isVerifying || !otp}>
+                      {isVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Login with OTP
                     </Button>
                 )}

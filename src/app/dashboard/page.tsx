@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { DollarSign, Leaf, Tractor, Wheat } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 
 interface UserData {
   name?: string;
@@ -48,33 +49,36 @@ const StatCardSkeleton = () => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <Skeleton className="h-5 w-2/4" />
+            <Skeleton className="h-4 w-4" />
         </CardHeader>
         <CardContent>
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-2/4 mt-2" />
+            <Skeleton className="h-8 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-2/4" />
         </CardContent>
     </Card>
 );
 
 export default function DashboardPage() {
-  const [user] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
+  const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Real-time listener for recent diagnoses
-  const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(3)) : null;
-  const [recentDiagnoses, diagnosesLoading, diagnosesError] = useCollectionData(diagnosesQuery, { idField: 'id' });
+  const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5)) : null;
+  const [recentDiagnoses, diagnosesLoading] = useCollectionData(diagnosesQuery, { idField: 'id' });
 
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user) {
-        setIsLoading(false);
+    if (authLoading) return;
+    if (!user) {
+        router.push('/');
         return;
-      };
+    }
 
-      setIsLoading(true);
+    const fetchDashboardData = async () => {
+      setIsDataLoading(true);
       try {
         // Fetch user's name
         const userDocRef = doc(db, "users", user.uid);
@@ -88,8 +92,8 @@ export default function DashboardPage() {
         const data: DashboardData = {
             totalRevenue: 45231.89,
             revenueChange: 20.1,
-            activeDiagnosesCount: 2,
-            resolvedThisWeek: 1,
+            activeDiagnosesCount: recentDiagnoses?.filter(d => d.status === 'Active').length || 0,
+            resolvedThisWeek: 1, // This would require more complex querying
             cropVarieties: 12,
             cropChange: 2,
             activeRentalsCount: 2,
@@ -104,12 +108,14 @@ export default function DashboardPage() {
       } catch (error) {
         console.error("Error fetching dashboard data: ", error);
       } finally {
-        setIsLoading(false);
+        setIsDataLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, [user]);
+  }, [user, authLoading, router, recentDiagnoses]);
+  
+  const isLoading = authLoading || isDataLoading;
 
   if (isLoading) {
       return (
@@ -201,7 +207,7 @@ export default function DashboardPage() {
               Monitor the health of your crops.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
              <Table>
               <TableHeader>
                 <TableRow>
@@ -213,24 +219,21 @@ export default function DashboardPage() {
               <TableBody>
                 {diagnosesLoading && (
                     <TableRow>
-                        <TableCell colSpan={3} className="text-center">
+                        <TableCell colSpan={3} className="h-24 text-center">
                             Loading diagnoses...
                         </TableCell>
                     </TableRow>
                 )}
                 {!diagnosesLoading && recentDiagnoses && recentDiagnoses.map((diag) => (
                   <TableRow key={diag.id}>
-                    <TableCell>
-                      <div className="font-medium">{diag.crop}</div>
-                      <div className="text-sm text-muted-foreground">{diag.disease}</div>
-                    </TableCell>
+                    <TableCell className="font-medium">{diag.crop}</TableCell>
                     <TableCell>
                       <Badge variant={diag.status === 'Active' ? 'destructive' : 'default'}>{diag.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                             <span>{diag.progress}%</span>
-                            <Progress value={diag.progress} className="w-20" />
+                            <Progress value={diag.progress} className="w-20 h-2" />
                         </div>
                     </TableCell>
                   </TableRow>
@@ -238,7 +241,7 @@ export default function DashboardPage() {
                  {!diagnosesLoading && (!recentDiagnoses || recentDiagnoses.length === 0) && (
                     <TableRow>
                         <TableCell colSpan={3} className="text-center h-24">
-                            No recent diagnoses.
+                            No recent diagnoses found.
                         </TableCell>
                     </TableRow>
                 )}
