@@ -74,19 +74,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href} className="flex justify-center">
-                  <Link href={item.href} legacyBehavior passHref>
-                    <SidebarMenuButton
-                      isActive={pathname.startsWith(item.href)}
-                      tooltip={item.label}
-                      className={cn(
-                        "rounded-full !w-12 !h-12 flex items-center justify-center transition-colors duration-200",
-                        pathname === item.href && "bg-primary text-primary-foreground hover:bg-primary/90"
-                      )}
-                    >
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(item.href)}
+                    tooltip={item.label}
+                    className={cn(
+                      "rounded-full !w-12 !h-12 flex items-center justify-center transition-colors duration-200",
+                      pathname === item.href && "bg-primary text-primary-foreground hover:bg-primary/90"
+                    )}
+                  >
+                    <Link href={item.href}>
                       <item.icon className="h-5 w-5" />
                       <span className="sr-only">{item.label}</span>
-                    </SidebarMenuButton>
-                  </Link>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
