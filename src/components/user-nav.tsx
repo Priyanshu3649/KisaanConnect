@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Languages, LogOut, Settings, User as UserIcon } from "lucide-react";
+import { Bell, Languages, LogOut, Settings, User as UserIcon, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -74,7 +74,7 @@ export default function UserNav() {
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
               <AvatarImage src={userData?.photoURL || "https://placehold.co/100x100.png"} alt={userData?.name || ""} data-ai-hint="farmer portrait" />
               <AvatarFallback>{getInitials(userData?.name || '')}</AvatarFallback>
@@ -92,13 +92,23 @@ export default function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <UserIcon className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+            <DropdownMenuItem asChild>
+                <Link href="/dashboard/profile">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+            <DropdownMenuItem asChild>
+                 <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                 </Link>
+            </DropdownMenuItem>
+             <DropdownMenuItem asChild>
+                 <Link href="/dashboard/help-feedback">
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>Help & Feedback</span>
+                 </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

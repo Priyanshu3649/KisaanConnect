@@ -15,6 +15,10 @@ import { Progress } from "@/components/ui/progress";
 import { Lightbulb, Loader2, UploadCloud, CheckCircle2, AlertCircle, Leaf } from "lucide-react";
 import { diagnoseCropDisease, type DiagnoseCropDiseaseOutput } from "@/ai/flows/crop-disease-diagnosis";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
 
 export default function CropDiagnosisPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -23,6 +27,7 @@ export default function CropDiagnosisPage() {
   const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -47,6 +52,14 @@ export default function CropDiagnosisPage() {
       });
       return;
     }
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Not Logged In",
+            description: "You must be logged in to submit a diagnosis.",
+        });
+        return;
+    }
     setIsLoading(true);
     setResult(null);
 
@@ -60,6 +73,28 @@ export default function CropDiagnosisPage() {
           cropDescription: description,
         });
         setResult(diagnosisResult);
+
+        // Save to Firestore
+        const diagnosisData = {
+            userId: user.uid,
+            crop: description.split(' ')[0] || 'Unknown Crop', // Simple crop name extraction
+            disease: diagnosisResult.diseaseIdentification.isDiseased ? diagnosisResult.diseaseIdentification.likelyDisease : 'Healthy',
+            status: diagnosisResult.diseaseIdentification.isDiseased ? 'Active' : 'Resolved',
+            progress: diagnosisResult.diseaseIdentification.isDiseased ? 0 : 100, // Initial progress
+            createdAt: serverTimestamp(),
+            imageUrl: '', // In a real app, you'd upload the image and store the URL
+            isDiseased: diagnosisResult.diseaseIdentification.isDiseased,
+            confidence: diagnosisResult.diseaseIdentification.confidenceLevel,
+            recommendations: diagnosisResult.recommendedActions
+        };
+
+        await addDoc(collection(db, "diagnoses"), diagnosisData);
+
+        toast({
+            title: "Diagnosis Saved",
+            description: "Your crop diagnosis has been saved to your dashboard.",
+        });
+
       };
       reader.onerror = (error) => {
         console.error("Error reading file:", error);
@@ -123,7 +158,7 @@ export default function CropDiagnosisPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={isLoading || !file || !description} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button type="submit" disabled={isLoading || !file || !description} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -140,7 +175,7 @@ export default function CropDiagnosisPage() {
         <div className="space-y-4">
             <h2 className="font-headline text-2xl font-semibold">Diagnosis Result</h2>
             {isLoading && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg">
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg bg-card">
                     <Loader2 className="w-12 h-12 mb-4 text-muted-foreground animate-spin" />
                     <p className="text-muted-foreground">AI is analyzing your crop. Please wait...</p>
                 </div>
@@ -157,10 +192,10 @@ export default function CropDiagnosisPage() {
                             </AlertDescription>
                         </Alert>
                     ) : (
-                        <Alert className="border-green-300 bg-green-50 text-green-800">
-                             <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            <AlertTitle className="text-green-900">Crop appears healthy!</AlertTitle>
-                            <AlertDescription className="text-green-800">
+                        <Alert variant="default" className="border-green-500/50 bg-green-500/10 text-foreground">
+                             <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            <AlertTitle className="text-green-400">Crop appears healthy!</AlertTitle>
+                            <AlertDescription className="text-green-400/80">
                                 No significant disease detected based on the analysis.
                             </AlertDescription>
                         </Alert>
@@ -176,7 +211,7 @@ export default function CropDiagnosisPage() {
                             </div>
                         </div>
                         <div>
-                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-accent"/> Recommended Actions</h3>
+                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> Recommended Actions</h3>
                             <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
                                 {result.recommendedActions.map((action, index) => (
                                     <li key={index}>{action}</li>
@@ -188,7 +223,7 @@ export default function CropDiagnosisPage() {
               </Card>
             )}
             {!isLoading && !result && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg">
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg bg-card">
                     <Leaf className="w-12 h-12 mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground">Your diagnosis results will appear here.</p>
                 </div>

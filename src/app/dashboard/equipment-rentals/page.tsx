@@ -53,7 +53,7 @@ export default function EquipmentRentalsPage() {
       </PageHeader>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredData.map((item, index) => (
-          <Card key={index} className="overflow-hidden">
+          <Card key={index} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group">
             <CardHeader className="p-0">
               <div className="relative">
                 <Image
@@ -61,10 +61,10 @@ export default function EquipmentRentalsPage() {
                   alt={item.name}
                   width={600}
                   height={400}
-                  className="aspect-video w-full object-cover"
+                  className="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   data-ai-hint={item.hint}
                 />
-                <Badge className={`absolute top-2 right-2 ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
+                <Badge className={`absolute top-2 right-2 border-none ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
                   {item.available ? "Available" : "Rented"}
                 </Badge>
               </div>
@@ -78,7 +78,7 @@ export default function EquipmentRentalsPage() {
             </CardContent>
             <CardFooter className="flex justify-between items-center p-4 pt-0">
                 <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/day</span></p>
-                <Button disabled={!item.available} className="bg-accent hover:bg-accent/90 text-accent-foreground">Rent Now</Button>
+                <Button disabled={!item.available} className="bg-primary hover:bg-primary/90 text-primary-foreground">Rent Now</Button>
             </CardFooter>
           </Card>
         ))}

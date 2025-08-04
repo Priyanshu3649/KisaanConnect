@@ -166,16 +166,17 @@ export default function LoginPage() {
 
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background">
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div id="recaptcha-container"></div>
-       <div className="absolute inset-0 bg-cover bg-center opacity-10" style={{backgroundImage: 'url(https://placehold.co/1920x1080.png)'}} data-ai-hint="farm landscape"></div>
+       <div className="absolute inset-0 bg-cover bg-center opacity-20" style={{backgroundImage: 'url(https://placehold.co/1920x1080.png)'}} data-ai-hint="farm landscape"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background z-0"></div>
       <div className="relative z-10 flex flex-col items-center space-y-4 text-center">
         <div className="flex items-center space-x-2 text-primary">
           <Leaf className="h-12 w-12" />
           <h1 className="font-headline text-5xl font-bold">KisaanConnect</h1>
         </div>
         <p className="text-muted-foreground text-lg">Empowering Indian farmers through technology.</p>
-        <Card className="w-full max-w-sm">
+        <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Welcome Back!</CardTitle>
             <CardDescription>Choose your login method.</CardDescription>
@@ -204,12 +205,12 @@ export default function LoginPage() {
                   </div>
                 )}
                  {!otpSent ? (
-                    <Button onClick={handleSendOtp} className="w-full" disabled={isLoading || !phone} style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+                    <Button onClick={handleSendOtp} className="w-full" disabled={isLoading || !phone} style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Send OTP
                     </Button>
                 ) : (
-                    <Button onClick={handlePhoneLogin} className="w-full" disabled={isLoading || !otp} style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+                    <Button onClick={handlePhoneLogin} className="w-full" disabled={isLoading || !otp} style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Login with OTP
                     </Button>
@@ -225,7 +226,7 @@ export default function LoginPage() {
                         <Label htmlFor="password">Password</Label>
                         <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading || !email || !password} style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+                    <Button type="submit" className="w-full" disabled={isLoading || !email || !password} style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Login with Email
                     </Button>
@@ -238,7 +239,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
+                <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>

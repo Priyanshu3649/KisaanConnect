@@ -147,16 +147,17 @@ export default function RegisterPage() {
         }
     }
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background py-12">
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background py-12 p-4">
        <div id="recaptcha-container"></div>
-       <div className="absolute inset-0 bg-cover bg-center opacity-10" style={{backgroundImage: 'url(https://placehold.co/1920x1080.png)'}} data-ai-hint="farm landscape"></div>
-      <div className="relative z-10 flex flex-col items-center space-y-4 text-center">
+       <div className="absolute inset-0 bg-cover bg-center opacity-20" style={{backgroundImage: 'url(https://placehold.co/1920x1080.png)'}} data-ai-hint="farm landscape"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background z-0"></div>
+      <div className="relative z-10 flex w-full flex-col items-center space-y-4 text-center">
         <div className="flex items-center space-x-2 text-primary">
           <Leaf className="h-12 w-12" />
           <h1 className="font-headline text-5xl font-bold">KisaanConnect</h1>
         </div>
         <p className="text-muted-foreground text-lg">Join our community of empowered farmers.</p>
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-lg bg-card/80 backdrop-blur-sm border-border/50">
          <form onSubmit={handleRegister} ref={formRef}>
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
@@ -187,7 +188,7 @@ export default function RegisterPage() {
                 <Label htmlFor="profile-photo">Profile Photo</Label>
                  <label htmlFor="profile-photo-input" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary">
                     {photoPreview ? (
-                         <img src={photoPreview} alt="Profile preview" className="h-full w-auto object-contain p-1" />
+                         <img src={photoPreview} alt="Profile preview" className="h-full w-auto object-contain p-1 rounded-lg" />
                     ) : (
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
@@ -217,7 +218,7 @@ export default function RegisterPage() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}} disabled={!isOtpSent || !otp || isLoading}>
+            <Button type="submit" className="w-full" style={{backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))'}} disabled={!isOtpSent || !otp || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Register
             </Button>

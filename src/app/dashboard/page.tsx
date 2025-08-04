@@ -1,9 +1,9 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc, collection, query, where, getDocs, limit } from "firebase/firestore";
+import { useCollectionData } from "react-firebase-hooks/firestore";
+import { doc, getDoc, collection, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
@@ -19,10 +19,12 @@ interface UserData {
   name?: string;
 }
 interface Diagnosis {
+    id: string;
     crop: string;
     disease: string;
     status: 'Active' | 'Resolved';
     progress: number;
+    createdAt: Timestamp;
 }
 interface Rental {
     equipment: string;
@@ -39,15 +41,31 @@ interface DashboardData {
     activeRentalsCount: number;
     lendingCount: number;
     borrowingCount: number;
-    recentDiagnoses: Diagnosis[];
     activeRentals: Rental[];
 }
+
+const StatCardSkeleton = () => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Skeleton className="h-5 w-2/4" />
+        </CardHeader>
+        <CardContent>
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-4 w-2/4 mt-2" />
+        </CardContent>
+    </Card>
+);
 
 export default function DashboardPage() {
   const [user] = useAuthState(auth);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Real-time listener for recent diagnoses
+  const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(3)) : null;
+  const [recentDiagnoses, diagnosesLoading, diagnosesError] = useCollectionData(diagnosesQuery, { idField: 'id' });
+
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -77,11 +95,6 @@ export default function DashboardPage() {
             activeRentalsCount: 2,
             lendingCount: 1,
             borrowingCount: 1,
-            recentDiagnoses: [
-                { crop: "Tomato", disease: "Late Blight", status: "Active", progress: 75 },
-                { crop: "Potato", disease: "Early Blight", status: "Resolved", progress: 100 },
-                { crop: "Wheat", disease: "Rust", status: "Active", progress: 40 },
-            ],
             activeRentals: [
                 { equipment: "John Deere Tractor", type: "Lending", due: "3 days" },
                 { equipment: "Power Tiller", type: "Borrowing", due: "5 days" },
@@ -106,10 +119,10 @@ export default function DashboardPage() {
                   description="Loading your farm's summary..."
               />
                <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
-                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
-                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
-                    <Card><CardHeader><Skeleton className="h-5 w-2/4" /></CardHeader><CardContent><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-2/4 mt-2" /></CardContent></Card>
+                  <StatCardSkeleton />
+                  <StatCardSkeleton />
+                  <StatCardSkeleton />
+                  <StatCardSkeleton />
                </div>
           </AppLayout>
       )
@@ -194,12 +207,19 @@ export default function DashboardPage() {
                 <TableRow>
                   <TableHead>Crop</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Treatment Progress</TableHead>
+                  <TableHead className="text-right">Treatment</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dashboardData?.recentDiagnoses.map((diag, index) => (
-                  <TableRow key={index}>
+                {diagnosesLoading && (
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-center">
+                            Loading diagnoses...
+                        </TableCell>
+                    </TableRow>
+                )}
+                {!diagnosesLoading && recentDiagnoses && recentDiagnoses.map((diag) => (
+                  <TableRow key={diag.id}>
                     <TableCell>
                       <div className="font-medium">{diag.crop}</div>
                       <div className="text-sm text-muted-foreground">{diag.disease}</div>
@@ -215,6 +235,13 @@ export default function DashboardPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                 {!diagnosesLoading && (!recentDiagnoses || recentDiagnoses.length === 0) && (
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-center h-24">
+                            No recent diagnoses.
+                        </TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
