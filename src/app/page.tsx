@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -97,7 +96,9 @@ export default function LoginPage() {
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.render().then((widgetId) => {
           // @ts-ignore
-          grecaptcha.reset(widgetId);
+          if (window.grecaptcha) {
+            window.grecaptcha.reset(widgetId);
+          }
         });
       }
     } finally {
@@ -223,12 +224,12 @@ export default function LoginPage() {
                   </div>
                 )}
                  {!otpSent ? (
-                    <Button onClick={handleSendOtp} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading || !phone}>
+                    <Button onClick={handleSendOtp} className="w-full" disabled={isLoading || !phone}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Send OTP
                     </Button>
                 ) : (
-                    <Button onClick={handlePhoneLogin} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading || !otp}>
+                    <Button onClick={handlePhoneLogin} className="w-full" disabled={isLoading || !otp}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Login with OTP
                     </Button>
@@ -244,7 +245,7 @@ export default function LoginPage() {
                         <Label htmlFor="password">Password</Label>
                         <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
-                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading || !email || !password}>
+                    <Button type="submit" className="w-full" disabled={isLoading || !email || !password}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Login with Email
                     </Button>
