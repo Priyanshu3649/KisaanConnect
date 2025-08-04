@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, TrendingUp } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import { getMandiPrices, type MandiPriceRecord } from "@/ai/flows/mandi-prices";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +33,13 @@ const states: { [key: string]: string[] } = {
   "Karnataka": ["Bangalore"],
 };
 const allStates = Object.keys(states);
+
+const getPriceTrend = (currentPrice: number, prevPrice: number | null) => {
+    if (prevPrice === null) return 'stable';
+    if (currentPrice > prevPrice) return 'up';
+    if (currentPrice < prevPrice) return 'down';
+    return 'stable';
+};
 
 
 export default function MandiPricesPage() {
@@ -48,7 +55,6 @@ export default function MandiPricesPage() {
   const availableMarkets = useMemo(() => states[selectedState] || [], [selectedState]);
 
   useEffect(() => {
-    // When state changes, if the current market isn't valid for the new state, reset it.
     if (!availableMarkets.includes(selectedMarket)) {
       setSelectedMarket(availableMarkets[0]);
     }
@@ -84,6 +90,15 @@ export default function MandiPricesPage() {
 
     fetchPrices();
   }, [selectedCommodity, selectedState, selectedMarket, toast]);
+  
+  const processedData = useMemo(() => {
+    return mandiData.map((item, index) => {
+        const prevPrice = index < mandiData.length - 1 ? parseInt(mandiData[index + 1]['Model Prize']) : null;
+        const trend = getPriceTrend(parseInt(item['Model Prize']), prevPrice);
+        return { ...item, trend };
+    });
+  }, [mandiData]);
+
 
   return (
     <AppLayout>
@@ -131,7 +146,6 @@ export default function MandiPricesPage() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Commodity</TableHead>
-                <TableHead>Market</TableHead>
                 <TableHead className="text-right">Min Price (₹)</TableHead>
                 <TableHead className="text-right">Max Price (₹)</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Model Price (₹)</TableHead>
@@ -140,27 +154,33 @@ export default function MandiPricesPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-48 text-center">
+                  <TableCell colSpan={5} className="h-48 text-center">
                     <div className="flex justify-center items-center gap-2">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         <span className="text-muted-foreground">Fetching latest prices...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : mandiData.length > 0 ? (
-                mandiData.map((item) => (
+              ) : processedData.length > 0 ? (
+                processedData.map((item) => (
                   <TableRow key={item['S.No']}>
                     <TableCell className="text-muted-foreground">{item.Date}</TableCell>
                     <TableCell className="font-medium">{item.Commodity}</TableCell>
-                    <TableCell>{item.City}</TableCell>
                     <TableCell className="text-right">{parseInt(item['Min Prize']).toLocaleString('en-IN')}</TableCell>
                     <TableCell className="text-right">{parseInt(item['Max Prize']).toLocaleString('en-IN')}</TableCell>
-                    <TableCell className="text-right font-bold text-primary">{parseInt(item['Model Prize']).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-right font-bold text-primary">
+                        <div className="flex items-center justify-end gap-2">
+                            <span>
+                                {item.trend === 'up' ? '📈' : item.trend === 'down' ? '📉' : ''}
+                            </span>
+                            <span>{parseInt(item['Model Prize']).toLocaleString('en-IN')}</span>
+                        </div>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                  <TableRow>
-                    <TableCell colSpan={6} className="h-48 text-center">
+                    <TableCell colSpan={5} className="h-48 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <TrendingUp className="h-10 w-10" />
                             <p>No data available for this selection.</p>

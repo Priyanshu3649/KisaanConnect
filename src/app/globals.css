@@ -4,65 +4,65 @@
 
 @layer base {
   :root {
-    --background: 33 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 48 60% 95%; /* light pastel green/cream (#F9FBE7) */
+    --foreground: 0 0% 13%; /* #212121 */
 
-    --card: 33 40% 98%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 48 60% 95%;
+    --card-foreground: 0 0% 13%;
  
-    --popover: 33 40% 98%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 48 60% 95%;
+    --popover-foreground: 0 0% 13%;
  
-    --primary: 94 38% 43%; /* Earthy Green */
-    --primary-foreground: 355.7 100% 97.3%;
+    --primary: 122 39% 49%; /* leafy green (#4CAF50) */
+    --primary-foreground: 60 100% 97%;
  
-    --secondary: 33 30% 91%; /* Desaturated Beige for secondary elements */
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 45 100% 51%; /* mustard/yellow (#FFC107) for highlights/tooltips */
+    --secondary-foreground: 0 0% 13%;
  
-    --muted: 33 30% 91%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 60 8% 90%; /* A lighter gray for muted backgrounds */
+    --muted-foreground: 0 0% 38%; /* #616161 */
  
-    --accent: 25 80% 60%; /* Warm Orange for accents */
-    --accent-foreground: 210 40% 98%;
+    --accent: 122 39% 49%; /* Using primary green as accent */
+    --accent-foreground: 60 100% 97%;
  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 33 30% 86%;
-    --input: 33 30% 86%;
-    --ring: 94 38% 43%;
+    --border: 122 20% 80%; /* A muted green for borders */
+    --input: 122 20% 80%;
+    --ring: 122 39% 49%;
  
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 20 14% 14%; /* Dark, earthy brown */
+    --foreground: 48 60% 95%;
  
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 20 14% 14%;
+    --card-foreground: 48 60% 95%;
  
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 20 14% 14%;
+    --popover-foreground: 48 60% 95%;
  
-    --primary: 94 35% 50%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 122 39% 55%; /* Slightly brighter green for dark mode */
+    --primary-foreground: 20 14% 14%;
  
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 45 100% 51%; /* mustard/yellow remains vibrant */
+    --secondary-foreground: 20 14% 14%;
  
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215.4 16.3% 56.9%;
+    --muted: 20 14% 20%;
+    --muted-foreground: 48 30% 80%;
  
-    --accent: 25 75% 55%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 122 39% 55%;
+    --accent-foreground: 20 14% 14%;
  
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 48 60% 95%;
  
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 94 35% 50%;
+    --border: 20 14% 30%;
+    --input: 20 14% 30%;
+    --ring: 122 39% 55%;
   }
 }
  

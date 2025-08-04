@@ -1,9 +1,9 @@
 
 "use client";
 
-import Sidebar from "@/components/sidebar";
+import React from "react";
 import AppHeader from "@/components/app-header";
-import MobileHeader from "./mobile-header";
+import BottomNav from "@/components/bottom-nav";
 import VoiceNavigator from "./voice-navigator";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -13,31 +13,18 @@ const navItems = [
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
   { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
   { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
-  { href: "/dashboard/organics-support", icon: "BookOpenCheck", labelKey: "nav.organicsSupport" },
-  { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen w-full bg-background">
-      {isMobile ? (
-        <>
-          <MobileHeader navItems={navItems} />
-          <main className="p-4 bg-secondary/30 min-h-screen">{children}</main>
-        </>
-      ) : (
-        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-          <Sidebar navItems={navItems} />
-          <div className="flex flex-col">
-            <AppHeader />
-            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30">
-              {children}
-            </main>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col min-h-screen w-full bg-background">
+      <AppHeader />
+      <main className="flex-grow p-4 md:p-6 mb-16 md:mb-0">
+        {children}
+      </main>
+      {isMobile && <BottomNav navItems={navItems} />}
       <VoiceNavigator />
     </div>
   );
