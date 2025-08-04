@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,44 +10,98 @@ import { Label } from '@/components/ui/label';
 import { Leaf, UploadCloud, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
+import { auth } from '@/lib/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier;
+    confirmationResult?: ConfirmationResult;
+  }
+}
 
 export default function RegisterPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const [phone, setPhone] = useState('');
     const [aadhaar, setAadhaar] = useState('');
-    const [isAadhaarOtpSent, setIsAadhaarOtpSent] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [isOtpSent, setIsOtpSent] = useState(false);
     const [isGeneratingOtp, setIsGeneratingOtp] = useState(false);
 
-    const handleGenerateOtp = (e: React.MouseEvent<HTMLButtonElement>) => {
+    useEffect(() => {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response: any) => {
+              // reCAPTCHA solved
+            }
+        });
+      }
+    }, []);
+
+    const handleGenerateOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        if (!/^\d{12}$/.test(aadhaar.replace(/\s/g, ''))) {
+        if (!/^\d{10}$/.test(phone)) {
             toast({
                 variant: "destructive",
-                title: "Invalid Aadhaar Number",
-                description: "Please enter a valid 12-digit Aadhaar number.",
+                title: "Invalid Phone Number",
+                description: "Please enter a valid 10-digit phone number to receive an OTP.",
             });
             return;
         }
         setIsGeneratingOtp(true);
-        // Simulate sending Aadhaar OTP
-        setTimeout(() => {
-            setIsAadhaarOtpSent(true);
-            setIsGeneratingOtp(false);
+        try {
+            const phoneNumber = "+91" + phone;
+            const appVerifier = window.recaptchaVerifier!;
+            const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+            window.confirmationResult = confirmationResult;
+            setIsOtpSent(true);
             toast({
                 title: "OTP Sent",
-                description: "An OTP has been sent to your Aadhaar-registered mobile number.",
+                description: "An OTP has been sent to your mobile number.",
             });
-        }, 1000);
+        } catch (error: any) {
+            console.error("Error sending OTP:", error);
+            toast({
+                variant: "destructive",
+                title: "Failed to Send OTP",
+                description: error.message || "An error occurred while sending OTP. Please try again.",
+            });
+        } finally {
+            setIsGeneratingOtp(false);
+        }
     }
 
-    const handleRegister = (e: React.FormEvent) => {
+    const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Here you would typically handle the registration and Aadhaar auth flow.
-        // For this prototype, we'll just navigate to the dashboard.
-        router.push('/dashboard');
+        setIsGeneratingOtp(true); // Re-use loading state for verification
+        try {
+            const confirmationResult = window.confirmationResult;
+            if (!confirmationResult) {
+                throw new Error("Please verify your phone number first.");
+            }
+            await confirmationResult.confirm(otp);
+            toast({
+                title: "Registration Successful!",
+                description: "Your account has been created.",
+            });
+            // Here you would typically save user data to your database
+            router.push('/dashboard');
+        } catch (error: any) {
+            console.error("Error during registration:", error);
+            toast({
+                variant: "destructive",
+                title: "Registration Failed",
+                description: "The OTP is incorrect or another error occurred.",
+            });
+        } finally {
+            setIsGeneratingOtp(false);
+        }
     }
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background py-12">
+       <div id="recaptcha-container"></div>
        <div className="absolute inset-0 bg-cover bg-center opacity-10" style={{backgroundImage: 'url(https://placehold.co/1920x1080.png)'}} data-ai-hint="farm landscape"></div>
       <div className="relative z-10 flex flex-col items-center space-y-4 text-center">
         <div className="flex items-center space-x-2 text-primary">
@@ -76,7 +130,7 @@ export default function RegisterPage() {
             </div>
              <div className="grid gap-2 text-left">
               <Label htmlFor="phone">Phone Number <span className="text-destructive">*</span></Label>
-              <Input id="phone" type="tel" placeholder="9876543210" required />
+              <Input id="phone" type="tel" placeholder="9876543210" required value={phone} onChange={e => setPhone(e.target.value)} disabled={isOtpSent} />
             </div>
             <div className="grid gap-2 text-left">
               <Label htmlFor="email">Email Address</Label>
@@ -93,24 +147,27 @@ export default function RegisterPage() {
                  </label>
             </div>
             <div className="grid gap-2 text-left md:col-span-2">
-              <Label htmlFor="aadhaar">Aadhaar Verification</Label>
-              <div className="flex items-center gap-2">
-                <Input id="aadhaar" type="text" placeholder="XXXX XXXX XXXX" value={aadhaar} onChange={(e) => setAadhaar(e.target.value)} disabled={isAadhaarOtpSent} />
-                <Button onClick={handleGenerateOtp} disabled={!aadhaar || isGeneratingOtp || isAadhaarOtpSent} className="flex-shrink-0">
+              <Label htmlFor="aadhaar">Aadhaar Number (Optional)</Label>
+              <Input id="aadhaar" type="text" placeholder="XXXX XXXX XXXX" value={aadhaar} onChange={(e) => setAadhaar(e.target.value)} />
+            </div>
+            
+            {!isOtpSent ? (
+              <div className="md:col-span-2">
+                <Button onClick={handleGenerateOtp} disabled={!phone || isGeneratingOtp} className="w-full">
                     {isGeneratingOtp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isAadhaarOtpSent ? "OTP Sent" : "Generate OTP"}
+                    Generate OTP
                 </Button>
               </div>
-            </div>
-            {isAadhaarOtpSent && (
+            ) : (
                 <div className="grid gap-2 text-left md:col-span-2">
-                    <Label htmlFor="otp">Aadhaar OTP</Label>
-                    <Input id="otp" type="password" placeholder="Enter 6-digit OTP" />
+                    <Label htmlFor="otp">Verify Phone with OTP</Label>
+                    <Input id="otp" type="password" placeholder="Enter 6-digit OTP" value={otp} onChange={e => setOtp(e.target.value)} required />
                 </div>
             )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+            <Button type="submit" className="w-full" style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}} disabled={!isOtpSent || !otp || isGeneratingOtp}>
+              {isGeneratingOtp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Register
             </Button>
              <p className="text-xs text-muted-foreground">
