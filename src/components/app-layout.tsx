@@ -33,19 +33,19 @@ const navItems = [
   { href: "/dashboard/organics-support", icon: BookOpenCheck, label: "Organics Support" },
 ];
 
+const pageTitles: { [key: string]: string } = {
+    "/dashboard": "Dashboard",
+    "/dashboard/crop-diagnosis": "Crop Diagnosis",
+    "/dashboard/mandi-prices": "Mandi Prices",
+    "/dashboard/equipment-rentals": "Equipment Rentals",
+    "/dashboard/scheme-navigator": "Scheme Navigator",
+    "/dashboard/organics-support": "Organics Support",
+    "/dashboard/help-feedback": "Help & Feedback"
+};
+
 const AppHeader = () => {
-  const getPageTitle = (path: string) => {
-    if (path === '/dashboard/help-feedback') return "Help & Feedback";
-    // For the dashboard itself, we need to check for an exact match
-    if (path === '/dashboard') {
-        return "Dashboard";
-    }
-    // For other pages, we can use startsWith
-    const item = navItems.find((item) => item.href !== '/dashboard' && path.startsWith(item.href));
-    return item ? item.label : "Dashboard";
-  };
   const pathname = usePathname();
-  const pageTitle = getPageTitle(pathname);
+  const pageTitle = pageTitles[pathname] || "Dashboard";
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
@@ -76,7 +76,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SidebarMenuItem key={item.href} className="flex justify-center">
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith(item.href)}
+                    isActive={pathname === item.href}
                     tooltip={item.label}
                     className={cn(
                       "rounded-full !w-12 !h-12 flex items-center justify-center transition-colors duration-200",

@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { Leaf } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -178,7 +177,7 @@ export default function LoginPage() {
         <p className="text-muted-foreground text-lg">Empowering Indian farmers through technology.</p>
         <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Welcome Back!</CardTitle>
+            <CardTitle>Welcome Back!</CardTitle>
             <CardDescription>Choose your login method.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -196,12 +195,12 @@ export default function LoginPage() {
                   <div className="grid gap-2">
                     <Label htmlFor="otp">One-Time Password (OTP)</Label>
                     <Input id="otp" type="password" required value={otp} onChange={(e) => setOtp(e.target.value)} />
-                    <p className="text-xs text-muted-foreground text-right">
+                    <div className="text-xs text-muted-foreground text-right">
                         Didn&apos;t receive OTP?{" "}
                         <button onClick={handleResendOtp} className="underline underline-offset-4 hover:text-primary">
                             Resend
                         </button>
-                    </p>
+                    </div>
                   </div>
                 )}
                  {!otpSent ? (
@@ -251,12 +250,12 @@ export default function LoginPage() {
             </Button>
           </CardContent>
           <CardFooter>
-             <p className="w-full text-center text-xs text-muted-foreground">
+             <div className="w-full text-center text-xs text-muted-foreground">
                 Don&apos;t have an account?{" "}
                 <Link href="/register" className="underline underline-offset-4 hover:text-primary">
                     Register here
                 </Link>
-            </p>
+            </div>
           </CardFooter>
         </Card>
       </div>

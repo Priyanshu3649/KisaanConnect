@@ -92,12 +92,12 @@ export default function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-             <DropdownMenuItem asChild>
-                 <Link href="/dashboard/help-feedback">
+             <Link href="/dashboard/help-feedback" passHref>
+                <DropdownMenuItem>
                     <HelpCircle className="mr-2 h-4 w-4" />
                     <span>Help & Feedback</span>
-                 </Link>
-            </DropdownMenuItem>
+                </DropdownMenuItem>
+             </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
