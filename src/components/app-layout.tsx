@@ -11,7 +11,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarInset,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -20,10 +19,7 @@ import {
   Warehouse,
   Coins,
   BookOpenCheck,
-  LifeBuoy,
-  Menu,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import UserNav from "@/components/user-nav";
 import { cn } from "@/lib/utils";
 import BottomNav from "./bottom-nav";
