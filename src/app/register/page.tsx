@@ -1,16 +1,44 @@
 
 "use client";
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Leaf, UploadCloud } from 'lucide-react';
+import { Leaf, UploadCloud, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useToast } from "@/hooks/use-toast";
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { toast } = useToast();
+    const [aadhaar, setAadhaar] = useState('');
+    const [isAadhaarOtpSent, setIsAadhaarOtpSent] = useState(false);
+    const [isGeneratingOtp, setIsGeneratingOtp] = useState(false);
+
+    const handleGenerateOtp = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        if (!/^\d{12}$/.test(aadhaar.replace(/\s/g, ''))) {
+            toast({
+                variant: "destructive",
+                title: "Invalid Aadhaar Number",
+                description: "Please enter a valid 12-digit Aadhaar number.",
+            });
+            return;
+        }
+        setIsGeneratingOtp(true);
+        // Simulate sending Aadhaar OTP
+        setTimeout(() => {
+            setIsAadhaarOtpSent(true);
+            setIsGeneratingOtp(false);
+            toast({
+                title: "OTP Sent",
+                description: "An OTP has been sent to your Aadhaar-registered mobile number.",
+            });
+        }, 1000);
+    }
 
     const handleRegister = (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,14 +92,22 @@ export default function RegisterPage() {
                     <Input id="profile-photo-input" type="file" className="hidden" accept="image/*" />
                  </label>
             </div>
-            <div className="grid gap-2 text-left">
-              <Label htmlFor="aadhaar">Aadhaar Number</Label>
-              <Input id="aadhaar" type="text" placeholder="XXXX XXXX XXXX" />
+            <div className="grid gap-2 text-left md:col-span-2">
+              <Label htmlFor="aadhaar">Aadhaar Verification</Label>
+              <div className="flex items-center gap-2">
+                <Input id="aadhaar" type="text" placeholder="XXXX XXXX XXXX" value={aadhaar} onChange={(e) => setAadhaar(e.target.value)} disabled={isAadhaarOtpSent} />
+                <Button onClick={handleGenerateOtp} disabled={!aadhaar || isGeneratingOtp || isAadhaarOtpSent} className="flex-shrink-0">
+                    {isGeneratingOtp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isAadhaarOtpSent ? "OTP Sent" : "Generate OTP"}
+                </Button>
+              </div>
             </div>
-            <div className="grid gap-2 text-left">
-              <Label htmlFor="otp">Aadhaar OTP</Label>
-              <Input id="otp" type="password" />
-            </div>
+            {isAadhaarOtpSent && (
+                <div className="grid gap-2 text-left md:col-span-2">
+                    <Label htmlFor="otp">Aadhaar OTP</Label>
+                    <Input id="otp" type="password" placeholder="Enter 6-digit OTP" />
+                </div>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
