@@ -1,7 +1,7 @@
 
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -11,40 +11,39 @@ import {
   Coins,
   BookOpenCheck,
   LifeBuoy,
-  LucideIcon
+  LucideIcon,
+  Mic,
+  Languages,
+  Loader2,
 } from "lucide-react";
 import UserNav from "@/components/user-nav";
 import BottomNav from "./bottom-nav";
+import { useTranslation } from "@/context/translation-context";
+import VoiceNavigator from "./voice-navigator";
+import { Button } from "./ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/dashboard/crop-diagnosis", icon: Leaf, label: "Crop Diagnosis" },
-  { href: "/dashboard/mandi-prices", icon: Warehouse, label: "Mandi Prices" },
-  { href: "/dashboard/equipment-rentals", icon: Tractor, label: "Equipment Rentals" },
-  { href: "/dashboard/scheme-navigator", icon: Coins, label: "Scheme Navigator" },
-  { href: "/dashboard/organics-support", icon: BookOpenCheck, label: "Organics Support" },
-  { href: "/dashboard/help-feedback", icon: LifeBuoy, label: "Help & Feedback" },
+  { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
+  { href: "/dashboard/crop-diagnosis", icon: Leaf, labelKey: "cropDiagnosis" },
+  { href: "/dashboard/mandi-prices", icon: Warehouse, labelKey: "mandiPrices" },
+  { href: "/dashboard/equipment-rentals", icon: Tractor, labelKey: "equipmentRentals" },
+  { href: "/dashboard/scheme-navigator", icon: Coins, labelKey: "schemeNavigator" },
+  { href: "/dashboard/organics-support", icon: BookOpenCheck, labelKey: "organicsSupport" },
+  { href: "/dashboard/help-feedback", icon: LifeBuoy, labelKey: "helpAndFeedback" },
 ];
 
-const pageTitles: { [key: string]: string } = {
-    "/dashboard": "Dashboard",
-    "/dashboard/crop-diagnosis": "Crop Diagnosis",
-    "/dashboard/mandi-prices": "Mandi Prices",
-    "/dashboard/equipment-rentals": "Equipment Rentals",
-    "/dashboard/scheme-navigator": "Scheme Navigator",
-    "/dashboard/organics-support": "Organics Support",
-    "/dashboard/help-feedback": "Help & Feedback"
-};
 
 const AppHeader = () => {
+  const { t, setLanguage, language } = useTranslation();
   const pathname = usePathname();
-  const pageTitle = pageTitles[pathname] || "KisaanConnect";
+  const currentNavItem = navItems.find(item => item.href === pathname);
+  const pageTitle = currentNavItem ? t(`nav.${currentNavItem.labelKey}`) : "KisaanConnect";
 
   return (
     <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
@@ -55,7 +54,24 @@ const AppHeader = () => {
         <div className="flex-1 text-center hidden md:block">
             <h1 className="font-headline text-2xl font-bold tracking-tight">{pageTitle}</h1>
         </div>
-        <UserNav />
+        <div className="flex items-center gap-2">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <Languages className="h-5 w-5" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setLanguage('en')} disabled={language === 'en'}>
+                        English
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('hi')} disabled={language === 'hi'}>
+                        हिंदी
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <UserNav />
+        </div>
     </header>
   );
 };
@@ -69,6 +85,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
         </main>
         <BottomNav navItems={navItems} />
+        <VoiceNavigator />
     </div>
   );
 }

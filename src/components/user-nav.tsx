@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "./ui/skeleton";
+import { useTranslation } from "@/context/translation-context";
 
 interface UserData {
     name: string;
@@ -33,6 +34,7 @@ interface UserData {
 }
 
 export default function UserNav() {
+  const { t } = useTranslation();
   const [user, loading] = useAuthState(auth);
   const [userData, setUserData] = useState<UserData | null>(null);
   const router = useRouter();
@@ -68,7 +70,7 @@ export default function UserNav() {
     <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
+            <span className="sr-only">{t('userNav.notifications')}</span>
         </Button>
         <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -84,9 +86,9 @@ export default function UserNav() {
         <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{userData?.name || 'User'}</p>
+                <p className="text-sm font-medium leading-none">{userData?.name || t('userNav.user')}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                {userData?.email || 'No email'}
+                {userData?.email || t('userNav.noEmail')}
                 </p>
             </div>
             </DropdownMenuLabel>
@@ -95,14 +97,14 @@ export default function UserNav() {
                 <Link href="/dashboard/help-feedback">
                     <DropdownMenuItem>
                         <HelpCircle className="mr-2 h-4 w-4" />
-                        <span>Help & Feedback</span>
+                        <span>{t('userNav.helpAndFeedback')}</span>
                     </DropdownMenuItem>
                 </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>{t('userNav.logout')}</span>
             </DropdownMenuItem>
         </DropdownMenuContent>
         </DropdownMenu>

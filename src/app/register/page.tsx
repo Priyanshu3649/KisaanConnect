@@ -16,8 +16,10 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useTranslation } from '@/context/translation-context';
 
 export default function RegisterPage() {
+    const { t } = useTranslation();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -54,15 +56,15 @@ export default function RegisterPage() {
         setError(null);
 
         if (password.length < 6) {
-            setError("Password must be at least 6 characters long.");
+            setError(t('register.passwordLengthError'));
             return;
         }
         if (aadhar.replace(/\s/g, '').length !== 12) {
-            setError("Please enter a valid 12-digit Aadhar number.");
+            setError(t('register.aadharLengthError'));
             return;
         }
          if (!profilePic) {
-            setError("Please upload a profile picture.");
+            setError(t('register.profilePicError'));
             return;
         }
 
@@ -96,17 +98,17 @@ export default function RegisterPage() {
             });
 
             toast({
-                title: "Registration Successful!",
-                description: "Your account has been created. Redirecting to dashboard...",
+                title: t('register.successTitle'),
+                description: t('register.successDesc'),
             });
 
             router.push('/dashboard');
 
         } catch (error: any) {
             console.error("Registration failed:", error);
-            let errorMessage = "An unexpected error occurred. Please try again.";
+            let errorMessage = t('register.unexpectedError');
             if (error.code === 'auth/email-already-in-use') {
-                errorMessage = "This email address is already in use by another account.";
+                errorMessage = t('register.emailInUseError');
             }
              else if (error.code) {
                 errorMessage = error.message;
@@ -130,20 +132,20 @@ export default function RegisterPage() {
                 <Card className="w-full bg-card/80 backdrop-blur-sm border-border/50">
                     <form onSubmit={handleSubmit}>
                         <CardHeader>
-                            <CardTitle>Create an Account</CardTitle>
-                            <CardDescription>Join our community of modern farmers.</CardDescription>
+                            <CardTitle>{t('register.createAccount')}</CardTitle>
+                            <CardDescription>{t('register.joinCommunity')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {error && (
                                  <Alert variant="destructive">
                                     <AlertCircle className="h-4 w-4" />
-                                    <AlertTitle>Registration Error</AlertTitle>
+                                    <AlertTitle>{t('register.errorTitle')}</AlertTitle>
                                     <AlertDescription>{error}</AlertDescription>
                                 </Alert>
                             )}
 
                             <div className="space-y-2 text-left">
-                                <Label>Profile Picture</Label>
+                                <Label>{t('register.profilePicture')}</Label>
                                 <div 
                                     className="flex items-center justify-center w-full"
                                     onClick={() => fileInputRef.current?.click()}
@@ -154,7 +156,7 @@ export default function RegisterPage() {
                                         ) : (
                                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                                 <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                                                <p className="text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
+                                                <p className="text-sm text-muted-foreground"><span className="font-semibold">{t('register.clickToUpload')}</span></p>
                                             </div>
                                         )}
                                         <Input ref={fileInputRef} id="profile-pic-input" type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" required />
@@ -163,24 +165,24 @@ export default function RegisterPage() {
                             </div>
                             
                             <div className="space-y-2 text-left">
-                                <Label htmlFor="name">Full Name</Label>
+                                <Label htmlFor="name">{t('register.fullName')}</Label>
                                 <Input id="name" placeholder="Ramesh Kumar" value={name} onChange={(e) => setName(e.target.value)} required />
                             </div>
                             <div className="space-y-2 text-left">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">{t('register.email')}</Label>
                                 <Input id="email" type="email" placeholder="ramesh@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                             </div>
                              <div className="space-y-2 text-left">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">{t('register.password')}</Label>
                                 <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2 text-left">
-                                    <Label htmlFor="aadhar">Aadhaar Number</Label>
+                                    <Label htmlFor="aadhar">{t('register.aadhar')}</Label>
                                     <Input id="aadhar" placeholder="1234 5678 9012" value={aadhar} onChange={handleAadharChange} required />
                                 </div>
                                 <div className="space-y-2 text-left">
-                                    <Label htmlFor="location">Village/Town, State</Label>
+                                    <Label htmlFor="location">{t('register.location')}</Label>
                                     <Input id="location" placeholder="Pune, Maharashtra" value={location} onChange={(e) => setLocation(e.target.value)} required />
                                 </div>
                             </div>
@@ -188,12 +190,12 @@ export default function RegisterPage() {
                         <CardFooter className="flex-col gap-4">
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                {isLoading ? "Registering..." : "Register"}
+                                {isLoading ? t('register.registering') : t('register.register')}
                             </Button>
                             <div className="w-full text-center text-xs text-muted-foreground">
-                                Already have an account?{" "}
+                                {t('register.haveAccount')}{" "}
                                 <Link href="/" className="underline underline-offset-4 hover:text-primary">
-                                    Login here
+                                    {t('register.loginHere')}
                                 </Link>
                             </div>
                         </CardFooter>

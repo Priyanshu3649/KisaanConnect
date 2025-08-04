@@ -11,11 +11,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useTranslation } from "@/context/translation-context";
 
 interface NavItem {
   href: string;
   icon: LucideIcon;
-  label: string;
+  labelKey: string;
 }
 
 interface BottomNavProps {
@@ -24,6 +25,7 @@ interface BottomNavProps {
 
 export default function BottomNav({ navItems }: BottomNavProps) {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   // Filter out Help & Feedback from bottom nav
   const bottomNavItems = navItems.filter(item => item.href !== '/dashboard/help-feedback');
@@ -45,11 +47,11 @@ export default function BottomNav({ navItems }: BottomNavProps) {
                     )}
                   >
                     <item.icon className="h-6 w-6" />
-                    <span className="text-xs font-medium sr-only">{item.label}</span>
+                    <span className="text-xs font-medium sr-only">{t(`nav.${item.labelKey}`)}</span>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  <p>{item.label}</p>
+                  <p>{t(`nav.${item.labelKey}`)}</p>
                 </TooltipContent>
               </Tooltip>
             );

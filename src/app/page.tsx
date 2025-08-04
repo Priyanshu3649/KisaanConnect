@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { auth } from '@/lib/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { useTranslation } from '@/context/translation-context';
 
 // Extend window type to include recaptchaVerifier
 declare global {
@@ -34,6 +35,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -74,8 +76,8 @@ export default function LoginPage() {
     if (!/^\d{10}$/.test(phone)) {
       toast({
         variant: "destructive",
-        title: "Invalid Phone Number",
-        description: "Please enter a valid 10-digit phone number.",
+        title: t('login.invalidPhoneTitle'),
+        description: t('login.invalidPhoneDesc'),
       });
       return;
     }
@@ -88,15 +90,15 @@ export default function LoginPage() {
       window.confirmationResult = confirmationResult;
       setOtpSent(true);
       toast({
-        title: "OTP Sent",
-        description: "An OTP has been sent to your phone number.",
+        title: t('login.otpSentTitle'),
+        description: t('login.otpSentDesc'),
       });
     } catch (error: any) {
       console.error("Error sending OTP:", error);
       toast({
         variant: "destructive",
-        title: "Failed to Send OTP",
-        description: error.message || "An error occurred. Please try again.",
+        title: t('login.otpFailedTitle'),
+        description: error.message || t('login.otpFailedDesc'),
       });
        // Reset reCAPTCHA on error
        // @ts-ignore
@@ -112,8 +114,8 @@ export default function LoginPage() {
   const handleResendOtp = () => {
      handleSendOtp(new MouseEvent('click') as any);
      toast({
-        title: "OTP Resent",
-        description: "A new OTP has been sent to your phone number.",
+        title: t('login.otpResentTitle'),
+        description: t('login.otpResentDesc'),
     });
   }
 
@@ -122,20 +124,20 @@ export default function LoginPage() {
     try {
       const confirmationResult = window.confirmationResult;
       if (!confirmationResult) {
-          throw new Error("No confirmation result found. Please request OTP again.");
+          throw new Error(t('login.noConfirmationError'));
       }
       await confirmationResult.confirm(otp);
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: t('login.loginSuccessTitle'),
+        description: t('login.welcomeBack'),
       });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
        toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: "The OTP you entered is incorrect. Please try again.",
+        title: t('login.loginFailedTitle'),
+        description: t('login.otpIncorrectError'),
       });
     } finally {
       setIsVerifying(false);
@@ -148,16 +150,16 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: t('login.loginSuccessTitle'),
+        description: t('login.welcomeBack'),
       });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Error logging in with email:", error);
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: (error as any).code === 'auth/invalid-credential' ? 'Invalid email or password.' : 'An unexpected error occurred.',
+        title: t('login.loginFailedTitle'),
+        description: (error as any).code === 'auth/invalid-credential' ? t('login.invalidCredentials') : t('login.unexpectedError'),
       });
     } finally {
         setIsLoading(false);
@@ -170,16 +172,16 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, provider);
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: t('login.loginSuccessTitle'),
+        description: t('login.welcomeBack'),
       });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Error with Google sign-in:", error);
       toast({
         variant: "destructive",
-        title: "Google Login Failed",
-        description: "Could not sign in with Google. Please try again.",
+        title: t('login.googleLoginFailedTitle'),
+        description: t('login.googleLoginFailedDesc'),
       });
     } finally {
       setIsLoading(false);
@@ -197,31 +199,31 @@ export default function LoginPage() {
           <Leaf className="h-12 w-12" />
           <h1 className="font-headline text-5xl font-bold">KisaanConnect</h1>
         </div>
-        <p className="text-muted-foreground text-lg">Empowering Indian farmers through technology.</p>
+        <p className="text-muted-foreground text-lg">{t('login.tagline')}</p>
         <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Welcome Back!</CardTitle>
-            <CardDescription>Choose your login method.</CardDescription>
+            <CardTitle>{t('login.welcome')}</CardTitle>
+            <CardDescription>{t('login.chooseMethod')}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
              <Tabs defaultValue="phone" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="phone">Phone</TabsTrigger>
-                <TabsTrigger value="email">Email</TabsTrigger>
+                <TabsTrigger value="phone">{t('login.phone')}</TabsTrigger>
+                <TabsTrigger value="email">{t('login.email')}</TabsTrigger>
               </TabsList>
               <TabsContent value="phone" className="space-y-4 pt-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">{t('login.phoneNumber')}</Label>
                   <Input id="phone" type="tel" placeholder="9876543210" required value={phone} onChange={(e) => setPhone(e.target.value)} disabled={otpSent} />
                 </div>
                 {otpSent && (
                   <div className="grid gap-2">
-                    <Label htmlFor="otp">One-Time Password (OTP)</Label>
+                    <Label htmlFor="otp">{t('login.otp')}</Label>
                     <Input id="otp" type="password" required value={otp} onChange={(e) => setOtp(e.target.value)} />
                     <div className="text-xs text-muted-foreground text-right">
-                        Didn&apos;t receive OTP?{" "}
+                        {t('login.noOtp')}{" "}
                         <button onClick={handleResendOtp} className="underline underline-offset-4 hover:text-primary">
-                            Resend
+                            {t('login.resend')}
                         </button>
                     </div>
                   </div>
@@ -229,28 +231,28 @@ export default function LoginPage() {
                  {!otpSent ? (
                     <Button onClick={handleSendOtp} className="w-full" disabled={isLoading || !phone}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Send OTP
+                      {t('login.sendOtp')}
                     </Button>
                 ) : (
                     <Button onClick={handlePhoneLogin} className="w-full" disabled={isVerifying || !otp}>
                       {isVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Login with OTP
+                      {t('login.loginWithOtp')}
                     </Button>
                 )}
               </TabsContent>
               <TabsContent value="email" className="space-y-4 pt-4">
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email Address</Label>
+                        <Label htmlFor="email">{t('login.emailAddress')}</Label>
                         <Input id="email" type="email" placeholder="name@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">{t('login.password')}</Label>
                         <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading || !email || !password}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Login with Email
+                        {t('login.loginWithEmail')}
                     </Button>
                 </form>
               </TabsContent>
@@ -262,7 +264,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
+                  {t('login.orContinueWith')}
                 </span>
               </div>
             </div>
@@ -274,9 +276,9 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter>
              <div className="w-full text-center text-xs text-muted-foreground">
-                Don&apos;t have an account?{" "}
+                {t('login.noAccount')}{" "}
                 <Link href="/register" className="underline underline-offset-4 hover:text-primary">
-                    Register here
+                    {t('login.registerHere')}
                 </Link>
             </div>
           </CardFooter>
