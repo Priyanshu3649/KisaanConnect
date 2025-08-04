@@ -21,7 +21,7 @@ export default function BottomNav({ navItems }: BottomNavProps) {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border z-40">
-      <div className="grid h-full grid-cols-6">
+      <div className={`grid h-full grid-cols-${navItems.length}`}>
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (

@@ -40,6 +40,11 @@ export default function UserNav() {
   useEffect(() => {
     const fetchUserData = async () => {
       if (user) {
+        // Attempt to get data from Auth profile first for speed
+        if (user.displayName && user.email && user.photoURL) {
+           setUserData({ name: user.displayName, email: user.email, photoURL: user.photoURL });
+        }
+        // Then fetch from Firestore for more details if needed, or as a fallback
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
@@ -87,12 +92,12 @@ export default function UserNav() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-            <Link href="/dashboard/help-feedback">
-                <DropdownMenuItem>
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Help & Feedback</span>
-                </DropdownMenuItem>
-            </Link>
+                <Link href="/dashboard/help-feedback">
+                    <DropdownMenuItem>
+                        <HelpCircle className="mr-2 h-4 w-4" />
+                        <span>Help & Feedback</span>
+                    </DropdownMenuItem>
+                </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
