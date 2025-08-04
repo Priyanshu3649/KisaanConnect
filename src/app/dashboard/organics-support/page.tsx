@@ -1,3 +1,5 @@
+"use client";
+
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
