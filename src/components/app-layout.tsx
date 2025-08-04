@@ -13,6 +13,7 @@ const navItems = [
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
   { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
   { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
+  { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

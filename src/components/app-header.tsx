@@ -23,6 +23,7 @@ const navItems = [
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
   { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
   { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
+  { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
   { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
 ];
 
@@ -34,7 +35,7 @@ export default function AppHeader() {
   const currentPage = navItems.find(item => item.href === pathname);
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-accent/80 backdrop-blur-sm px-4 md:px-6 text-accent-foreground">
         <div className="flex-1">
           <Link href="/dashboard" className="flex items-center gap-2 font-headline font-bold text-primary">
             <Leaf className="h-7 w-7" />

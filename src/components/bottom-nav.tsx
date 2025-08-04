@@ -23,8 +23,8 @@ export default function BottomNav({ navItems }: BottomNavProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t">
-      <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
+    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-accent border-t border-accent/50 text-accent-foreground">
+      <div className="grid h-full max-w-lg grid-cols-6 mx-auto font-medium">
         {navItems.map((item) => {
           const Icon = LucideIcons[item.icon] as React.ElementType;
           const isActive = pathname === item.href;
@@ -35,8 +35,8 @@ export default function BottomNav({ navItems }: BottomNavProps) {
                   <Link
                     href={item.href}
                     className={cn(
-                        "inline-flex flex-col items-center justify-center px-2 sm:px-5 hover:bg-muted group",
-                        isActive ? "text-primary" : "text-muted-foreground"
+                        "inline-flex flex-col items-center justify-center px-2 sm:px-5 hover:bg-black/10 group",
+                        isActive ? "text-primary-foreground" : ""
                     )}
                   >
                     <Icon className="w-6 h-6 mb-1" />

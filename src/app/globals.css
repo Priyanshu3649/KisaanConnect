@@ -4,31 +4,31 @@
 
 @layer base {
   :root {
-    --background: 48 60% 95%; /* light pastel green/cream (#F9FBE7) */
+    --background: 80 67% 95%; /* #F9FBE7 */
     --foreground: 0 0% 13%; /* #212121 */
 
-    --card: 48 60% 95%;
+    --card: 80 67% 95%;
     --card-foreground: 0 0% 13%;
  
-    --popover: 48 60% 95%;
+    --popover: 80 67% 95%;
     --popover-foreground: 0 0% 13%;
  
-    --primary: 122 39% 49%; /* leafy green (#4CAF50) */
-    --primary-foreground: 60 100% 97%;
+    --primary: 122 39% 49%; /* #4CAF50 */
+    --primary-foreground: 120 100% 97%;
  
-    --secondary: 45 100% 51%; /* mustard/yellow (#FFC107) for highlights/tooltips */
+    --secondary: 45 100% 51%; /* #FFC107 */
     --secondary-foreground: 0 0% 13%;
  
-    --muted: 60 8% 90%; /* A lighter gray for muted backgrounds */
+    --muted: 60 8% 90%;
     --muted-foreground: 0 0% 38%; /* #616161 */
  
-    --accent: 122 39% 49%; /* Using primary green as accent */
+    --accent: 30 25% 45%; /* #8D6E63 - Earthy Brown */
     --accent-foreground: 60 100% 97%;
  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 122 20% 80%; /* A muted green for borders */
+    --border: 122 20% 80%;
     --input: 122 20% 80%;
     --ring: 122 39% 49%;
  
@@ -36,32 +36,32 @@
   }
 
   .dark {
-    --background: 20 14% 14%; /* Dark, earthy brown */
-    --foreground: 48 60% 95%;
+    --background: 30 25% 15%; /* Darker earthy brown */
+    --foreground: 80 67% 95%;
  
-    --card: 20 14% 14%;
-    --card-foreground: 48 60% 95%;
+    --card: 30 25% 15%;
+    --card-foreground: 80 67% 95%;
  
-    --popover: 20 14% 14%;
-    --popover-foreground: 48 60% 95%;
+    --popover: 30 25% 15%;
+    --popover-foreground: 80 67% 95%;
  
-    --primary: 122 39% 55%; /* Slightly brighter green for dark mode */
-    --primary-foreground: 20 14% 14%;
+    --primary: 122 39% 55%;
+    --primary-foreground: 30 25% 15%;
  
-    --secondary: 45 100% 51%; /* mustard/yellow remains vibrant */
-    --secondary-foreground: 20 14% 14%;
+    --secondary: 45 100% 51%;
+    --secondary-foreground: 30 25% 15%;
  
-    --muted: 20 14% 20%;
-    --muted-foreground: 48 30% 80%;
+    --muted: 30 25% 20%;
+    --muted-foreground: 80 30% 80%;
  
-    --accent: 122 39% 55%;
-    --accent-foreground: 20 14% 14%;
+    --accent: 30 25% 55%; /* Lighter earthy brown */
+    --accent-foreground: 80 67% 95%;
  
     --destructive: 0 62.8% 50.6%;
-    --destructive-foreground: 48 60% 95%;
+    --destructive-foreground: 80 67% 95%;
  
-    --border: 20 14% 30%;
-    --input: 20 14% 30%;
+    --border: 30 25% 30%;
+    --input: 30 25% 30%;
     --ring: 122 39% 55%;
   }
 }

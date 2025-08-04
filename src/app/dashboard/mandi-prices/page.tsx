@@ -93,7 +93,7 @@ export default function MandiPricesPage() {
   
   const processedData = useMemo(() => {
     return mandiData.map((item, index) => {
-        const prevPrice = index < mandiData.length - 1 ? parseInt(mandiData[index + 1]['Model Prize']) : null;
+        const prevPrice = index > 0 ? parseInt(mandiData[index - 1]['Model Prize']) : null;
         const trend = getPriceTrend(parseInt(item['Model Prize']), prevPrice);
         return { ...item, trend };
     });
