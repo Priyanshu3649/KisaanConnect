@@ -27,9 +27,12 @@ const initialEquipmentData = [
   { name: "Cultivator", image: "https://placehold.co/600x400.png", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
   { name: "Rotavator", image: "https://placehold.co/600x400.png", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
   { name: "Plough", image: "https://placehold.co/600x400.png", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
-  { name: "Harvester", image: "https://placehold.co/600x400.png", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
+  { name: "Combine Harvester", image: "https://placehold.co/600x400.png", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
   { name: "Water Pump", image: "https://placehold.co/600x400.png", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
+  { name: "Sprayer", image: "https://placehold.co/600x400.png", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
+  { name: "Power Tiller", image: "https://placehold.co/600x400.png", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
 ];
+
 
 const locations = ["All Locations", ...Array.from(new Set(initialEquipmentData.map(item => item.location)))];
 
@@ -129,47 +132,47 @@ export default function EquipmentRentalsPage() {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                  <SelectItem value="distance">Sort by Distance</SelectItem>
-                  <SelectItem value="price_asc">Sort by Price: Low to High</SelectItem>
-                  <SelectItem value="price_desc">Sort by Price: High to Low</SelectItem>
+                  <SelectItem value="distance">{t('equipmentRentals.sortByDistance')}</SelectItem>
+                  <SelectItem value="price_asc">{t('equipmentRentals.sortByPriceAsc')}</SelectItem>
+                  <SelectItem value="price_desc">{t('equipmentRentals.sortByPriceDesc')}</SelectItem>
               </SelectContent>
             </Select>
             <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                 <DialogTrigger asChild>
                     <Button>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Upload Equipment
+                        {t('equipmentRentals.uploadButton')}
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>List Your Equipment</DialogTitle>
+                        <DialogTitle>{t('equipmentRentals.uploadTitle')}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleUploadSubmit}>
                         <div className="grid gap-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Equipment Name</Label>
-                                <Input id="name" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="e.g., John Deere Tractor" />
+                                <Label htmlFor="name">{t('equipmentRentals.uploadNameLabel')}</Label>
+                                <Input id="name" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder={t('equipmentRentals.uploadNamePlaceholder')} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                <div className="space-y-2">
-                                    <Label htmlFor="price">Price (per day)</Label>
-                                    <Input id="price" type="number" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} placeholder="e.g., 1500" />
+                                    <Label htmlFor="price">{t('equipmentRentals.uploadPriceLabel')}</Label>
+                                    <Input id="price" type="number" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} placeholder={t('equipmentRentals.uploadPricePlaceholder')} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="location">Location</Label>
-                                    <Input id="location" value={newItemLocation} onChange={(e) => setNewItemLocation(e.target.value)} placeholder="e.g., Pune" />
+                                    <Label htmlFor="location">{t('equipmentRentals.uploadLocationLabel')}</Label>
+                                    <Input id="location" value={newItemLocation} onChange={(e) => setNewItemLocation(e.target.value)} placeholder={t('equipmentRentals.uploadLocationPlaceholder')} />
                                 </div>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="image-upload">Equipment Image</Label>
+                                <Label htmlFor="image-upload">{t('equipmentRentals.uploadImageLabel')}</Label>
                                 <label htmlFor="image-upload-input" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary">
                                   {previewUrl ? (
                                     <Image src={previewUrl} alt="Preview" width={100} height={100} className="h-full w-auto object-contain p-2" />
                                   ) : (
                                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                         <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
+                                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">{t('register.clickToUpload')}</span></p>
                                     </div>
                                   )}
                                   <Input id="image-upload-input" type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
@@ -177,7 +180,7 @@ export default function EquipmentRentalsPage() {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit">List Equipment</Button>
+                            <Button type="submit">{t('equipmentRentals.uploadSubmitButton')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -219,3 +222,4 @@ export default function EquipmentRentalsPage() {
     </AppLayout>
   );
 }
+
