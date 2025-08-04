@@ -1,7 +1,7 @@
 
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -11,10 +11,7 @@ import {
   Coins,
   BookOpenCheck,
   LifeBuoy,
-  LucideIcon,
-  Mic,
   Languages,
-  Loader2,
 } from "lucide-react";
 import UserNav from "@/components/user-nav";
 import BottomNav from "./bottom-nav";
