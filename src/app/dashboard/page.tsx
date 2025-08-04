@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -248,16 +249,16 @@ export default function DashboardPage() {
                         </TableCell>
                     </TableRow>
                 )}
-                {!diagnosesLoading && recentDiagnoses && recentDiagnoses.map((diag) => (
+                {recentDiagnoses && recentDiagnoses.map((diag) => (
                   <TableRow key={diag.id}>
-                    <TableCell className="font-medium">{diag.crop}</TableCell>
+                    <TableCell className="font-medium">{(diag as Diagnosis).crop}</TableCell>
                     <TableCell>
-                      <Badge variant={diag.status === 'Active' ? 'destructive' : 'default'}>{t(`profile.status${diag.status}` as any)}</Badge>
+                      <Badge variant={(diag as Diagnosis).status === 'Active' ? 'destructive' : 'default'}>{t(`profile.status${(diag as Diagnosis).status}` as any)}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                            <span>{diag.progress}%</span>
-                            <Progress value={diag.progress} className="w-20 h-2" />
+                            <span>{(diag as Diagnosis).progress}%</span>
+                            <Progress value={(diag as Diagnosis).progress} className="w-20 h-2" />
                         </div>
                     </TableCell>
                   </TableRow>
