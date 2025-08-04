@@ -32,7 +32,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   ];
   
   // For the mobile bottom nav, we typically show fewer items.
-  // We'll show the main 6 here. Help/Feedback can be in the user menu.
   const mobileNavItems = navItems;
 
   return (

@@ -24,8 +24,7 @@ const VoiceNavigator = () => {
       const recognition = new window.webkitSpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
-
+      
       recognition.onstart = () => {
         setIsListening(true);
       };
@@ -66,14 +65,20 @@ const VoiceNavigator = () => {
       };
 
       recognition.onend = () => {
-        if (isListening) {
-          setIsListening(false);
-        }
+        setIsListening(false);
+        setIsProcessing(false);
       };
 
       recognitionRef.current = recognition;
     }
-  }, [language, router, t, toast, isListening]);
+  }, [language, router, t, toast]);
+
+  useEffect(() => {
+    if (recognitionRef.current) {
+        recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    }
+  }, [language]);
+
 
   const handleMicClick = () => {
     if (!recognitionRef.current) {
@@ -81,20 +86,14 @@ const VoiceNavigator = () => {
       return;
     }
     
-    if (isListening) {
+    if (isListening || isProcessing) {
       recognitionRef.current.stop();
-      setIsListening(false);
     } else {
       try {
-        // Ensure language is up-to-date before starting
-        recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-US';
         recognitionRef.current.start();
       } catch(e) {
         console.error("Error starting recognition:", e);
-        // It's possible the service is already running, so don't show an error unless it's a new one.
-        if ((e as DOMException).name === 'InvalidStateError') {
-          // Ignore this error as it means it's already listening
-        } else {
+        if ((e as DOMException).name !== 'InvalidStateError') {
           toast({ variant: "destructive", title: t('voice.micError'), description: (e as Error).message });
         }
       }

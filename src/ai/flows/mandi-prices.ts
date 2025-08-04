@@ -88,7 +88,7 @@ const getMandiPricesFlow = ai.defineFlow(
         }
         const data = await response.json();
         // IMPORTANT: Ensure the 'Date' field from your API is in a standard format like 'yyyy-MM-dd'
-        return data;
+        return data.map(item => ({...item, Date: new Date(item.Date).toISOString().split('T')[0]}));
     } catch (error) {
         console.error("Failed to fetch from real API:", error);
         // Fallback to empty array or re-throw error

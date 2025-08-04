@@ -95,19 +95,36 @@ export default function MandiPricesPage() {
   const processedData = useMemo(() => {
     if (!mandiData || mandiData.length === 0) return [];
     
-    // Create a mutable copy for sorting
+    // Create a mutable copy and sort robustly
     const sortedData = [...mandiData].sort((a, b) => {
         try {
-            // Dates are in 'yyyy-MM-dd' format, which is safe for string comparison or direct Date instantiation
-            return new Date(b.Date).getTime() - new Date(a.Date).getTime();
+            const dateA = new Date(a.Date).getTime();
+            const dateB = new Date(b.Date).getTime();
+            if(dateB !== dateA) return dateB - dateA;
+            // Stable sort if dates are the same
+            return parseInt(b['S.No']) - parseInt(a['S.No']);
         } catch(e) {
             return 0;
         }
     });
+    
+    const priceByDate: {[key: string]: number} = {};
+    sortedData.forEach(item => {
+        if (!priceByDate[item.Date]) {
+            priceByDate[item.Date] = parseInt(item['Model Prize']);
+        }
+    });
 
-    return sortedData.map((item, index) => {
-        const prevPriceRecord = sortedData[index + 1];
-        const prevPrice = prevPriceRecord ? parseInt(prevPriceRecord['Model Prize']) : null;
+    const uniqueDates = Object.keys(priceByDate).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+
+    return sortedData.map((item) => {
+        const currentDateIndex = uniqueDates.indexOf(item.Date);
+        let prevPrice: number | null = null;
+        if(currentDateIndex < uniqueDates.length - 1) {
+            const prevDate = uniqueDates[currentDateIndex + 1];
+            prevPrice = priceByDate[prevDate];
+        }
+
         const trend = getPriceTrend(parseInt(item['Model Prize']), prevPrice);
         return { ...item, trend };
     });
@@ -178,7 +195,7 @@ export default function MandiPricesPage() {
               ) : processedData.length > 0 ? (
                 processedData.map((item) => (
                   <TableRow key={item['S.No']}>
-                    <TableCell className="text-muted-foreground">{new Date(item.Date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</TableCell>
+                    <TableCell className="text-muted-foreground">{new Date(item.Date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</TableCell>
                     <TableCell className="font-medium">{item.Commodity}</TableCell>
                     <TableCell className="text-right">{parseInt(item['Min Prize']).toLocaleString('en-IN')}</TableCell>
                     <TableCell className="text-right">{parseInt(item['Max Prize']).toLocaleString('en-IN')}</TableCell>

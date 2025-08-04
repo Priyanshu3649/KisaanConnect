@@ -44,19 +44,34 @@ export default function UserNav() {
     const fetchUserData = async () => {
       if (user) {
         // Attempt to get data from Auth profile first for speed
-        if (user.displayName && user.email && user.photoURL) {
-           setUserData({ name: user.displayName, email: user.email, photoURL: user.photoURL });
-        }
+        let name = user.displayName;
+        let email = user.email;
+        let photoURL = user.photoURL;
+
         // Then fetch from Firestore for more details if needed, or as a fallback
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setUserData(userDoc.data() as UserData);
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const firestoreData = userDoc.data() as UserData;
+            // Firestore data is more reliable
+            name = firestoreData.name || name;
+            email = firestoreData.email || email;
+            photoURL = firestoreData.photoURL || photoURL;
+          }
+        } catch (e) {
+            console.error("Error fetching user data from Firestore:", e);
+        } finally {
+            if (name && email && photoURL) {
+                setUserData({ name, email, photoURL });
+            }
         }
       }
     };
-    fetchUserData();
-  }, [user]);
+    if(!loading) {
+        fetchUserData();
+    }
+  }, [user, loading]);
 
   const handleLogout = async () => {
     await signOut(auth);
