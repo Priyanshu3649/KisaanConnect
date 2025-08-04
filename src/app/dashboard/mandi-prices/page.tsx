@@ -92,11 +92,13 @@ export default function MandiPricesPage() {
   }, [selectedCommodity, selectedState, selectedMarket, toast]);
   
   const processedData = useMemo(() => {
+    if (!mandiData) return [];
     return mandiData.map((item, index) => {
-        const prevPrice = index > 0 ? parseInt(mandiData[index - 1]['Model Prize']) : null;
+        const prevPriceRecord = mandiData[index + 1]; // Compare with the next item (previous day)
+        const prevPrice = prevPriceRecord ? parseInt(prevPriceRecord['Model Prize']) : null;
         const trend = getPriceTrend(parseInt(item['Model Prize']), prevPrice);
         return { ...item, trend };
-    });
+    }).reverse(); // Reverse to show latest date first
   }, [mandiData]);
 
 
