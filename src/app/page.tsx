@@ -45,11 +45,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const { toast } = useToast();
   const router = useRouter();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         router.push('/dashboard');
+      } else {
+        setIsCheckingAuth(false);
       }
     });
 
@@ -131,7 +134,7 @@ export default function LoginPage() {
         title: t('login.loginSuccessTitle'),
         description: t('login.welcomeBack'),
       });
-      router.push('/dashboard');
+      // The onAuthStateChanged listener will handle the redirect.
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
        toast({
@@ -153,7 +156,7 @@ export default function LoginPage() {
         title: t('login.loginSuccessTitle'),
         description: t('login.welcomeBack'),
       });
-      router.push('/dashboard');
+      // The onAuthStateChanged listener will handle the redirect.
     } catch (error: any) {
       console.error("Error logging in with email:", error);
       toast({
@@ -175,7 +178,7 @@ export default function LoginPage() {
         title: t('login.loginSuccessTitle'),
         description: t('login.welcomeBack'),
       });
-      router.push('/dashboard');
+       // The onAuthStateChanged listener will handle the redirect.
     } catch (error: any) {
       console.error("Error with Google sign-in:", error);
       toast({
@@ -188,6 +191,14 @@ export default function LoginPage() {
     }
   };
 
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
