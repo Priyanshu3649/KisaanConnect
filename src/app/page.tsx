@@ -41,7 +41,7 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] useState('');
   const [password, setPassword] = useState('');
   const { toast } = useToast();
   const router = useRouter();
@@ -53,30 +53,31 @@ export default function LoginPage() {
         router.push('/dashboard');
       } else {
         setIsCheckingAuth(false);
+        // Ensure reCAPTCHA is set up only after we know we need the login page
+        if (!window.recaptchaVerifier) {
+            try {
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    'size': 'invisible',
+                    'callback': (response: any) => {
+                      // reCAPTCHA solved, allow signInWithPhoneNumber.
+                    },
+                    'expired-callback': () => {
+                      // Response expired. Ask user to solve reCAPTCHA again.
+                      toast({ variant: "destructive", title: "reCAPTCHA Expired", description: "Please try sending the OTP again."});
+                    }
+                });
+                // Render the verifier
+                window.recaptchaVerifier.render();
+            } catch (error) {
+                console.error("Error initializing RecaptchaVerifier", error);
+                toast({ variant: "destructive", title: "Could not initialize reCAPTCHA", description: "Please refresh the page."});
+            }
+        }
       }
     });
 
-    if (!window.recaptchaVerifier) {
-      // It's important to only initialize RecaptchaVerifier on the client side,
-      // and after the component has mounted.
-      try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-            'callback': (response: any) => {
-              // reCAPTCHA solved, allow signInWithPhoneNumber.
-            },
-            'expired-callback': () => {
-              // Response expired. Ask user to solve reCAPTCHA again.
-            }
-        });
-      } catch (error) {
-          console.error("Error initializing RecaptchaVerifier", error);
-      }
-    }
-
-
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toast]);
 
 
   const handleSendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -116,7 +117,9 @@ export default function LoginPage() {
        if (window.recaptchaVerifier) {
          window.recaptchaVerifier.render().then(function(widgetId) {
            // @ts-ignore
-           grecaptcha.reset(widgetId);
+           if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset(widgetId);
+           }
          });
        }
     } finally {
@@ -308,3 +311,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

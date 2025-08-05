@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/context/theme-provider';
 export const metadata: Metadata = {
   title: 'KisaanConnect',
   description: 'Empowering farmers with technology.',
+  icons: null,
 };
 
 export default function RootLayout({
