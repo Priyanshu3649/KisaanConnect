@@ -23,14 +23,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 const initialEquipmentData = [
-  { name: "Tractor", image: "https://placehold.co/600x400.png", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", distance: 12, available: true },
-  { name: "Cultivator", image: "https://placehold.co/600x400.png", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
-  { name: "Rotavator", image: "https://placehold.co/600x400.png", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
-  { name: "Plough", image: "https://placehold.co/600x400.png", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
-  { name: "Combine Harvester", image: "https://placehold.co/600x400.png", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
-  { name: "Water Pump", image: "https://placehold.co/600x400.png", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
-  { name: "Sprayer", image: "https://placehold.co/600x400.png", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
-  { name: "Power Tiller", image: "https://placehold.co/600x400.png", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
+  { name: "Tractor", image: "/src/images/tractor.jpeg", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", distance: 12, available: true },
+  { name: "Cultivator", image: "/src/images/cultivator.jpeg", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
+  { name: "Rotavator", image: "/src/images/rotavator.webp", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
+  { name: "Plough", image: "/src/images/plough.png", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
+  { name: "Combine Harvester", image: "/src/images/combine harvestor.jpeg", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
+  { name: "Water Pump", image: "/src/images/water pump.jpeg", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
+  { name: "Sprayer", image: "/src/images/sprayer.jpg", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
+  { name: "Power Tiller", image: "/src/images/power tiller.jpeg", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
 ];
 
 
