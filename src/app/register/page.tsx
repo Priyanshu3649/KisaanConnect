@@ -76,9 +76,12 @@ export default function RegisterPage() {
             const user = userCredential.user;
 
             // 2. Upload profile picture to Firebase Storage
-            const storageRef = ref(storage, `profilePictures/${user.uid}/${profilePic.name}`);
-            const snapshot = await uploadBytes(storageRef, profilePic);
-            const photoURL = await getDownloadURL(snapshot.ref);
+            let photoURL = '';
+            if (profilePic) {
+              const storageRef = ref(storage, `profilePictures/${user.uid}/${profilePic.name}`);
+              const snapshot = await uploadBytes(storageRef, profilePic);
+              photoURL = await getDownloadURL(snapshot.ref);
+            }
 
             // 3. Update user profile in Firebase Auth
             await updateProfile(user, {
@@ -91,10 +94,10 @@ export default function RegisterPage() {
                 uid: user.uid,
                 name: name,
                 email: email,
-                aadhar: aadhar,
+                aadhar: aadhar.replace(/\s/g, ''), // Store unformatted
                 location: location,
                 photoURL: photoURL,
-                createdAt: new Date(),
+                createdAt: new Date().toISOString(),
             });
 
             toast({
