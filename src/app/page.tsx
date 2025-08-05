@@ -55,27 +55,29 @@ export default function LoginPage() {
         setIsCheckingAuth(false);
       }
     });
-    return () => unsubscribe();
-  }, [router]);
 
-
-  useEffect(() => {
     if (!window.recaptchaVerifier) {
+      // It's important to only initialize RecaptchaVerifier on the client side,
+      // and after the component has mounted.
       try {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'invisible',
-            callback: () => {
-              // reCAPTCHA solved
+            'size': 'invisible',
+            'callback': (response: any) => {
+              // reCAPTCHA solved, allow signInWithPhoneNumber.
             },
             'expired-callback': () => {
               // Response expired. Ask user to solve reCAPTCHA again.
             }
         });
-      } catch (err) {
-        console.error("Error creating RecaptchaVerifier:", err);
+      } catch (error) {
+          console.error("Error initializing RecaptchaVerifier", error);
       }
     }
-  }, []);
+
+
+    return () => unsubscribe();
+  }, [router]);
+
 
   const handleSendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
