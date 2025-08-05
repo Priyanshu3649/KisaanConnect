@@ -61,16 +61,23 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'invisible',
-            callback: () => {
-              // reCAPTCHA solved
-            },
-            'expired-callback': () => {
-              // Response expired. Ask user to solve reCAPTCHA again.
+        // Delay verifier setup until after component mounts and element exists
+        setTimeout(() => {
+            try {
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    size: 'invisible',
+                    callback: () => {
+                      // reCAPTCHA solved
+                    },
+                    'expired-callback': () => {
+                      // Response expired. Ask user to solve reCAPTCHA again.
+                    }
+                });
+                window.recaptchaVerifier.render().catch(err => console.error("Recaptcha render error", err));
+            } catch (err) {
+                console.error("Error creating RecaptchaVerifier:", err);
             }
-        });
-        window.recaptchaVerifier.render().catch(err => console.error("Recaptcha render error", err));
+        }, 100);
     }
   }, []);
 
@@ -89,6 +96,9 @@ export default function LoginPage() {
     try {
       const phoneNumber = "+91" + phone;
       const appVerifier = window.recaptchaVerifier!;
+      if (!appVerifier) {
+          throw new Error("reCAPTCHA not initialized. Please wait a moment and try again.");
+      }
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       window.confirmationResult = confirmationResult;
       setOtpSent(true);
