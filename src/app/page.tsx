@@ -55,29 +55,25 @@ export default function LoginPage() {
         setIsCheckingAuth(false);
       }
     });
-
     return () => unsubscribe();
   }, [router]);
 
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
-        // Delay verifier setup until after component mounts and element exists
-        setTimeout(() => {
-            try {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    size: 'invisible',
-                    callback: () => {
-                      // reCAPTCHA solved
-                    },
-                    'expired-callback': () => {
-                      // Response expired. Ask user to solve reCAPTCHA again.
-                    }
-                });
-                window.recaptchaVerifier.render().catch(err => console.error("Recaptcha render error", err));
-            } catch (err) {
-                console.error("Error creating RecaptchaVerifier:", err);
+    if (!window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+            callback: () => {
+              // reCAPTCHA solved
+            },
+            'expired-callback': () => {
+              // Response expired. Ask user to solve reCAPTCHA again.
             }
-        }, 100);
+        });
+      } catch (err) {
+        console.error("Error creating RecaptchaVerifier:", err);
+      }
     }
   }, []);
 
@@ -99,6 +95,7 @@ export default function LoginPage() {
       if (!appVerifier) {
           throw new Error("reCAPTCHA not initialized. Please wait a moment and try again.");
       }
+      
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
       window.confirmationResult = confirmationResult;
       setOtpSent(true);
@@ -114,11 +111,12 @@ export default function LoginPage() {
         description: error.message || t('login.otpFailedDesc'),
       });
        // Reset reCAPTCHA on error
-       // @ts-ignore
-      if (window.grecaptcha && window.recaptchaVerifier) {
-        // @ts-ignore
-        window.grecaptcha.reset(window.recaptchaVerifier.widgetId);
-      }
+       if (window.recaptchaVerifier) {
+         window.recaptchaVerifier.render().then(function(widgetId) {
+           // @ts-ignore
+           grecaptcha.reset(widgetId);
+         });
+       }
     } finally {
       setIsLoading(false);
     }
