@@ -2,9 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,51 +20,49 @@ const WeatherIcon = ({ iconName, ...props }: { iconName: GetWeatherOutput['curre
 
 export default function WeatherPage() {
     const { t } = useTranslation();
-    const [user] = useAuthState(auth);
     const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [location, setLocation] = useState<string | null>(null);
+    const [locationStatus, setLocationStatus] = useState("Requesting location permission...");
 
     useEffect(() => {
-        const fetchWeather = async () => {
-            if (user) {
-                setIsLoading(true);
-                try {
-                    const userDocRef = doc(db, "users", user.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data();
-                        setLocation(userData.location);
-                        if (userData.location) {
-                            const weather = await getWeather({ location: userData.location });
-                            setWeatherData(weather);
-                        }
-                    }
-                } catch (error) {
-                    console.error("Error fetching weather data: ", error);
-                } finally {
+        const fetchWeather = () => {
+            setIsLoading(true);
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    setLocationStatus("Fetching weather for your location...");
+                    const weather = await getWeather({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
+                    setWeatherData(weather);
+                    setLocationStatus(weather ? "Current weather for your location" : "Could not fetch weather for your location.");
                     setIsLoading(false);
-                }
-            } else if (!user) {
-                // Handle case where user is not logged in, maybe redirect or show message
-                setIsLoading(false);
-            }
+                },
+                async (error) => {
+                    console.warn(`Geolocation error: ${error.message}. Falling back to default location.`);
+                    setLocationStatus("Fetching weather for Delhi (default)...");
+                    const weather = await getWeather({ location: "Delhi" });
+                    setWeatherData(weather);
+                    setLocationStatus(weather ? "Current weather for Delhi" : "Could not fetch weather for Delhi.");
+                    setIsLoading(false);
+                },
+                { timeout: 10000, enableHighAccuracy: true }
+            );
         };
 
         fetchWeather();
-    }, [user]);
+    }, []);
 
     return (
         <AppLayout>
             <PageHeader
                 title={t('nav.weather')}
-                description={location ? t('weather.pageDescription', { location }) : t('weather.pageDescriptionNoLocation')}
+                description={!isLoading ? locationStatus : "Fetching weather data..."}
             />
             {isLoading && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6">
+                   <Skeleton className="h-48 w-full" />
                    <Skeleton className="h-64 w-full" />
-                   <Skeleton className="h-64 w-full" />
-                   <Skeleton className="h-64 w-full col-span-1 md:col-span-2 lg:col-span-3" />
                 </div>
             )}
             {!isLoading && weatherData && (
@@ -85,23 +80,23 @@ export default function WeatherPage() {
                                     <div className="text-xl text-muted-foreground">{weatherData.current.condition}</div>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                                <div className="flex flex-col items-center">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center w-full md:w-auto">
+                                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50">
                                     <Thermometer className="h-6 w-6 mb-2 text-muted-foreground" />
                                     <span className="font-bold">{weatherData.current.high}° / {weatherData.current.low}°</span>
                                     <span className="text-xs text-muted-foreground">{t('weather.highLow')}</span>
                                 </div>
-                                <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50">
                                     <Droplets className="h-6 w-6 mb-2 text-muted-foreground" />
                                     <span className="font-bold">{weatherData.current.humidity}%</span>
                                     <span className="text-xs text-muted-foreground">{t('weather.humidity')}</span>
                                 </div>
-                                 <div className="flex flex-col items-center">
+                                 <div className="flex flex-col items-center p-2 rounded-lg bg-background/50">
                                     <Wind className="h-6 w-6 mb-2 text-muted-foreground" />
                                     <span className="font-bold">{weatherData.current.windSpeed} km/h</span>
                                     <span className="text-xs text-muted-foreground">{t('weather.wind')}</span>
                                 </div>
-                                <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center p-2 rounded-lg bg-background/50">
                                     <Cloud className="h-6 w-6 mb-2 text-muted-foreground" />
                                     <span className="font-bold">{weatherData.current.cloudCover}%</span>
                                     <span className="text-xs text-muted-foreground">{t('weather.cloudCover')}</span>
@@ -129,7 +124,7 @@ export default function WeatherPage() {
             )}
              {!isLoading && !weatherData && (
                  <Card className="flex flex-col items-center justify-center p-12 text-center">
-                    <Loader2 className="h-10 w-10 text-muted-foreground mb-4" />
+                    <Loader2 className="h-10 w-10 text-muted-foreground mb-4 animate-spin" />
                     <CardTitle>{t('profile.weatherError')}</CardTitle>
                     <CardDescription>{t('weather.errorDesc')}</CardDescription>
                 </Card>

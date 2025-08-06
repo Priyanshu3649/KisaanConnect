@@ -78,6 +78,7 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
+  const [locationStatus, setLocationStatus] = useState("Loading...");
   const [isDataLoading, setIsDataLoading] = useState(true);
   const { t } = useTranslation();
 
@@ -91,50 +92,70 @@ export default function DashboardPage() {
         return;
     }
 
-    const fetchDashboardData = async () => {
-      setIsDataLoading(true);
-      try {
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        let fetchedUserData: UserData | null = null;
-        if (userDoc.exists()) {
-          fetchedUserData = userDoc.data() as UserData;
-          setUserData(fetchedUserData);
-        }
+    const fetchInitialData = async () => {
+        setIsDataLoading(true);
+        try {
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+            let fetchedUserData: UserData = {};
+             if (userDoc.exists()) {
+                fetchedUserData = userDoc.data() as UserData;
+                setUserData(fetchedUserData);
+            }
 
-        // Fetch weather data if location is available
-        if (fetchedUserData?.location) {
-            const weather = await getWeather({ location: fetchedUserData.location });
-            setWeatherData(weather);
-        }
+            // Fetch static dashboard data
+            const activeDiagnosesCount = recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || 0;
+            const data: DashboardData = {
+                totalRevenue: 45231.89,
+                revenueChange: 20.1,
+                activeDiagnosesCount: activeDiagnosesCount,
+                resolvedThisWeek: 1, 
+                cropVarieties: 12,
+                cropChange: 2,
+                activeRentalsCount: 2,
+                lendingCount: 1,
+                borrowingCount: 1,
+                activeRentals: [
+                    { equipment: "John Deere Tractor", type: "Lending", due: "3 days" },
+                    { equipment: "Power Tiller", type: "Borrowing", due: "5 days" },
+                ]
+            };
+            setDashboardData(data);
 
-        const activeDiagnosesCount = recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || 0;
-        
-        const data: DashboardData = {
-            totalRevenue: 45231.89,
-            revenueChange: 20.1,
-            activeDiagnosesCount: activeDiagnosesCount,
-            resolvedThisWeek: 1, 
-            cropVarieties: 12,
-            cropChange: 2,
-            activeRentalsCount: 2,
-            lendingCount: 1,
-            borrowingCount: 1,
-            activeRentals: [
-                { equipment: "John Deere Tractor", type: "Lending", due: "3 days" },
-                { equipment: "Power Tiller", type: "Borrowing", due: "5 days" },
-            ]
-        };
-        setDashboardData(data);
-      } catch (error) {
-        console.error("Error fetching dashboard data: ", error);
-      } finally {
-        setIsDataLoading(false);
-      }
+        } catch (error) {
+            console.error("Error fetching dashboard data: ", error);
+        } finally {
+            setIsDataLoading(false);
+        }
+    };
+    
+    // Fetch weather data based on location
+    const fetchWeather = () => {
+        setLocationStatus("Fetching location...");
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                setLocationStatus("Fetching weather...");
+                const weather = await getWeather({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+                setWeatherData(weather);
+                setLocationStatus(weather ? `Weather for your location` : "Could not fetch weather.");
+            },
+            async (error) => {
+                console.warn(`Geolocation error: ${error.message}. Falling back to default.`);
+                setLocationStatus("Using default location...");
+                const weather = await getWeather({ location: "Delhi" });
+                setWeatherData(weather);
+                setLocationStatus(weather ? "Weather for Delhi" : "Could not fetch weather for Delhi.");
+            },
+            { timeout: 10000 }
+        );
     };
 
-    if(!diagnosesLoading) {
-      fetchDashboardData();
+    if(!diagnosesLoading && user) {
+      fetchInitialData();
+      fetchWeather();
     }
   }, [user, authLoading, router, recentDiagnoses, diagnosesLoading]);
   
@@ -231,14 +252,15 @@ export default function DashboardPage() {
         <Card>
             <CardHeader>
                 <CardTitle>{t('profile.weatherTitle')}</CardTitle>
-                <CardDescription>{userData?.location ? t('profile.weatherDescription', {location: userData.location}) : t('profile.weatherDescriptionNoLocation')}</CardDescription>
+                <CardDescription>{locationStatus}</CardDescription>
             </CardHeader>
             <CardContent>
-                {isLoading ? (
+                {!weatherData && (
                     <div className="flex items-center justify-center h-24">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
-                ) : weatherData ? (
+                )}
+                {weatherData && (
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-yellow-500" />
@@ -251,10 +273,6 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
                             <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
                         </div>
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                        {t('profile.weatherError')}
                     </div>
                 )}
             </CardContent>

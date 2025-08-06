@@ -14,7 +14,9 @@ import { z } from 'genkit';
 import { format } from 'date-fns';
 
 const GetWeatherInputSchema = z.object({
-  location: z.string().describe("The user's location (e.g., 'Pune, Maharashtra')."),
+  location: z.string().optional().describe("The user's location string (e.g., 'Pune, Maharashtra')."),
+  latitude: z.number().optional().describe("The user's latitude."),
+  longitude: z.number().optional().describe("The user's longitude."),
 });
 export type GetWeatherInput = z.infer<typeof GetWeatherInputSchema>;
 
@@ -55,33 +57,44 @@ const weatherCodeToIcon: Record<string, GetWeatherOutput["current"]["icon"]> = {
 };
 
 
-async function fetchWeatherData(location: string): Promise<GetWeatherOutput | null> {
+async function fetchWeatherData(input: GetWeatherInput): Promise<GetWeatherOutput | null> {
     const apiKey = process.env.OPENWEATHERMAP_API_KEY;
     if (!apiKey) {
         console.error("OpenWeatherMap API key is not configured.");
         return null;
     }
 
-    // 1. Geocode the location to get latitude and longitude using OpenWeatherMap
-    const geocodeUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
-    let geocodeResponse;
-    try {
-        geocodeResponse = await fetch(geocodeUrl);
-        if (!geocodeResponse.ok) {
-            console.error("Geocoding API request failed:", geocodeResponse.status, await geocodeResponse.text());
+    let lat: number | undefined = input.latitude;
+    let lon: number | undefined = input.longitude;
+
+    // 1. Geocode the location to get latitude and longitude if not provided
+    if ((!lat || !lon) && input.location) {
+        const geocodeUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(input.location)}&limit=1&appid=${apiKey}`;
+        try {
+            const geocodeResponse = await fetch(geocodeUrl);
+            if (!geocodeResponse.ok) {
+                console.error("Geocoding API request failed:", geocodeResponse.status, await geocodeResponse.text());
+                return null;
+            }
+            const geocodeData = await geocodeResponse.json();
+            if (geocodeData && geocodeData.length > 0) {
+                lat = geocodeData[0].lat;
+                lon = geocodeData[0].lon;
+            } else {
+                 console.error("No geocoding results found for location:", input.location);
+                 return null;
+            }
+        } catch (error) {
+            console.error("Failed to fetch from Geocoding API:", error);
             return null;
         }
-    } catch (error) {
-        console.error("Failed to fetch from Geocoding API:", error);
-        return null;
     }
     
-    const geocodeData = await geocodeResponse.json();
-    if (!geocodeData || geocodeData.length === 0) {
-        console.error("No geocoding results found for location:", location);
+    if (!lat || !lon) {
+        console.error("Cannot fetch weather data without coordinates or a valid location.");
         return null;
     }
-    const { lat, lon } = geocodeData[0];
+
 
     // 2. Fetch current weather and forecast data from OpenWeatherMap using coordinates
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
@@ -139,8 +152,8 @@ async function fetchWeatherData(location: string): Promise<GetWeatherOutput | nu
         return {
             current: {
                 temperature: Math.round(weatherData.main.temp),
-                high: Math.round(weatherData.main.temp_max),
-                low: Math.round(weatherData.main.temp_min),
+                high: Math.round(Math.max(...dailyForecasts[new Date().toISOString().split('T')[0]].highs)),
+                low: Math.round(Math.min(...dailyForecasts[new Date().toISOString().split('T')[0]].lows)),
                 condition: weatherData.weather[0].main,
                 cloudCover: weatherData.clouds.all,
                 humidity: weatherData.main.humidity,
@@ -170,11 +183,11 @@ const getWeatherFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-        if (!input || !input.location) {
-            console.error("getWeatherFlow called with no location.");
+        if (!input || (!input.location && (!input.latitude || !input.longitude))) {
+            console.error("getWeatherFlow called with no location or coordinates.");
             return null;
         }
-        const data = await fetchWeatherData(input.location);
+        const data = await fetchWeatherData(input);
         return data;
     } catch(error) {
         console.error("Error in getWeatherFlow:", error);
