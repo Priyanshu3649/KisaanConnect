@@ -41,7 +41,7 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [email, setEmail] useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { toast } = useToast();
   const router = useRouter();
@@ -51,33 +51,38 @@ export default function LoginPage() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         router.push('/dashboard');
+        // No need to set checking auth to false, we are redirecting
       } else {
         setIsCheckingAuth(false);
-        // Ensure reCAPTCHA is set up only after we know we need the login page
-        if (!window.recaptchaVerifier) {
-            try {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': (response: any) => {
-                      // reCAPTCHA solved, allow signInWithPhoneNumber.
-                    },
-                    'expired-callback': () => {
-                      // Response expired. Ask user to solve reCAPTCHA again.
-                      toast({ variant: "destructive", title: "reCAPTCHA Expired", description: "Please try sending the OTP again."});
-                    }
-                });
-                // Render the verifier
-                window.recaptchaVerifier.render();
-            } catch (error) {
-                console.error("Error initializing RecaptchaVerifier", error);
-                toast({ variant: "destructive", title: "Could not initialize reCAPTCHA", description: "Please refresh the page."});
-            }
-        }
       }
     });
 
     return () => unsubscribe();
-  }, [router, toast]);
+  }, [router]);
+  
+  useEffect(() => {
+      if (isCheckingAuth) return; // Don't run if we are still checking auth state
+      if (window.recaptchaVerifier) return; // Don't re-initialize
+      
+      try {
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+              'size': 'invisible',
+              'callback': (response: any) => {
+                // reCAPTCHA solved, allow signInWithPhoneNumber.
+              },
+              'expired-callback': () => {
+                // Response expired. Ask user to solve reCAPTCHA again.
+                toast({ variant: "destructive", title: "reCAPTCHA Expired", description: "Please try sending the OTP again."});
+              }
+          });
+          // Render the verifier
+          window.recaptchaVerifier.render();
+      } catch (error) {
+          console.error("Error initializing RecaptchaVerifier", error);
+          toast({ variant: "destructive", title: "Could not initialize reCAPTCHA", description: "Please refresh the page."});
+      }
+
+  }, [isCheckingAuth, toast]);
 
 
   const handleSendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -311,5 +316,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
