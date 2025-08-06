@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A service for fetching real-time weather data.
+ * @fileOverview A service for fetching real-time weather data using OpenWeatherMap.
  *
  * - getWeather - A function that returns current weather conditions for a given location.
  * - GetWeatherInput - The input type for the getWeather function.
@@ -27,30 +27,29 @@ const GetWeatherOutputSchema = z.object({
 });
 export type GetWeatherOutput = z.infer<typeof GetWeatherOutputSchema>;
 
-// This is a simplified mapping. A real implementation might be more complex.
-const weatherCodeToIcon: Record<number, GetWeatherOutput["icon"]> = {
-    0: 'Sun', // Clear sky
-    1: 'CloudSun', // Mainly clear
-    2: 'CloudSun', // Partly cloudy
-    3: 'Cloud', // Overcast
-    45: 'CloudFog', // Fog
-    46: 'CloudFog', // Depositing rime fog
-    51: 'CloudRain', // Drizzle: Light
-    53: 'CloudRain', // Drizzle: Moderate
-    55: 'CloudRain', // Drizzle: Dense
-    61: 'CloudRain', // Rain: Slight
-    63: 'CloudRain', // Rain: Moderate
-    65: 'CloudRain', // Rain: Heavy
-    80: 'CloudRain', // Rain showers: Slight
-    81: 'CloudRain', // Rain showers: Moderate
-    82: 'CloudRain', // Rain showers: Violent
-    95: 'CloudLightning', // Thundersotrm
+// Mapping from OpenWeatherMap icon codes to our icon set
+const weatherCodeToIcon: Record<string, GetWeatherOutput["icon"]> = {
+    '01d': 'Sun', '01n': 'Sun',
+    '02d': 'CloudSun', '02n': 'CloudSun',
+    '03d': 'Cloud', '03n': 'Cloud',
+    '04d': 'Cloud', '04n': 'Cloud',
+    '09d': 'CloudRain', '09n': 'CloudRain',
+    '10d': 'CloudRain', '10n': 'CloudRain',
+    '11d': 'CloudLightning', '11n': 'CloudLightning',
+    '13d': 'CloudSnow', '13n': 'CloudSnow',
+    '50d': 'CloudFog', '50n': 'CloudFog',
 };
 
 
 async function fetchWeatherData(location: string): Promise<GetWeatherOutput | null> {
-    // Geocode the location to get latitude and longitude
-    const geocodeUrl = `https://geocode.maps.co/search?q=${encodeURIComponent(location)}`;
+    const apiKey = process.env.OPENWEATHERMAP_API_KEY;
+    if (!apiKey) {
+        console.error("OpenWeatherMap API key is not configured.");
+        return null;
+    }
+
+    // 1. Geocode the location to get latitude and longitude using OpenWeatherMap
+    const geocodeUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
     let geocodeResponse;
     try {
         geocodeResponse = await fetch(geocodeUrl);
@@ -70,8 +69,8 @@ async function fetchWeatherData(location: string): Promise<GetWeatherOutput | nu
     }
     const { lat, lon } = geocodeData[0];
 
-    // Fetch weather data from Open-Meteo
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,cloud_cover,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+    // 2. Fetch weather data from OpenWeatherMap using coordinates
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     let weatherResponse;
      try {
         weatherResponse = await fetch(weatherUrl);
@@ -85,25 +84,19 @@ async function fetchWeatherData(location: string): Promise<GetWeatherOutput | nu
     }
 
     const weatherData = await weatherResponse.json();
-    if (!weatherData.current || !weatherData.daily) {
+
+    if (!weatherData.main || !weatherData.weather || !weatherData.weather[0]) {
         console.error("Weather data is missing expected fields:", weatherData);
         return null;
     }
 
-    const conditionMap: { [key: number]: string } = {
-        0: 'Sunny', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
-        45: 'Fog', 48: 'Rime Fog', 51: 'Light Drizzle', 53: 'Drizzle', 55: 'Heavy Drizzle',
-        61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain', 80: 'Slight Showers', 81: 'Showers',
-        82: 'Heavy Showers', 95: 'Thunderstorm'
-    };
-
     return {
-        temperature: Math.round(weatherData.current.temperature_2m),
-        high: Math.round(weatherData.daily.temperature_2m_max[0]),
-        low: Math.round(weatherData.daily.temperature_2m_min[0]),
-        condition: conditionMap[weatherData.current.weather_code] || 'Clear',
-        cloudCover: weatherData.current.cloud_cover,
-        icon: weatherCodeToIcon[weatherData.current.weather_code] || 'Sun',
+        temperature: Math.round(weatherData.main.temp),
+        high: Math.round(weatherData.main.temp_max),
+        low: Math.round(weatherData.main.temp_min),
+        condition: weatherData.weather[0].main, // e.g., "Clouds", "Rain"
+        cloudCover: weatherData.clouds.all, // Cloudiness percentage
+        icon: weatherCodeToIcon[weatherData.weather[0].icon] || 'Sun',
     };
 }
 

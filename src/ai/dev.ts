@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-config();
+config({ path: '.env' });
 
 import '@/ai/flows/scheme-navigator.ts';
 import '@/ai/flows/crop-disease-diagnosis.ts';
