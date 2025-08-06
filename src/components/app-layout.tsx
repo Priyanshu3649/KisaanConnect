@@ -7,6 +7,7 @@ import BottomNav from "@/components/bottom-nav";
 import VoiceNavigator from "./voice-navigator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type * as LucideIcons from "lucide-react";
+import Sidebar from "./sidebar";
 
 export interface NavItem {
   href: string;
@@ -15,33 +16,40 @@ export interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", icon: "UserRound", labelKey: "nav.profile" },
+  { href: "/dashboard", icon: "LayoutDashboard", labelKey: "nav.dashboard" },
   { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
   { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
   { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
   { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
+  { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
 ];
+
+// For mobile, we might want a different set/order
+const mobileNavItems: NavItem[] = [
+    { href: "/dashboard", icon: "UserRound", labelKey: "nav.profile" },
+    { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
+    { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
+    { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
+    { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
+    { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
+];
+
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   
-  const allNavItems: NavItem[] = [
-      ...navItems,
-      { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
-  ];
-  
-  // For the mobile bottom nav, we typically show fewer items.
-  const mobileNavItems = navItems;
-
   return (
-    <div className="flex flex-col min-h-screen w-full bg-background">
-      <AppHeader navItems={allNavItems} />
-      <main className="flex-grow p-4 md:p-6 pb-20 md:pb-6">
-        {children}
-      </main>
-      {isMobile && <BottomNav navItems={mobileNavItems} />}
-      <VoiceNavigator />
+     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
+      <Sidebar navItems={navItems} />
+      <div className="flex flex-col">
+        <AppHeader navItems={navItems} />
+        <main className="flex-grow p-4 md:p-6 pb-20 md:pb-6">
+            {children}
+        </main>
+        {isMobile && <BottomNav navItems={mobileNavItems} />}
+        <VoiceNavigator />
+      </div>
     </div>
   );
 }

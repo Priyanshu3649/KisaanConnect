@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Languages, Leaf } from "lucide-react";
+import { Languages, Leaf, Menu } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import UserNav from "./user-nav";
 import AlertMenu from "./alert-menu";
@@ -16,6 +16,8 @@ import Link from "next/link";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePathname } from "next/navigation";
 import type { NavItem } from "./app-layout";
+import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { cn } from "@/lib/utils";
 
 interface AppHeaderProps {
     navItems: NavItem[];
@@ -28,21 +30,48 @@ export default function AppHeader({ navItems }: AppHeaderProps) {
   const currentPage = navItems.find(item => item.href === pathname);
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-accent/80 backdrop-blur-sm px-4 md:px-6 text-accent-foreground">
-        <div className="flex-1">
-          <Link href="/dashboard" className="flex items-center gap-2 font-headline font-bold text-primary">
-            <Leaf className="h-7 w-7" />
-            <span className="text-2xl hidden md:inline-block">KisaanConnect</span>
-          </Link>
+    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <div className="flex items-center gap-2 md:hidden">
+         <Sheet>
+            <SheetTrigger asChild>
+                <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+                <nav className="grid gap-6 text-lg font-medium">
+                <Link
+                    href="/dashboard"
+                    className="flex items-center gap-2 text-lg font-semibold text-primary"
+                >
+                    <Leaf className="h-6 w-6" />
+                    <span className="sr-only">KisaanConnect</span>
+                </Link>
+                {navItems.map((item) => (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn("hover:text-foreground", pathname === item.href ? "text-foreground" : "text-muted-foreground")}
+                    >
+                        {t(item.labelKey as any)}
+                    </Link>
+                ))}
+                </nav>
+            </SheetContent>
+            </Sheet>
         </div>
         
-        {isMobile && currentPage && (
-          <div className="flex-1 text-center">
-            <h1 className="font-headline text-xl font-bold tracking-tight">
-              {t(currentPage.labelKey as any)}
+        <div className="flex-1 text-center md:text-left">
+            <h1 className="font-semibold text-xl tracking-tight hidden md:block">
+              {currentPage ? t(currentPage.labelKey as any) : "Dashboard"}
             </h1>
-          </div>
-        )}
+        </div>
+        
 
         <div className="flex-shrink-0 flex items-center gap-2">
             <AlertMenu />
