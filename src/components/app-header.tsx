@@ -30,14 +30,14 @@ export default function AppHeader({ navItems }: AppHeaderProps) {
   const currentPage = navItems.find(item => item.href === pathname);
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-primary/20 bg-primary text-primary-foreground px-4 md:px-6">
         <div className="flex items-center gap-2 md:hidden">
          <Sheet>
             <SheetTrigger asChild>
                 <Button
                 variant="outline"
                 size="icon"
-                className="shrink-0"
+                className="shrink-0 text-primary-foreground border-primary-foreground/50 hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
@@ -77,7 +77,7 @@ export default function AppHeader({ navItems }: AppHeaderProps) {
             <AlertMenu />
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 focus-visible:ring-primary-foreground">
                         <Languages className="h-5 w-5" />
                         <span className="sr-only">Change Language</span>
                     </Button>
