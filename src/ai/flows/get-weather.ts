@@ -121,7 +121,7 @@ const getWeatherFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-        if (!input.location) {
+        if (!input || !input.location) {
             console.error("getWeatherFlow called with no location.");
             return null;
         }
