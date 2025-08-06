@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -47,34 +48,51 @@ const weatherCodeToIcon: Record<number, GetWeatherOutput["icon"]> = {
 };
 
 
-async function fetchWeatherData(location: string) {
+async function fetchWeatherData(location: string): Promise<GetWeatherOutput | null> {
     // Geocode the location to get latitude and longitude
     const geocodeUrl = `https://geocode.maps.co/search?q=${encodeURIComponent(location)}`;
-    const geocodeResponse = await fetch(geocodeUrl);
-    if (!geocodeResponse.ok) {
-        console.error("Geocoding failed:", await geocodeResponse.text());
+    let geocodeResponse;
+    try {
+        geocodeResponse = await fetch(geocodeUrl);
+        if (!geocodeResponse.ok) {
+            console.error("Geocoding API request failed:", geocodeResponse.status, await geocodeResponse.text());
+            return null;
+        }
+    } catch (error) {
+        console.error("Failed to fetch from Geocoding API:", error);
         return null;
     }
+    
     const geocodeData = await geocodeResponse.json();
     if (!geocodeData || geocodeData.length === 0) {
-        console.error("No geocoding results found for:", location);
+        console.error("No geocoding results found for location:", location);
         return null;
     }
     const { lat, lon } = geocodeData[0];
 
     // Fetch weather data from Open-Meteo
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,cloud_cover,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
-    const weatherResponse = await fetch(weatherUrl);
-     if (!weatherResponse.ok) {
-        console.error("Weather fetch failed:", await weatherResponse.text());
+    let weatherResponse;
+     try {
+        weatherResponse = await fetch(weatherUrl);
+        if (!weatherResponse.ok) {
+            console.error("Weather API request failed:", weatherResponse.status, await weatherResponse.text());
+            return null;
+        }
+    } catch (error) {
+        console.error("Failed to fetch from Weather API:", error);
         return null;
     }
+
     const weatherData = await weatherResponse.json();
-    if (!weatherData.current || !weatherData.daily) return null;
+    if (!weatherData.current || !weatherData.daily) {
+        console.error("Weather data is missing expected fields:", weatherData);
+        return null;
+    }
 
     const conditionMap: { [key: number]: string } = {
         0: 'Sunny', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
-        45: 'Fog', 46: 'Rime Fog', 51: 'Light Drizzle', 53: 'Drizzle', 55: 'Heavy Drizzle',
+        45: 'Fog', 48: 'Rime Fog', 51: 'Light Drizzle', 53: 'Drizzle', 55: 'Heavy Drizzle',
         61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain', 80: 'Slight Showers', 81: 'Showers',
         82: 'Heavy Showers', 95: 'Thunderstorm'
     };
@@ -103,6 +121,10 @@ const getWeatherFlow = ai.defineFlow(
   },
   async (input) => {
     try {
+        if (!input.location) {
+            console.error("getWeatherFlow called with no location.");
+            return null;
+        }
         const data = await fetchWeatherData(input.location);
         return data;
     } catch(error) {
