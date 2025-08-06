@@ -2,33 +2,47 @@
 'use server';
 
 /**
- * @fileOverview A service for fetching real-time weather data using OpenWeatherMap.
+ * @fileOverview A service for fetching real-time and forecast weather data using OpenWeatherMap.
  *
- * - getWeather - A function that returns current weather conditions for a given location.
+ * - getWeather - A function that returns current and forecasted weather conditions for a given location.
  * - GetWeatherInput - The input type for the getWeather function.
  * - GetWeatherOutput - The return type for the getWeather function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { format } from 'date-fns';
 
 const GetWeatherInputSchema = z.object({
   location: z.string().describe("The user's location (e.g., 'Pune, Maharashtra')."),
 });
 export type GetWeatherInput = z.infer<typeof GetWeatherInputSchema>;
 
-const GetWeatherOutputSchema = z.object({
-  temperature: z.number().describe('The current temperature in Celsius.'),
-  high: z.number().describe('The forecasted high temperature in Celsius.'),
-  low: z.number().describe('The forecasted low temperature in Celsius.'),
-  condition: z.string().describe('A brief description of the weather conditions (e.g., "Sunny", "Partly cloudy").'),
-  cloudCover: z.number().describe('The cloud cover percentage.'),
-  icon: z.enum(["Sun", "CloudSun", "Cloud", "CloudRain", "CloudSnow", "CloudFog", "CloudLightning"]).describe("An icon name representing the weather condition."),
+const DailyForecastSchema = z.object({
+    date: z.string().describe("The date for the forecast (e.g., 'Monday')."),
+    high: z.number().describe('The forecasted high temperature in Celsius.'),
+    low: z.number().describe('The forecasted low temperature in Celsius.'),
+    icon: z.enum(["Sun", "CloudSun", "Cloud", "CloudRain", "CloudSnow", "CloudFog", "CloudLightning"]).describe("An icon name representing the weather condition."),
 });
+
+const GetWeatherOutputSchema = z.object({
+  current: z.object({
+      temperature: z.number().describe('The current temperature in Celsius.'),
+      high: z.number().describe('The forecasted high temperature in Celsius.'),
+      low: z.number().describe('The forecasted low temperature in Celsius.'),
+      condition: z.string().describe('A brief description of the weather conditions (e.g., "Sunny", "Partly cloudy").'),
+      cloudCover: z.number().describe('The cloud cover percentage.'),
+      humidity: z.number().describe('The humidity percentage.'),
+      windSpeed: z.number().describe('The wind speed in km/h.'),
+      icon: z.enum(["Sun", "CloudSun", "Cloud", "CloudRain", "CloudSnow", "CloudFog", "CloudLightning"]).describe("An icon name representing the weather condition."),
+  }),
+  forecast: z.array(DailyForecastSchema).describe("A 5-day weather forecast."),
+});
+
 export type GetWeatherOutput = z.infer<typeof GetWeatherOutputSchema>;
 
 // Mapping from OpenWeatherMap icon codes to our icon set
-const weatherCodeToIcon: Record<string, GetWeatherOutput["icon"]> = {
+const weatherCodeToIcon: Record<string, GetWeatherOutput["current"]["icon"]> = {
     '01d': 'Sun', '01n': 'Sun',
     '02d': 'CloudSun', '02n': 'CloudSun',
     '03d': 'Cloud', '03n': 'Cloud',
@@ -69,35 +83,77 @@ async function fetchWeatherData(location: string): Promise<GetWeatherOutput | nu
     }
     const { lat, lon } = geocodeData[0];
 
-    // 2. Fetch weather data from OpenWeatherMap using coordinates
+    // 2. Fetch current weather and forecast data from OpenWeatherMap using coordinates
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-    let weatherResponse;
-     try {
-        weatherResponse = await fetch(weatherUrl);
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+    try {
+        const [weatherResponse, forecastResponse] = await Promise.all([
+            fetch(weatherUrl),
+            fetch(forecastUrl),
+        ]);
+
         if (!weatherResponse.ok) {
             console.error("Weather API request failed:", weatherResponse.status, await weatherResponse.text());
             return null;
         }
-    } catch (error) {
-        console.error("Failed to fetch from Weather API:", error);
+        if (!forecastResponse.ok) {
+            console.error("Forecast API request failed:", forecastResponse.status, await forecastResponse.text());
+            return null;
+        }
+
+        const weatherData = await weatherResponse.json();
+        const forecastData = await forecastResponse.json();
+
+        if (!weatherData.main || !weatherData.weather || !weatherData.weather[0]) {
+            console.error("Weather data is missing expected fields:", weatherData);
+            return null;
+        }
+        
+        // Process forecast data to get one entry per day
+        const dailyForecasts: { [key: string]: { highs: number[], lows: number[], icons: string[] } } = {};
+        forecastData.list.forEach((item: any) => {
+            const date = item.dt_txt.split(' ')[0]; // Get just the date part
+            if (!dailyForecasts[date]) {
+                dailyForecasts[date] = { highs: [], lows: [], icons: [] };
+            }
+            dailyForecasts[date].highs.push(item.main.temp_max);
+            dailyForecasts[date].lows.push(item.main.temp_min);
+            dailyForecasts[date].icons.push(item.weather[0].icon);
+        });
+
+        const processedForecast = Object.keys(dailyForecasts).slice(0, 5).map(date => {
+            const dayData = dailyForecasts[date];
+            const high = Math.round(Math.max(...dayData.highs));
+            const low = Math.round(Math.min(...dayData.lows));
+            // Find the most frequent icon for the day
+            const icon = dayData.icons.sort((a,b) => dayData.icons.filter(v => v===a).length - dayData.icons.filter(v => v===b).length).pop()!;
+            return {
+                date: format(new Date(date), 'EEEE'),
+                high,
+                low,
+                icon: weatherCodeToIcon[icon] || 'Sun',
+            };
+        });
+
+        return {
+            current: {
+                temperature: Math.round(weatherData.main.temp),
+                high: Math.round(weatherData.main.temp_max),
+                low: Math.round(weatherData.main.temp_min),
+                condition: weatherData.weather[0].main,
+                cloudCover: weatherData.clouds.all,
+                humidity: weatherData.main.humidity,
+                windSpeed: Math.round(weatherData.wind.speed * 3.6), // m/s to km/h
+                icon: weatherCodeToIcon[weatherData.weather[0].icon] || 'Sun',
+            },
+            forecast: processedForecast,
+        };
+
+    } catch(error) {
+        console.error("Failed to fetch from weather/forecast APIs:", error);
         return null;
     }
-
-    const weatherData = await weatherResponse.json();
-
-    if (!weatherData.main || !weatherData.weather || !weatherData.weather[0]) {
-        console.error("Weather data is missing expected fields:", weatherData);
-        return null;
-    }
-
-    return {
-        temperature: Math.round(weatherData.main.temp),
-        high: Math.round(weatherData.main.temp_max),
-        low: Math.round(weatherData.main.temp_min),
-        condition: weatherData.weather[0].main, // e.g., "Clouds", "Rain"
-        cloudCover: weatherData.clouds.all, // Cloudiness percentage
-        icon: weatherCodeToIcon[weatherData.weather[0].icon] || 'Sun',
-    };
 }
 
 

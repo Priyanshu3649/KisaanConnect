@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning } from "lucide-react";
+import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, Droplets, Wind } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -63,7 +63,7 @@ const StatCardSkeleton = () => (
     </Card>
 );
 
-const WeatherIcon = ({ iconName, ...props }: { iconName: GetWeatherOutput['icon'], [key: string]: any }) => {
+const WeatherIcon = ({ iconName, ...props }: { iconName: GetWeatherOutput['current']['icon'], [key: string]: any }) => {
     const icons: { [key: string]: React.ElementType } = {
         Sun, Cloud, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning
     };
@@ -231,7 +231,7 @@ export default function DashboardPage() {
         <Card>
             <CardHeader>
                 <CardTitle>{t('profile.weatherTitle')}</CardTitle>
-                <CardDescription>{t('profile.weatherDescription')}</CardDescription>
+                <CardDescription>{userData?.location ? t('profile.weatherDescription', {location: userData.location}) : t('profile.weatherDescriptionNoLocation')}</CardDescription>
             </CardHeader>
             <CardContent>
                 {isLoading ? (
@@ -241,20 +241,20 @@ export default function DashboardPage() {
                 ) : weatherData ? (
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <WeatherIcon iconName={weatherData.icon} className="h-12 w-12 text-yellow-500" />
+                            <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-yellow-500" />
                             <div>
-                                <div className="text-3xl font-bold">{weatherData.temperature}°C</div>
-                                <div className="text-muted-foreground">{weatherData.condition}</div>
+                                <div className="text-3xl font-bold">{weatherData.current.temperature}°C</div>
+                                <div className="text-muted-foreground">{weatherData.current.condition}</div>
                             </div>
                         </div>
                         <div className="flex flex-col items-end text-sm">
-                            <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.high}° / L: {weatherData.low}°</div>
-                            <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.cloudCover}%</div>
+                            <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
+                            <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
                         </div>
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-4">
-                        Could not load weather data.
+                        {t('profile.weatherError')}
                     </div>
                 )}
             </CardContent>

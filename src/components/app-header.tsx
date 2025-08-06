@@ -13,11 +13,11 @@ import { useTranslation } from "@/context/translation-context";
 import UserNav from "./user-nav";
 import AlertMenu from "./alert-menu";
 import Link from "next/link";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { usePathname } from "next/navigation";
 import type { NavItem } from "./app-layout";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { cn } from "@/lib/utils";
+import * as LucideIcons from 'lucide-react';
 
 interface AppHeaderProps {
     navItems: NavItem[];
@@ -25,7 +25,6 @@ interface AppHeaderProps {
 
 export default function AppHeader({ navItems }: AppHeaderProps) {
   const { setLanguage, language, t } = useTranslation();
-  const isMobile = useIsMobile();
   const pathname = usePathname();
   const currentPage = navItems.find(item => item.href === pathname);
 
@@ -43,24 +42,32 @@ export default function AppHeader({ navItems }: AppHeaderProps) {
                 <span className="sr-only">Toggle navigation menu</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left">
-                <nav className="grid gap-6 text-lg font-medium">
+            <SheetContent side="left" className="flex flex-col">
+                <nav className="grid gap-2 text-lg font-medium">
                 <Link
                     href="/dashboard"
-                    className="flex items-center gap-2 text-lg font-semibold text-primary"
+                    className="flex items-center gap-2 text-lg font-semibold text-primary mb-4"
                 >
                     <Leaf className="h-6 w-6" />
-                    <span className="sr-only">KisaanConnect</span>
+                    <span className="">KisaanConnect</span>
                 </Link>
-                {navItems.map((item) => (
+                {navItems.map((item) => {
+                  const Icon = LucideIcons[item.icon] as React.ElementType;
+                  const isActive = pathname === item.href;
+                  return (
                     <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn("hover:text-foreground", pathname === item.href ? "text-foreground" : "text-muted-foreground")}
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
+                        isActive && "bg-muted text-foreground"
+                      )}
                     >
-                        {t(item.labelKey as any)}
+                      <Icon className="h-5 w-5" />
+                      {t(item.labelKey as any)}
                     </Link>
-                ))}
+                  )
+                })}
                 </nav>
             </SheetContent>
             </Sheet>

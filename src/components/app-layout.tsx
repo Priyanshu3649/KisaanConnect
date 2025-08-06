@@ -18,6 +18,7 @@ export interface NavItem {
 const navItems: NavItem[] = [
   { href: "/dashboard", icon: "LayoutDashboard", labelKey: "nav.dashboard" },
   { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
+  { href: "/dashboard/weather", icon: "CloudSun", labelKey: "nav.weather" },
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
   { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
   { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
@@ -25,14 +26,13 @@ const navItems: NavItem[] = [
   { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
 ];
 
-// For mobile, we might want a different set/order
+// For mobile, we have a different set for the bottom nav
 const mobileNavItems: NavItem[] = [
     { href: "/dashboard", icon: "UserRound", labelKey: "nav.profile" },
     { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
     { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
     { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
     { href: "/dashboard/scheme-navigator", icon: "Sparkles", labelKey: "nav.schemeNavigator" },
-    { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
 ];
 
 

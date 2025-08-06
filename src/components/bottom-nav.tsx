@@ -22,16 +22,15 @@ const gridClasses: { [key: number]: string } = {
     6: 'grid-cols-6',
     7: 'grid-cols-7',
     8: 'grid-cols-8',
-    // Add more if needed
 };
 
 export default function BottomNav({ navItems }: BottomNavProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const gridClass = gridClasses[navItems.length] || 'grid-cols-6';
+  const gridClass = gridClasses[navItems.length] || 'grid-cols-5';
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-accent border-t border-accent/50 text-accent-foreground">
+    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-primary/95 backdrop-blur-sm border-t border-primary/20 text-primary-foreground">
       <div className={cn("grid h-full max-w-lg mx-auto font-medium", gridClass)}>
         {navItems.map((item) => {
           const Icon = LucideIcons[item.icon] as React.ElementType;
@@ -43,8 +42,8 @@ export default function BottomNav({ navItems }: BottomNavProps) {
                   <Link
                     href={item.href}
                     className={cn(
-                        "inline-flex flex-col items-center justify-center px-2 sm:px-5 hover:bg-black/10 group",
-                        isActive ? "text-primary-foreground bg-black/10" : ""
+                        "inline-flex flex-col items-center justify-center px-2 sm:px-5 hover:bg-black/10 group rounded-lg",
+                        isActive ? "text-background bg-black/20" : "text-primary-foreground/80"
                     )}
                   >
                     <Icon className="w-6 h-6 mb-1" />
