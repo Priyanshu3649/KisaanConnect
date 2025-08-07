@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useMemo } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import dynamic from 'next/dynamic';
+import { useEffect } from "react";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
