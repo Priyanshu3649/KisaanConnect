@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const SchemeEligibilityInputSchema = z.object({
+const SchemeEligibilityInputSchema = z.object({
   schemeName: z.string().describe('The name of the government scheme.'),
   landSizeInAcres: z.number().describe('The user\'s land size in acres.'),
   annualIncome: z.number().describe('The user\'s total annual income in INR.'),
@@ -19,7 +19,7 @@ export const SchemeEligibilityInputSchema = z.object({
 });
 export type SchemeEligibilityInput = z.infer<typeof SchemeEligibilityInputSchema>;
 
-export const SchemeEligibilityOutputSchema = z.object({
+const SchemeEligibilityOutputSchema = z.object({
   isEligible: z.boolean().describe('Whether the user is likely eligible for the scheme.'),
   reasoning: z.string().describe('A detailed explanation of why the user is or is not eligible.'),
   benefits: z.array(z.string()).describe('A list of key benefits provided by the scheme.'),
