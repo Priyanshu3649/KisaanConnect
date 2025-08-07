@@ -93,8 +93,10 @@ const VoiceNavigator = () => {
         recognitionRef.current.start();
       } catch(e) {
         console.error("Error starting recognition:", e);
-        if ((e as DOMException).name !== 'InvalidStateError') {
-          toast({ variant: "destructive", title: t('voice.micError'), description: (e as Error).message });
+        if ((e as DOMException).name === 'InvalidStateError') {
+             toast({ variant: "destructive", title: t('voice.micError'), description: "The microphone is already active. Please wait." });
+        } else {
+            toast({ variant: "destructive", title: t('voice.micError'), description: (e as Error).message });
         }
       }
     }
