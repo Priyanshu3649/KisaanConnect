@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -30,14 +31,12 @@ const MapEvents = ({ setMarkerPosition }: { setMarkerPosition: (position: [numbe
 };
 
 const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) => {
-
     return (
         <MapContainer 
             center={markerPosition} 
             zoom={13} 
             scrollWheelZoom={false}
             style={{ height: '100%', width: '100%' }}
-            key={markerPosition.join('_')} // Force re-render when position changes
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -49,4 +48,4 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
     );
 };
 
-export default MapComponent;
+export default React.memo(MapComponent);
