@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save } from "lucide-react";
+import { Map as MapIcon, Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -14,11 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import dynamic from 'next/dynamic';
-import { useEffect } from "react";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
-    loading: () => <div className="flex items-center justify-center w-full h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>
+    loading: () => <div className="flex items-center justify-center w-full h-full bg-muted"><Loader2 className="w-8 h-8 animate-spin" /></div>
 });
 
 const severityColors = {
@@ -44,8 +43,7 @@ export default function DigitalTwinPage() {
   const [width, setWidth] = useState("");
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([18.5204, 73.8567]); // Default to Pune
 
-
-  useEffect(() => {
+  useMemo(() => {
     if (selectedFieldId) {
       setIsLoading(true);
       getDigitalTwinData({ fieldId: selectedFieldId })
@@ -69,6 +67,13 @@ export default function DigitalTwinPage() {
     });
   };
 
+  const handleSetLocation = () => {
+    toast({
+        title: "Location Set",
+        description: `Field location confirmed at coordinates: ${markerPosition[0].toFixed(4)}, ${markerPosition[1].toFixed(4)}`,
+    });
+  };
+
   const calculatedYield = useMemo(() => {
     if (!data) return null;
     const lengthNum = parseFloat(length);
@@ -80,10 +85,9 @@ export default function DigitalTwinPage() {
       const totalYield = areaAcres * data.expectedYield.value;
       return {
         value: totalYield.toFixed(2),
-        unit: "quintals", // The unit is now absolute for the field
+        unit: "quintals",
       };
     }
-    // Default to per-unit value if dimensions are not set
     return {
       value: data.expectedYield.value.toFixed(2),
       unit: data.expectedYield.unit,
@@ -104,11 +108,17 @@ export default function DigitalTwinPage() {
                     <CardTitle>{t('digitalTwin.fieldMapTitle')}</CardTitle>
                     <CardDescription>{t('digitalTwin.fieldMapDescription')}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                        <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
+                <CardContent className="p-0">
+                    <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
+                       <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
                     </div>
                 </CardContent>
+                 <CardFooter className="flex justify-end pt-4">
+                    <Button onClick={handleSetLocation}>
+                        <Pin className="mr-2 h-4 w-4" />
+                        Set Location
+                    </Button>
+                </CardFooter>
             </Card>
 
             <Card>
@@ -185,4 +195,6 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
             <p className="font-bold text-lg">{value}</p>
         </div>
     </div>
-)
+);
+
+    
