@@ -15,6 +15,7 @@ import wav from 'wav';
 
 const AiAssistantInputSchema = z.object({
   query: z.string().describe('The question about government subsidies, crop advice, or market prices.'),
+  language: z.string().optional().describe('The language for the response (e.g., "en" or "hi").'),
 });
 export type AiAssistantInput = z.infer<typeof AiAssistantInputSchema>;
 
@@ -29,6 +30,16 @@ export async function aiAssistant(input: AiAssistantInput): Promise<AiAssistantO
   return aiAssistantFlow(input);
 }
 
+// Map language codes to specific TTS voices for better quality
+const languageToVoice: Record<string, string> = {
+    'en': 'Algenib', // English
+    'hi': 'en-IN-Wavenet-D', // Hindi (using a high-quality en-IN voice as a proxy)
+    'pa': 'en-IN-Wavenet-D', // Punjabi (proxy)
+    'mr': 'en-IN-Wavenet-D', // Marathi (proxy)
+    'ta': 'ta-IN-Wavenet-A', // Tamil
+    'te': 'te-IN-Standard-A', // Telugu
+}
+
 const aiAssistantPrompt = ai.definePrompt({
   name: 'aiAssistantPrompt',
   input: {schema: AiAssistantInputSchema},
@@ -36,13 +47,13 @@ const aiAssistantPrompt = ai.definePrompt({
       summary: z.string().describe('A concise, direct answer to the user\'s question.'),
       reasoning: z.string().describe('A brief explanation of the reasoning or context behind the summary.'),
   })},
-  prompt: `You are an expert AI assistant for Indian farmers. Your name is KisaanConnect Assistant. Answer the user's question in a clear, easy-to-understand way.
+  prompt: `You are an expert AI assistant for Indian farmers. Your name is KisaanConnect Assistant. Answer the user's question in a clear, easy-to-understand way, in the language of their query.
 
-The user's question could be about government schemes, crop management, pest control, market prices, or general farming advice.
+The user's question could be about government schemes, crop management, pest control, market prices, or general farming advice. It could also be a simple greeting.
 
 Your response must have two parts:
-1.  **Summary:** A direct and concise answer to the question.
-2.  **Reasoning:** A brief explanation providing more context, sources, or the "why" behind your answer.
+1.  **Summary:** A direct and concise answer to the question. For a simple greeting like "Hello", this could be "Hi there!".
+2.  **Reasoning:** A brief explanation providing more context, sources, or the "why" behind your answer. For a simple greeting, this could be "How can I help you today?".
 
 Question: {{{query}}}
 `,
@@ -57,6 +68,7 @@ const aiAssistantFlow = ai.defineFlow(
   async input => {
     const {output} = await aiAssistantPrompt(input);
     const textToSpeak = `Summary: ${output?.summary}\nReasoning: ${output?.reasoning}`;
+    const voice = languageToVoice[input.language || 'en'] || 'Algenib';
 
     // Convert the summary and reasoning to speech
     const ttsResult = await ai.generate({
@@ -65,7 +77,7 @@ const aiAssistantFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'Algenib'},
+            prebuiltVoiceConfig: {voiceName: voice},
           },
         },
       },

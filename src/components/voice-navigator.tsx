@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { processVoiceCommand } from '@/ai/flows/voice-navigator';
+import { aiAssistant } from '@/ai/flows/ai-assistant';
 import { useTranslation } from '@/context/translation-context';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { useAudioPlayer } from '@/context/audio-player-context';
+
 
 const languageToCode: { [key: string]: string } = {
   en: 'en-US',
@@ -20,20 +23,20 @@ const languageToCode: { [key: string]: string } = {
   te: 'te-IN',
 };
 
-const VoiceNavigator = () => {
+const VoiceAssistant = () => {
   const { t, language } = useTranslation();
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+  const { playAudio } = useAudioPlayer();
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window)) {
       return;
     }
 
-    // Abort any existing recognition
     if (recognitionRef.current) {
         recognitionRef.current.abort();
     }
@@ -55,16 +58,22 @@ const VoiceNavigator = () => {
       toast({ title: t('voice.processing'), description: `${t('voice.heard')}: "${command}"` });
 
       try {
-        const result = await processVoiceCommand({ command, language });
-        if (result.action === 'navigate' && result.route) {
-          router.push(result.route);
-          toast({ title: t('voice.navigating'), description: result.reasoning });
-        } else if (result.action === 'logout') {
+        // First, try to process as a navigation command
+        const navResult = await processVoiceCommand({ command, language });
+        if (navResult.action === 'navigate' && navResult.route) {
+          router.push(navResult.route);
+          toast({ title: t('voice.navigating'), description: navResult.reasoning });
+        } else if (navResult.action === 'logout') {
           await signOut(auth);
           router.push('/');
-          toast({ title: t('voice.loggingOut'), description: result.reasoning });
+          toast({ title: t('voice.loggingOut'), description: navResult.reasoning });
         } else {
-          toast({ variant: 'destructive', title: t('voice.notUnderstood'), description: result.reasoning });
+          // If not a navigation command, treat as a general query
+          const assistantResult = await aiAssistant({ query: command, language });
+          if (assistantResult.audio) {
+            playAudio(assistantResult.audio);
+          }
+          toast({ title: "KisaanConnect Assistant", description: assistantResult.summary });
         }
       } catch (error) {
         console.error('Voice command processing failed:', error);
@@ -85,16 +94,15 @@ const VoiceNavigator = () => {
 
     recognition.onend = () => {
       setIsListening(false);
-      setIsProcessing(false);
+      // Don't set processing to false here, as it may still be processing async
     };
     
-    // Cleanup function to abort recognition on component unmount or language change
     return () => {
         if (recognitionRef.current) {
             recognitionRef.current.abort();
         }
     }
-  }, [language, router, t, toast]);
+  }, [language, router, t, toast, playAudio]);
 
 
   const handleMicClick = () => {
@@ -110,9 +118,7 @@ const VoiceNavigator = () => {
         recognitionRef.current.start();
       } catch (e) {
         console.error('Error starting recognition:', e);
-        if ((e as DOMException).name === 'InvalidStateError') {
-          // This can happen if start() is called while it's already running.
-          // The isListening/isProcessing state should prevent this, but as a safeguard:
+         if ((e as DOMException).name === 'InvalidStateError') {
           toast({ variant: 'destructive', title: t('voice.micError'), description: 'The microphone is already active. Please wait.' });
         } else {
           toast({ variant: 'destructive', title: t('voice.micError'), description: (e as Error).message });
@@ -148,4 +154,4 @@ declare global {
   }
 }
 
-export default VoiceNavigator;
+export default VoiceAssistant;

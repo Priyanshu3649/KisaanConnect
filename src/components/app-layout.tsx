@@ -4,10 +4,11 @@
 import React from "react";
 import AppHeader from "@/components/app-header";
 import BottomNav from "@/components/bottom-nav";
-import VoiceNavigator from "./voice-navigator";
+import VoiceAssistant from "./voice-navigator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type * as LucideIcons from "lucide-react";
 import Sidebar from "./sidebar";
+import { AudioPlayerProvider } from "@/context/audio-player-context";
 
 export interface NavItem {
   href: string;
@@ -42,6 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   
   return (
+    <AudioPlayerProvider>
      <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
       <Sidebar navItems={navItems} />
       <div className="flex flex-col">
@@ -50,8 +52,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
         </main>
         {isMobile && <BottomNav navItems={mobileNavItems} />}
-        <VoiceNavigator />
+        <VoiceAssistant />
       </div>
     </div>
+    </AudioPlayerProvider>
   );
 }
