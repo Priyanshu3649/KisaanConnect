@@ -1,20 +1,24 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map as MapIcon, Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import dynamic from 'next/dynamic';
 
-const MapComponent = lazy(() => import('@/components/map'));
+const MapComponent = dynamic(() => import('@/components/map'), { 
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center w-full h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>
+});
 
 const severityColors = {
   low: "bg-yellow-500",
@@ -31,7 +35,6 @@ const METERS_PER_ACRE = 4046.86;
 
 export default function DigitalTwinPage() {
   const { t } = useTranslation();
-  // Let's use a more descriptive field ID for clarity
   const [selectedFieldId, setSelectedFieldId] = useState<string>("field_pune_1");
   const [data, setData] = useState<DigitalTwinOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,7 +97,6 @@ export default function DigitalTwinPage() {
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-            {/* Map and Field Selection */}
             <Card>
                 <CardHeader>
                     <CardTitle>{t('digitalTwin.fieldMapTitle')}</CardTitle>
@@ -102,14 +104,11 @@ export default function DigitalTwinPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                        <Suspense fallback={<div className="flex items-center justify-center w-full h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
-                            <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
-                        </Suspense>
+                        <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Field Configuration */}
             <Card>
                 <CardHeader>
                     <CardTitle>{t('digitalTwin.configTitle')}</CardTitle>
@@ -134,7 +133,6 @@ export default function DigitalTwinPage() {
             </Card>
         </div>
 
-        {/* Key Metrics and Alerts */}
         <div className="space-y-6">
             <Card>
                 <CardHeader>
