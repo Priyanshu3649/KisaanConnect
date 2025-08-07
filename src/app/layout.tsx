@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 import { TranslationProvider } from '@/context/translation-context';
 import { ThemeProvider } from '@/context/theme-provider';
+import 'leaflet/dist/leaflet.css';
+
 
 export const metadata: Metadata = {
   title: 'KisaanConnect',

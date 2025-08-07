@@ -1,18 +1,20 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map, Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save } from "lucide-react";
+import { Map as MapIcon, Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+const MapComponent = lazy(() => import('@/components/map'));
 
 const severityColors = {
   low: "bg-yellow-500",
@@ -29,17 +31,19 @@ const METERS_PER_ACRE = 4046.86;
 
 export default function DigitalTwinPage() {
   const { t } = useTranslation();
-  const [selectedField, setSelectedField] = useState<string | null>("field_1");
+  // Let's use a more descriptive field ID for clarity
+  const [selectedFieldId, setSelectedFieldId] = useState<string>("field_pune_1");
   const [data, setData] = useState<DigitalTwinOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [length, setLength] = useState("");
   const [width, setWidth] = useState("");
+  const [markerPosition, setMarkerPosition] = useState<[number, number] | null>([18.5204, 73.8567]); // Default to Pune
 
   useEffect(() => {
-    if (selectedField) {
+    if (selectedFieldId) {
       setIsLoading(true);
-      getDigitalTwinData({ fieldId: selectedField })
+      getDigitalTwinData({ fieldId: selectedFieldId })
         .then(setData)
         .catch(err => {
           console.error("Failed to get digital twin data", err);
@@ -51,7 +55,7 @@ export default function DigitalTwinPage() {
         })
         .finally(() => setIsLoading(false));
     }
-  }, [selectedField, toast, t]);
+  }, [selectedFieldId, toast, t]);
 
   const handleSaveConfiguration = () => {
     toast({
@@ -92,31 +96,17 @@ export default function DigitalTwinPage() {
         <div className="lg:col-span-2 space-y-6">
             {/* Map and Field Selection */}
             <Card>
-            <CardHeader>
-                <CardTitle>{t('digitalTwin.fieldMapTitle')}</CardTitle>
-                <CardDescription>{t('digitalTwin.fieldMapDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                    {/* This is a placeholder for a real map component */}
-                    <img src="https://placehold.co/800x450.png" alt="Map of fields" className="w-full h-full object-cover" data-ai-hint="map farm" />
-                    <div className="absolute inset-0 bg-black/20"></div>
-                    
-                    {/* Simulated Field Polygons */}
-                    <div 
-                        className={`absolute w-1/3 h-1/2 top-4 left-4 border-2 cursor-pointer transition-all duration-300 ${selectedField === 'field_1' ? 'bg-primary/50 border-primary' : 'bg-white/30 border-white hover:bg-primary/30'}`}
-                        onClick={() => setSelectedField('field_1')}
-                    >
-                        <span className="absolute bottom-1 right-1 text-white text-xs bg-black/50 px-1 rounded-sm">Field 1</span>
+                <CardHeader>
+                    <CardTitle>{t('digitalTwin.fieldMapTitle')}</CardTitle>
+                    <CardDescription>{t('digitalTwin.fieldMapDescription')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
+                        <Suspense fallback={<div className="flex items-center justify-center w-full h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+                            <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
+                        </Suspense>
                     </div>
-                    <div 
-                        className={`absolute w-1/2 h-1/3 bottom-4 right-4 border-2 cursor-pointer transition-all duration-300 ${selectedField === 'field_2' ? 'bg-primary/50 border-primary' : 'bg-white/30 border-white hover:bg-primary/30'}`}
-                        onClick={() => setSelectedField('field_2')}
-                    >
-                        <span className="absolute bottom-1 right-1 text-white text-xs bg-black/50 px-1 rounded-sm">Field 2</span>
-                    </div>
-                </div>
-            </CardContent>
+                </CardContent>
             </Card>
 
             {/* Field Configuration */}
@@ -196,5 +186,3 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
         </div>
     </div>
 )
-
-    
