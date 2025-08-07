@@ -37,6 +37,7 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
             zoom={13} 
             scrollWheelZoom={false}
             style={{ height: '100%', width: '100%' }}
+            key={markerPosition.join('_')} // Force re-render when position changes
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

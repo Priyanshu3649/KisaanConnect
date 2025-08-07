@@ -41,12 +41,7 @@ export default function DigitalTwinPage() {
   const { toast } = useToast();
   const [length, setLength] = useState("");
   const [width, setWidth] = useState("");
-  const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(null);
-
-  useEffect(() => {
-    // Set default position only on client-side
-    setMarkerPosition([18.5204, 73.8567]); // Default to Pune
-  }, []);
+  const [markerPosition, setMarkerPosition] = useState<[number, number]>([18.5204, 73.8567]); // Default to Pune
 
 
   useEffect(() => {
@@ -110,7 +105,7 @@ export default function DigitalTwinPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                        {markerPosition && <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />}
+                        <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
                     </div>
                 </CardContent>
             </Card>
