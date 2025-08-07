@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 config({ path: '.env' });
 
-import '@/ai/flows/scheme-navigator.ts';
+import '@/ai/flows/ai-assistant.ts';
 import '@/ai/flows/crop-disease-diagnosis.ts';
 import '@/ai/flows/submit-feedback.ts';
 import '@/ai/flows/voice-navigator.ts';

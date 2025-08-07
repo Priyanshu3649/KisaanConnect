@@ -1,10 +1,10 @@
 // 'use server';
 /**
- * @fileOverview A government scheme navigator AI agent. This agent allows farmers to ask questions about government subsidies and receive instant voice-based answers with summarized information and reasoning.
+ * @fileOverview An AI assistant for farmers. This agent allows farmers to ask questions about government subsidies, crop advice, or market prices and receive instant voice-based answers with summarized information and reasoning.
  *
- * - schemeNavigator - A function that handles the scheme navigation process.
- * - SchemeNavigatorInput - The input type for the schemeNavigator function.
- * - SchemeNavigatorOutput - The return type for the schemeNavigator function.
+ * - aiAssistant - A function that handles the AI assistant process.
+ * - AiAssistantInput - The input type for the aiAssistant function.
+ * - AiAssistantOutput - The return type for the aiAssistant function.
  */
 
 'use server';
@@ -13,25 +13,25 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import wav from 'wav';
 
-const SchemeNavigatorInputSchema = z.object({
+const AiAssistantInputSchema = z.object({
   query: z.string().describe('The question about government subsidies, crop advice, or market prices.'),
 });
-export type SchemeNavigatorInput = z.infer<typeof SchemeNavigatorInputSchema>;
+export type AiAssistantInput = z.infer<typeof AiAssistantInputSchema>;
 
-const SchemeNavigatorOutputSchema = z.object({
+const AiAssistantOutputSchema = z.object({
   summary: z.string().describe('A concise, direct answer to the user\'s question.'),
   reasoning: z.string().describe('A brief explanation of the reasoning or context behind the summary.'),
   audio: z.string().describe('The voice-based answer in base64 encoded WAV format.'),
 });
-export type SchemeNavigatorOutput = z.infer<typeof SchemeNavigatorOutputSchema>;
+export type AiAssistantOutput = z.infer<typeof AiAssistantOutputSchema>;
 
-export async function schemeNavigator(input: SchemeNavigatorInput): Promise<SchemeNavigatorOutput> {
-  return schemeNavigatorFlow(input);
+export async function aiAssistant(input: AiAssistantInput): Promise<AiAssistantOutput> {
+  return aiAssistantFlow(input);
 }
 
-const schemeNavigatorPrompt = ai.definePrompt({
-  name: 'schemeNavigatorPrompt',
-  input: {schema: SchemeNavigatorInputSchema},
+const aiAssistantPrompt = ai.definePrompt({
+  name: 'aiAssistantPrompt',
+  input: {schema: AiAssistantInputSchema},
   output: {schema: z.object({
       summary: z.string().describe('A concise, direct answer to the user\'s question.'),
       reasoning: z.string().describe('A brief explanation of the reasoning or context behind the summary.'),
@@ -48,14 +48,14 @@ Question: {{{query}}}
 `,
 });
 
-const schemeNavigatorFlow = ai.defineFlow(
+const aiAssistantFlow = ai.defineFlow(
   {
-    name: 'schemeNavigatorFlow',
-    inputSchema: SchemeNavigatorInputSchema,
-    outputSchema: SchemeNavigatorOutputSchema,
+    name: 'aiAssistantFlow',
+    inputSchema: AiAssistantInputSchema,
+    outputSchema: AiAssistantOutputSchema,
   },
   async input => {
-    const {output} = await schemeNavigatorPrompt(input);
+    const {output} = await aiAssistantPrompt(input);
     const textToSpeak = `Summary: ${output?.summary}\nReasoning: ${output?.reasoning}`;
 
     // Convert the summary and reasoning to speech

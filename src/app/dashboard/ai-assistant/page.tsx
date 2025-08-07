@@ -10,17 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Mic, Send, Volume2 } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
-import { schemeNavigator, SchemeNavigatorOutput } from "@/ai/flows/scheme-navigator";
+import { aiAssistant, AiAssistantOutput } from "@/ai/flows/ai-assistant";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 
-export default function SchemeNavigatorPage() {
+export default function AiAssistantPage() {
     const { t } = useTranslation();
     const [query, setQuery] = useState("");
     const [lastQuery, setLastQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [result, setResult] = useState<SchemeNavigatorOutput | null>(null);
+    const [result, setResult] = useState<AiAssistantOutput | null>(null);
     const [user] = useAuthState(auth);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const { toast } = useToast();
@@ -35,7 +35,7 @@ export default function SchemeNavigatorPage() {
         setResult(null);
 
         try {
-            const res = await schemeNavigator({ query });
+            const res = await aiAssistant({ query });
             setResult(res);
             if (res.audio && audioRef.current) {
                 audioRef.current.src = res.audio;
@@ -62,7 +62,7 @@ export default function SchemeNavigatorPage() {
     return (
         <AppLayout>
             <PageHeader
-                title={t('nav.schemeNavigator')}
+                title={t('nav.aiAssistant')}
                 description={t('schemes.pageDescription')}
             />
             <div className="flex justify-center">

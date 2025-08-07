@@ -55,8 +55,8 @@ export default function Sidebar({ navItems }: SidebarProps) {
                     <div className="mt-4 text-center">
                     <h2 className="font-semibold">{t('schemes.assistantName')}</h2>
                     <p className="text-xs text-muted-foreground mt-1 mb-2">{t('schemes.pageDescription')}</p>
-                    <Link href="/dashboard/scheme-navigator">
-                        <Button size="sm" className="w-full">{t('nav.schemeNavigator')}</Button>
+                    <Link href="/dashboard/ai-assistant">
+                        <Button size="sm" className="w-full">{t('nav.aiAssistant')}</Button>
                     </Link>
                     </div>
                 </CardContent>

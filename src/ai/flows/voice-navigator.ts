@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -42,7 +43,8 @@ const prompt = ai.definePrompt({
     - /dashboard/crop-diagnosis (Crop Diagnosis, fasal rog)
     - /dashboard/mandi-prices (Mandi Prices, mandi bhav)
     - /dashboard/equipment-rentals (Equipment Rentals, upkaran)
-    - /dashboard/scheme-navigator (Scheme Navigator, sarkari yojana)
+    - /dashboard/government-schemes (Government Schemes, sarkari yojana)
+    - /dashboard/ai-assistant (AI Assistant, AI sahayak)
     - /dashboard/organics-support (Organics Support, jaivik kheti)
     - /dashboard/help-feedback (Help & Feedback, sahayata)
     
