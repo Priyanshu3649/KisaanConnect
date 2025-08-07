@@ -1,7 +1,4 @@
 
-"use client";
-
-import { useIsMobile } from "@/hooks/use-mobile";
 import { AudioPlayerProvider } from "@/context/audio-player-context";
 import AppLayout from "@/components/app-layout";
 import { PermissionsProvider } from "@/context/permissions-context";

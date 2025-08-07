@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,7 +100,7 @@ export default function DigitalTwinPage() {
 
 
   return (
-    <AppLayout>
+    <>
       <PageHeader
         title={t('nav.digitalTwin')}
         description={t('digitalTwin.pageDescription')}
@@ -188,7 +187,7 @@ export default function DigitalTwinPage() {
             </Card>
         </div>
       </div>
-    </AppLayout>
+    </>
   );
 }
 

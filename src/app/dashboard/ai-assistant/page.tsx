@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,7 +59,7 @@ export default function AiAssistantPage() {
     }
 
     return (
-        <AppLayout>
+        <>
             <PageHeader
                 title={t('nav.aiAssistant')}
                 description={t('schemes.pageDescription')}
@@ -163,6 +162,6 @@ export default function AiAssistantPage() {
                     </CardContent>
                 </Card>
             </div>
-        </AppLayout>
+        </>
     );
 }

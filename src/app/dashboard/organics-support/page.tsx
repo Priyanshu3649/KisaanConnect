@@ -1,7 +1,6 @@
 
 "use client";
 
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -58,7 +57,7 @@ const faqs = [
 export default function OrganicsSupportPage() {
   const { t } = useTranslation();
   return (
-    <AppLayout>
+    <>
       <PageHeader
         title={t('nav.organicsSupport')}
         description={t('organics.pageDescription')}
@@ -99,6 +98,6 @@ export default function OrganicsSupportPage() {
             </Accordion>
         </CardContent>
       </Card>
-    </AppLayout>
+    </>
   );
 }

@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,7 +53,7 @@ export default function WeatherPage() {
     }, []);
 
     return (
-        <AppLayout>
+        <>
             <PageHeader
                 title={t('nav.weather')}
                 description={!isLoading ? locationStatus : "Fetching weather data..."}
@@ -129,6 +128,6 @@ export default function WeatherPage() {
                     <CardDescription>{t('weather.errorDesc')}</CardDescription>
                 </Card>
             )}
-        </AppLayout>
+        </>
     );
 }

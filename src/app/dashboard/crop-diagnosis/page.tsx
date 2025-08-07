@@ -1,8 +1,8 @@
+
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,7 +119,7 @@ export default function CropDiagnosisPage() {
   };
 
   return (
-    <AppLayout>
+    <>
       <PageHeader
         title={t('nav.cropDiagnosis')}
         description={t('cropDiagnosis.pageDescription')}
@@ -232,6 +232,6 @@ export default function CropDiagnosisPage() {
             )}
         </div>
       </div>
-    </AppLayout>
+    </>
   );
 }

@@ -1,7 +1,7 @@
+
 "use client";
 
 import { useState } from "react";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +65,7 @@ export default function HelpFeedbackPage() {
     };
 
     return (
-        <AppLayout>
+        <>
             <PageHeader
                 title={t('nav.helpAndFeedback')}
                 description={t('help.pageDescription')}
@@ -133,6 +133,6 @@ export default function HelpFeedbackPage() {
                     </form>
                 </Card>
             </div>
-        </AppLayout>
+        </>
     );
 }

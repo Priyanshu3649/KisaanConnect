@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import {
   Table,
@@ -132,7 +131,7 @@ export default function MandiPricesPage() {
 
 
   return (
-    <AppLayout>
+    <>
       <PageHeader
         title={t('nav.mandiPrices')}
         description={t('mandi.pageDescription')}
@@ -224,6 +223,6 @@ export default function MandiPricesPage() {
           </Table>
         </CardContent>
       </Card>
-    </AppLayout>
+    </>
   );
 }

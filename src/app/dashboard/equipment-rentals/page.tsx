@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,7 +109,7 @@ export default function EquipmentRentalsPage() {
         });
 
   return (
-    <AppLayout>
+    <>
       <PageHeader
         title={t('nav.equipmentRentals')}
         description={t('equipmentRentals.pageDescription')}
@@ -219,7 +218,6 @@ export default function EquipmentRentalsPage() {
           </Card>
         ))}
       </div>
-    </AppLayout>
+    </>
   );
 }
-

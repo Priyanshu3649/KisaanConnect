@@ -6,7 +6,6 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { doc, getDoc, collection, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -172,7 +171,7 @@ export default function DashboardPage() {
   const pageDescription = isLoading ? t('profile.loadingDesc') : t('profile.pageDescription');
 
   return (
-    <AppLayout>
+    <>
       <PageHeader
         title={getGreeting()}
         description={pageDescription}
@@ -374,6 +373,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </>
   );
 }

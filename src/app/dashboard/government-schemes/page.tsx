@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -165,7 +164,7 @@ export default function GovernmentSchemesPage() {
     const { t, language } = useTranslation();
 
     return (
-        <AppLayout>
+        <>
             <PageHeader
                 title={t('nav.governmentSchemes')}
                 description={t('schemes.pageHeaderDescription')}
@@ -198,6 +197,6 @@ export default function GovernmentSchemesPage() {
                     );
                 })}
             </div>
-        </AppLayout>
+        </>
     );
 }
