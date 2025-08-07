@@ -1,27 +1,89 @@
 
 'use client';
 
-import React, { createContext, useContext, useRef, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useRef, useCallback, ReactNode, useState } from 'react';
 
 interface AudioPlayerContextType {
-  playAudio: (audioSrc: string) => void;
+  playAudio: (audioSrc: string, onEnded?: () => void) => void;
+  playStartSound: () => void;
+  stopAudio: () => void;
+  isPlaying: boolean;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
 
 export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const onEndedCallbackRef = useRef<(() => void) | null>(null);
 
-  const playAudio = useCallback((audioSrc: string) => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+  // Initialize AudioContext on first user interaction
+  const initAudioContext = useCallback(() => {
+    if (!audioContextRef.current && typeof window !== 'undefined' && window.AudioContext) {
+      try {
+        audioContextRef.current = new window.AudioContext();
+      } catch (e) {
+        console.error("Failed to create AudioContext", e);
+      }
     }
-    audioRef.current.src = audioSrc;
-    audioRef.current.play().catch(error => console.error("Audio playback failed:", error));
   }, []);
 
+  const playStartSound = useCallback(() => {
+    initAudioContext();
+    if (!audioContextRef.current) return;
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+    const oscillator = audioContextRef.current.createOscillator();
+    const gainNode = audioContextRef.current.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContextRef.current.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioContextRef.current.currentTime);
+    gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
+    oscillator.start();
+    oscillator.stop(audioContextRef.current.currentTime + 0.1);
+  }, [initAudioContext]);
+
+  const handleAudioEnded = useCallback(() => {
+      setIsPlaying(false);
+      if(onEndedCallbackRef.current) {
+          onEndedCallbackRef.current();
+          onEndedCallbackRef.current = null; // Clear callback after execution
+      }
+  }, []);
+
+  const playAudio = useCallback((audioSrc: string, onEnded?: () => void) => {
+    initAudioContext();
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.addEventListener('ended', handleAudioEnded);
+      audioRef.current.addEventListener('pause', handleAudioEnded); // Also treat pause as ended for our purpose
+    }
+    
+    onEndedCallbackRef.current = onEnded || null;
+
+    audioRef.current.src = audioSrc;
+    audioRef.current.play().then(() => {
+        setIsPlaying(true);
+    }).catch(error => {
+        console.error("Audio playback failed:", error)
+        setIsPlaying(false);
+    });
+  }, [handleAudioEnded, initAudioContext]);
+
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      handleAudioEnded();
+    }
+  }, [handleAudioEnded]);
+
+
   return (
-    <AudioPlayerContext.Provider value={{ playAudio }}>
+    <AudioPlayerContext.Provider value={{ playAudio, playStartSound, stopAudio, isPlaying }}>
       {children}
     </AudioPlayerContext.Provider>
   );

@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -10,7 +11,9 @@ import 'leaflet/dist/leaflet.css';
 export const metadata: Metadata = {
   title: 'KisaanConnect',
   description: 'Empowering farmers with technology.',
-  icons: null,
+  icons: {
+    icon: '/logo.svg',
+  }
 };
 
 export default function RootLayout({
