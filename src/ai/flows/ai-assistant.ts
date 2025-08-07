@@ -77,7 +77,7 @@ const aiAssistantFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await aiAssistantPrompt(input);
-    const textToSpeak = `Summary: ${output?.summary}\nReasoning: ${output?.reasoning}`;
+    const textToSpeak = `${output?.summary}. ${output?.reasoning}`;
     const voice = languageToVoice[input.language || 'en'] || 'Algenib';
 
     // Convert the summary and reasoning to speech
