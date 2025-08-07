@@ -12,6 +12,8 @@
     "nav.digitalTwin": "ਡਿਜੀਟਲ ਟਵਿਨ",
     "nav.governmentSchemes": "ਸਰਕਾਰੀ ਯੋਜਨਾਵਾਂ",
 
+    "optional": "ਵਿਕਲਪਿਕ",
+
     "userNav.notifications": "ਸੂਚਨਾਵਾਂ",
     "userNav.user": "ਉਪਭੋਗਤਾ",
     "userNav.noEmail": "ਕੋਈ ਈਮੇਲ ਨਹੀਂ",
@@ -160,8 +162,8 @@
     "cropDiagnosis.confidence": "ਵਿਸ਼ਵਾਸ ਦਾ ਪੱਧਰ",
     "cropDiagnosis.recommendations": "ਸਿਫਾਰਸ਼ੀ ਕਾਰਵਾਈਆਂ",
     "cropDiagnosis.resultsPlaceholder": "ਤੁਹਾਡੇ ਨਿਦਾਨ ਦੇ ਨਤੀਜੇ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ।",
-    "cropDiagnosis.missingInfoTitle": "ਜਾਣਕਾਰੀ ਗੁੰਮ ਹੈ",
-    "cropDiagnosis.missingInfoDesc": "ਕਿਰਪਾ ਕਰਕੇ ਇੱਕ ਫੋਟੋ ਅਪਲੋਡ ਕਰੋ ਅਤੇ ਵੇਰਵਾ ਪ੍ਰਦਾਨ ਕਰੋ।",
+    "cropDiagnosis.missingInfoTitle": "ਤਸਵੀਰ ਗੁੰਮ ਹੈ",
+    "cropDiagnosis.missingInfoDesc": "ਨਿਦਾਨ ਪ੍ਰਾਪਤ ਕਰਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਇੱਕ ਫੋਟੋ ਅਪਲੋਡ ਕਰੋ।",
     "cropDiagnosis.notLoggedInTitle": "ਲਾਗਇਨ ਨਹੀਂ ਕੀਤਾ",
     "cropDiagnosis.notLoggedInDesc": "ਨਿਦਾਨ ਜਮ੍ਹਾਂ ਕਰਨ ਲਈ ਤੁਹਾਨੂੰ ਲੌਗਇਨ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।",
     "cropDiagnosis.savedTitle": "ਨਿਦਾਨ ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ",

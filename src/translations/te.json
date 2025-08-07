@@ -12,6 +12,8 @@
     "nav.digitalTwin": "డిజిటల్ ట్విన్",
     "nav.governmentSchemes": "ప్రభుత్వ పథకాలు",
 
+    "optional": "ఐచ్ఛికం",
+
     "userNav.notifications": "ప్రకటనలు",
     "userNav.user": "వినియోగదారు",
     "userNav.noEmail": "ఇమెయిల్ లేదు",
@@ -160,8 +162,8 @@
     "cropDiagnosis.confidence": "విశ్వాస స్థాయి",
     "cropDiagnosis.recommendations": "సిఫార్సు చేయబడిన చర్యలు",
     "cropDiagnosis.resultsPlaceholder": "మీ నిర్ధారణ ఫలితాలు ఇక్కడ కనిపిస్తాయి.",
-    "cropDiagnosis.missingInfoTitle": "సమాచారం లేదు",
-    "cropDiagnosis.missingInfoDesc": "దయచేసి ఒక ఫోటోను అప్‌లోడ్ చేసి వివరణను అందించండి.",
+    "cropDiagnosis.missingInfoTitle": "చిత్రం లేదు",
+    "cropDiagnosis.missingInfoDesc": "నిర్ధారణ పొందడానికి దయచేసి ఒక ఫోటోను అప్‌లోడ్ చేయండి.",
     "cropDiagnosis.notLoggedInTitle": "లాగిన్ కాలేదు",
     "cropDiagnosis.notLoggedInDesc": "నిర్ధారణను సమర్పించడానికి మీరు లాగిన్ అయి ఉండాలి.",
     "cropDiagnosis.savedTitle": "నిర్ధారణ సేవ్ చేయబడింది",

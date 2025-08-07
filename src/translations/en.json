@@ -12,6 +12,8 @@
     "nav.digitalTwin": "Digital Twin",
     "nav.governmentSchemes": "Government Schemes",
 
+    "optional": "optional",
+
     "userNav.notifications": "Notifications",
     "userNav.user": "User",
     "userNav.noEmail": "No email",
@@ -160,8 +162,8 @@
     "cropDiagnosis.confidence": "Confidence Level",
     "cropDiagnosis.recommendations": "Recommended Actions",
     "cropDiagnosis.resultsPlaceholder": "Your diagnosis results will appear here.",
-    "cropDiagnosis.missingInfoTitle": "Missing Information",
-    "cropDiagnosis.missingInfoDesc": "Please upload a photo and provide a description.",
+    "cropDiagnosis.missingInfoTitle": "Image Missing",
+    "cropDiagnosis.missingInfoDesc": "Please upload a photo to get a diagnosis.",
     "cropDiagnosis.notLoggedInTitle": "Not Logged In",
     "cropDiagnosis.notLoggedInDesc": "You must be logged in to submit a diagnosis.",
     "cropDiagnosis.savedTitle": "Diagnosis Saved",

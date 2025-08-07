@@ -12,6 +12,8 @@
     "nav.digitalTwin": "डिजिटल ट्विन",
     "nav.governmentSchemes": "सरकारी योजना",
 
+    "optional": "ऐच्छिक",
+
     "userNav.notifications": "सूचना",
     "userNav.user": "वापरकर्ता",
     "userNav.noEmail": "ईमेल नाही",
@@ -160,8 +162,8 @@
     "cropDiagnosis.confidence": "आत्मविश्वास पातळी",
     "cropDiagnosis.recommendations": "शिफारस केलेल्या कृती",
     "cropDiagnosis.resultsPlaceholder": "तुमचे निदान परिणाम येथे दिसतील.",
-    "cropDiagnosis.missingInfoTitle": "माहिती गहाळ आहे",
-    "cropDiagnosis.missingInfoDesc": "कृपया एक फोटो अपलोड करा आणि वर्णन द्या.",
+    "cropDiagnosis.missingInfoTitle": "प्रतिमा गहाळ आहे",
+    "cropDiagnosis.missingInfoDesc": "निदान मिळवण्यासाठी कृपया एक फोटो अपलोड करा.",
     "cropDiagnosis.notLoggedInTitle": "लॉग इन केलेले नाही",
     "cropDiagnosis.notLoggedInDesc": "निदान सबमिट करण्यासाठी तुम्ही लॉग इन असणे आवश्यक आहे.",
     "cropDiagnosis.savedTitle": "निदान जतन केले",

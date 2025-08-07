@@ -45,7 +45,7 @@ export default function CropDiagnosisPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!file || !description) {
+    if (!file) {
       toast({
         variant: "destructive",
         title: t('cropDiagnosis.missingInfoTitle'),
@@ -149,7 +149,7 @@ export default function CropDiagnosisPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">{t('cropDiagnosis.descriptionLabel')}</Label>
+                <Label htmlFor="description">{t('cropDiagnosis.descriptionLabel')} <span className="text-xs text-muted-foreground">({t('optional')})</span></Label>
                 <Textarea
                   id="description"
                   placeholder={t('cropDiagnosis.descriptionPlaceholder')}
@@ -160,7 +160,7 @@ export default function CropDiagnosisPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={isLoading || !file || !description} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button type="submit" disabled={isLoading || !file} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

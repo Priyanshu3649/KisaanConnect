@@ -17,7 +17,7 @@ const DiagnoseCropDiseaseInputSchema = z.object({
     .describe(
       "A photo of a crop, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  cropDescription: z.string().describe('The description of the crop.'),
+  cropDescription: z.string().optional().describe('An optional description of the crop and its symptoms.'),
   language: z.string().describe('The language for the response (e.g., "en" or "hi").'),
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
@@ -44,12 +44,14 @@ const prompt = ai.definePrompt({
   output: {schema: DiagnoseCropDiseaseOutputSchema},
   prompt: `You are an expert in crop diseases. Your response must be in the specified language: {{language}}.
 
-You will use this information to diagnose the crop and identify potential diseases.
+You will use the provided photo and optional description to diagnose the crop and identify potential diseases.
 
-Description: {{{cropDescription}}}
 Photo: {{media url=photoDataUri}}
+{{#if cropDescription}}
+Description: {{{cropDescription}}}
+{{/if}}
 
-Based on the image and description, determine if the crop is diseased. If so, identify the likely disease and your confidence level (as a number between 0 and 1).
+Based on the image and any available description, determine if the crop is diseased. If so, identify the likely disease and your confidence level (as a number between 0 and 1).
 Also suggest some recommended actions to remediate the disease. All parts of your response must be in {{language}}.
 `,
 });
