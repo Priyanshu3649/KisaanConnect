@@ -4,7 +4,6 @@
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect } from 'react';
 
 // Leaflet's default icon path can break in Next.js. This fixes it.
 // @ts-ignore
@@ -17,7 +16,7 @@ L.Icon.Default.mergeOptions({
 
 
 interface MapComponentProps {
-  markerPosition: [number, number] | null;
+  markerPosition: [number, number];
   setMarkerPosition: (position: [number, number]) => void;
 }
 
@@ -31,15 +30,6 @@ const MapEvents = ({ setMarkerPosition }: { setMarkerPosition: (position: [numbe
 };
 
 const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) => {
-
-    useEffect(() => {
-        // This effect runs on the client side, ensuring window is available
-        if (typeof window !== 'undefined') {
-          // Additional client-side only initializations can go here
-        }
-    }, []);
-
-    if (!markerPosition) return null; // Or a loading state
 
     return (
         <MapContainer 

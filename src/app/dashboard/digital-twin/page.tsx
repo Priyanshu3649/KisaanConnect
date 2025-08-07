@@ -104,7 +104,9 @@ export default function DigitalTwinPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                        <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
+                        <Suspense fallback={<div className="flex items-center justify-center w-full h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+                           {markerPosition && <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />}
+                        </Suspense>
                     </div>
                 </CardContent>
             </Card>
