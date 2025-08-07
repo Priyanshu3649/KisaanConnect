@@ -12,6 +12,9 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import wav from 'wav';
+import { getWeatherTool } from './get-weather';
+import { getMandiPricesTool } from './mandi-prices';
+
 
 const AiAssistantInputSchema = z.object({
   query: z.string().describe('The question about government subsidies, crop advice, or market prices.'),
@@ -42,6 +45,7 @@ const languageToVoice: Record<string, string> = {
 
 const aiAssistantPrompt = ai.definePrompt({
   name: 'aiAssistantPrompt',
+  tools: [getWeatherTool, getMandiPricesTool],
   input: {schema: AiAssistantInputSchema},
   output: {schema: z.object({
       summary: z.string().describe('A concise, direct answer to the user\'s question.'),
@@ -49,11 +53,14 @@ const aiAssistantPrompt = ai.definePrompt({
   })},
   prompt: `You are an expert AI assistant for Indian farmers. Your name is KisaanConnect Assistant. Answer the user's question in a clear, easy-to-understand way, in the language of their query.
 
-The user's question could be about government schemes, crop management, pest control, market prices, or general farming advice. It could also be a simple greeting.
+The user's question could be about government schemes, crop management, pest control, market prices, weather, or general farming advice. It could also be a simple greeting.
+
+If the user asks about weather, use the getWeatherTool. You can ask the user for their location if it's not provided.
+If the user asks about market (mandi) prices, use the getMandiPricesTool. You will likely need to know the commodity, state, and market/city.
 
 Your response must have two parts:
-1.  **Summary:** A direct and concise answer to the question. For a simple greeting like "Hello", this could be "Hi there!".
-2.  **Reasoning:** A brief explanation providing more context, sources, or the "why" behind your answer. For a simple greeting, this could be "How can I help you today?".
+1.  **Summary:** A direct and concise answer to the question. For a simple greeting like "Hello", this could be "Hi there!". When using a tool, summarize the tool's output in a conversational way (e.g., "The weather in Pune is currently 25°C and sunny.").
+2.  **Reasoning:** A brief explanation providing more context, sources, or the "why" behind your answer. For a simple greeting, this could be "How can I help you today?". When using a tool, you can provide additional details from the tool's output here (e.g., "The high for today is 32°C and the low is 20°C.").
 
 Question: {{{query}}}
 `,

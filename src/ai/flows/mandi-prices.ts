@@ -105,3 +105,13 @@ const getMandiPricesFlow = ai.defineFlow(
     return data;
   }
 );
+
+export const getMandiPricesTool = ai.defineTool(
+    {
+        name: 'getMandiPricesTool',
+        description: 'Get live agricultural market (mandi) prices for a specific commodity in a given state and market/city.',
+        inputSchema: GetMandiPricesInputSchema,
+        outputSchema: GetMandiPricesOutputSchema,
+    },
+    async (input) => getMandiPricesFlow(input)
+);

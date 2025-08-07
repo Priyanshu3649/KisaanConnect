@@ -195,3 +195,13 @@ const getWeatherFlow = ai.defineFlow(
     }
   }
 );
+
+export const getWeatherTool = ai.defineTool(
+    {
+        name: 'getWeatherTool',
+        description: 'Get the current and forecasted weather for a specific location. Requires either a location string or latitude/longitude.',
+        inputSchema: GetWeatherInputSchema,
+        outputSchema: z.nullable(GetWeatherOutputSchema),
+    },
+    async (input) => getWeatherFlow(input)
+);
