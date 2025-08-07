@@ -268,5 +268,16 @@
     "digitalTwin.moistureLevel": "ஈரப்பதம் நிலை",
     "digitalTwin.expectedYield": "எதிர்பார்க்கப்படும் மகசூல்",
     "digitalTwin.alertsTitle": "நேரடி எச்சரிக்கைகள்",
-    "digitalTwin.noAlerts": "இந்த நேரத்தில் எச்சரிக்கைகள் இல்லை. உங்கள் புலம் ஆரோக்கியமாகத் தெரிகிறது."
+    "digitalTwin.noAlerts": "இந்த நேரத்தில் எச்சரிக்கைகள் இல்லை. உங்கள் புலம் ஆரோக்கியமாகத் தெரிகிறது.",
+    "digitalTwin.errorTitle": "பிழை",
+    "digitalTwin.errorDesc": "புலத் தரவை ஏற்ற முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.",
+    "digitalTwin.configTitle": "புல உள்ளமைவு",
+    "digitalTwin.configDesc": "தேர்ந்தெடுக்கப்பட்ட புலத்தின் பரிமாணங்களை உள்ளிடவும்.",
+    "digitalTwin.lengthLabel": "நீளம் (மீட்டர்)",
+    "digitalTwin.widthLabel": "அகலம் (மீட்டர்)",
+    "digitalTwin.saveConfigButton": "உள்ளமைவைச் சேமிக்கவும்",
+    "digitalTwin.configSavedTitle": "உள்ளமைவு சேமிக்கப்பட்டது",
+    "digitalTwin.configSavedDesc": "புல பரிமாணங்கள் இதற்கு அமைக்கப்பட்டுள்ளன"
 }
+
+    

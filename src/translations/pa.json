@@ -268,5 +268,16 @@
     "digitalTwin.moistureLevel": "ਨਮੀ ਦਾ ਪੱਧਰ",
     "digitalTwin.expectedYield": "ਉਮੀਦ ਕੀਤੀ ਪੈਦਾਵਾਰ",
     "digitalTwin.alertsTitle": "ਲਾਈਵ ਚੇਤਾਵਨੀਆਂ",
-    "digitalTwin.noAlerts": "ਇਸ ਸਮੇਂ ਕੋਈ ਚੇਤਾਵਨੀ ਨਹੀਂ ਹੈ। ਤੁਹਾਡਾ ਖੇਤ ਸਿਹਤਮੰਦ ਦਿਸਦਾ ਹੈ।"
+    "digitalTwin.noAlerts": "ਇਸ ਸਮੇਂ ਕੋਈ ਚੇਤਾਵਨੀ ਨਹੀਂ ਹੈ। ਤੁਹਾਡਾ ਖੇਤ ਸਿਹਤਮੰਦ ਦਿਸਦਾ ਹੈ।",
+    "digitalTwin.errorTitle": "ਤਰੁੱਟੀ",
+    "digitalTwin.errorDesc": "ਫੀਲਡ ਡੇਟਾ ਲੋਡ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    "digitalTwin.configTitle": "ਫੀਲਡ ਸੰਰਚਨਾ",
+    "digitalTwin.configDesc": "ਚੁਣੇ ਹੋਏ ਫੀਲਡ ਦੇ ਮਾਪ ਦਾਖਲ ਕਰੋ।",
+    "digitalTwin.lengthLabel": "ਲੰਬਾਈ (ਮੀਟਰ)",
+    "digitalTwin.widthLabel": "ਚੌੜਾਈ (ਮੀਟਰ)",
+    "digitalTwin.saveConfigButton": "ਸੰਰਚਨਾ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰੋ",
+    "digitalTwin.configSavedTitle": "ਸੰਰਚਨਾ ਸੁਰੱਖਿਅਤ ਕੀਤੀ ਗਈ",
+    "digitalTwin.configSavedDesc": "ਫੀਲਡ ਦੇ ਮਾਪ ਇਸ 'ਤੇ ਸੈੱਟ ਕੀਤੇ ਗਏ ਹਨ"
 }
+
+    

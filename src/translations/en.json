@@ -268,5 +268,17 @@
     "digitalTwin.moistureLevel": "Moisture Level",
     "digitalTwin.expectedYield": "Expected Yield",
     "digitalTwin.alertsTitle": "Live Alerts",
-    "digitalTwin.noAlerts": "No alerts at this time. Your field looks healthy."
+    "digitalTwin.noAlerts": "No alerts at this time. Your field looks healthy.",
+    "digitalTwin.errorTitle": "Error",
+    "digitalTwin.errorDesc": "Could not load field data. Please try again later.",
+    "digitalTwin.configTitle": "Field Configuration",
+    "digitalTwin.configDesc": "Enter the dimensions of the selected field.",
+    "digitalTwin.lengthLabel": "Length (meters)",
+    "digitalTwin.widthLabel": "Width (meters)",
+    "digitalTwin.saveConfigButton": "Save Configuration",
+    "digitalTwin.configSavedTitle": "Configuration Saved",
+    "digitalTwin.configSavedDesc": "Field dimensions set to"
+
 }
+
+    

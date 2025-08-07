@@ -268,5 +268,16 @@
     "digitalTwin.moistureLevel": "తేమ స్థాయి",
     "digitalTwin.expectedYield": "అంచనా దిగుబడి",
     "digitalTwin.alertsTitle": "ప్రత్యక్ష హెచ్చరికలు",
-    "digitalTwin.noAlerts": "ప్రస్తుతానికి హెచ్చరికలు లేవు. మీ ఫీల్డ్ ఆరోగ్యంగా కనిపిస్తుంది."
+    "digitalTwin.noAlerts": "ప్రస్తుతానికి హెచ్చరికలు లేవు. మీ ఫీల్డ్ ఆరోగ్యంగా కనిపిస్తుంది.",
+    "digitalTwin.errorTitle": "లోపం",
+    "digitalTwin.errorDesc": "ఫీల్డ్ డేటాను లోడ్ చేయలేకపోయాము. దయచేసి తరువాత మళ్లీ ప్రయత్నించండి.",
+    "digitalTwin.configTitle": "ఫీల్డ్ కాన్ఫిగరేషన్",
+    "digitalTwin.configDesc": "ఎంచుకున్న ఫీల్డ్ యొక్క కొలతలు నమోదు చేయండి.",
+    "digitalTwin.lengthLabel": "పొడవు (మీటర్లు)",
+    "digitalTwin.widthLabel": "వెడల్పు (మీటర్లు)",
+    "digitalTwin.saveConfigButton": "కాన్ఫిగరేషన్‌ను సేవ్ చేయండి",
+    "digitalTwin.configSavedTitle": "కాన్ఫిగరేషన్ సేవ్ చేయబడింది",
+    "digitalTwin.configSavedDesc": "ఫీల్డ్ కొలతలు దీనికి సెట్ చేయబడ్డాయి"
 }
+
+    

@@ -267,5 +267,16 @@
     "digitalTwin.moistureLevel": "नमी का स्तर",
     "digitalTwin.expectedYield": "अपेक्षित उपज",
     "digitalTwin.alertsTitle": "लाइव अलर्ट",
-    "digitalTwin.noAlerts": "इस समय कोई अलर्ट नहीं। आपका खेत स्वस्थ दिखता है।"
+    "digitalTwin.noAlerts": "इस समय कोई अलर्ट नहीं। आपका खेत स्वस्थ दिखता है।",
+    "digitalTwin.errorTitle": "त्रुटि",
+    "digitalTwin.errorDesc": "फ़ील्ड डेटा लोड नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।",
+    "digitalTwin.configTitle": "फ़ील्ड कॉन्फ़िगरेशन",
+    "digitalTwin.configDesc": "चयनित फ़ील्ड के आयाम दर्ज करें।",
+    "digitalTwin.lengthLabel": "लंबाई (मीटर)",
+    "digitalTwin.widthLabel": "चौड़ाई (मीटर)",
+    "digitalTwin.saveConfigButton": "कॉन्फ़िगरेशन सहेजें",
+    "digitalTwin.configSavedTitle": "कॉन्फ़िगरेशन सहेजा गया",
+    "digitalTwin.configSavedDesc": "फ़ील्ड आयाम इस पर सेट हैं"
 }
+
+    

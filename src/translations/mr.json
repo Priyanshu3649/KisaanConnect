@@ -268,5 +268,16 @@
     "digitalTwin.moistureLevel": "आर्द्रता पातळी",
     "digitalTwin.expectedYield": "अपेक्षित उत्पन्न",
     "digitalTwin.alertsTitle": "थेट सूचना",
-    "digitalTwin.noAlerts": "यावेळी कोणतीही सूचना नाही. तुमचे शेत निरोगी दिसते."
+    "digitalTwin.noAlerts": "यावेळी कोणतीही सूचना नाही. तुमचे शेत निरोगी दिसते.",
+    "digitalTwin.errorTitle": "त्रुटी",
+    "digitalTwin.errorDesc": "फील्ड डेटा लोड करू शकलो नाही. कृपया नंतर पुन्हा प्रयत्न करा.",
+    "digitalTwin.configTitle": "फील्ड कॉन्फिगरेशन",
+    "digitalTwin.configDesc": "निवडलेल्या फील्डचे परिमाण प्रविष्ट करा.",
+    "digitalTwin.lengthLabel": "लांबी (मीटर)",
+    "digitalTwin.widthLabel": "रुंदी (मीटर)",
+    "digitalTwin.saveConfigButton": "कॉन्फिगरेशन जतन करा",
+    "digitalTwin.configSavedTitle": "कॉन्फिगरेशन जतन केले",
+    "digitalTwin.configSavedDesc": "फील्ड परिमाण येथे सेट केले आहेत"
 }
+
+    
