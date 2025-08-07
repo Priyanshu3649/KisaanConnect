@@ -1,3 +1,4 @@
+
 "use client";
 
 import AppLayout from "@/components/app-layout";
@@ -64,10 +65,12 @@ export default function OrganicsSupportPage() {
       />
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {infoCards.map((card, index) => (
-            <Card key={index} className="flex flex-col">
+        {infoCards.map((card) => {
+            const Icon = card.icon;
+            return (
+            <Card key={card.titleKey} className="flex flex-col">
                 <CardHeader className="flex-row gap-4 items-center">
-                    <card.icon className="h-8 w-8 text-primary" />
+                    <Icon className="h-8 w-8 text-primary" />
                     <div>
                         <CardTitle className="font-headline text-xl">{t(card.titleKey as any)}</CardTitle>
                     </div>
@@ -76,7 +79,7 @@ export default function OrganicsSupportPage() {
                      <p className="text-muted-foreground">{t(card.descriptionKey as any)}</p>
                 </CardContent>
             </Card>
-        ))}
+        )})}
       </div>
 
       <Card className="mt-8">
@@ -85,8 +88,8 @@ export default function OrganicsSupportPage() {
         </CardHeader>
         <CardContent>
             <Accordion type="single" collapsible className="w-full">
-                {faqs.map((faq, index) => (
-                    <AccordionItem value={`item-${index}`} key={index}>
+                {faqs.map((faq) => (
+                    <AccordionItem value={faq.questionKey} key={faq.questionKey}>
                         <AccordionTrigger className="font-semibold text-left">{t(faq.questionKey as any)}</AccordionTrigger>
                         <AccordionContent className="text-muted-foreground">
                             {t(faq.answerKey as any)}
