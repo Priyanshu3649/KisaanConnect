@@ -18,6 +18,7 @@ import { auth } from "@/lib/firebase";
 export default function SchemeNavigatorPage() {
     const { t } = useTranslation();
     const [query, setQuery] = useState("");
+    const [lastQuery, setLastQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<SchemeNavigatorOutput | null>(null);
     const [user] = useAuthState(auth);
@@ -27,6 +28,9 @@ export default function SchemeNavigatorPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!query) return;
+        
+        setLastQuery(query);
+        setQuery("");
         setIsLoading(true);
         setResult(null);
 
@@ -38,7 +42,7 @@ export default function SchemeNavigatorPage() {
                 audioRef.current.play();
             }
         } catch (error) {
-            console.error("Scheme navigator failed:", error);
+            console.error("AI assistant failed:", error);
             toast({
                 variant: "destructive",
                 title: t('help.errorTitle'),
@@ -70,7 +74,8 @@ export default function SchemeNavigatorPage() {
                     <CardContent>
                         <div className="space-y-6">
                             {/* Chat display */}
-                            <div className="space-y-4 h-80 overflow-y-auto p-4 border rounded-md bg-secondary/50">
+                            <div className="space-y-4 h-96 overflow-y-auto p-4 border rounded-md bg-secondary/50 flex flex-col">
+                                {/* Initial Welcome Message */}
                                 <div className="flex items-start gap-3">
                                     <Avatar>
                                         <AvatarImage src="/logo.svg" alt="KisaanConnect Assistant" />
@@ -78,17 +83,19 @@ export default function SchemeNavigatorPage() {
                                     </Avatar>
                                     <div>
                                         <div className="font-semibold">{t('schemes.assistantName')}</div>
-                                        <div className="p-3 rounded-lg bg-background text-sm">
+                                        <div className="p-3 rounded-lg bg-background text-sm max-w-prose">
                                             {t('schemes.welcomeMessage')}
                                         </div>
                                     </div>
                                 </div>
-                                {query && (
+                                
+                                {/* User's query */}
+                                {lastQuery && (
                                      <div className="flex items-start gap-3 justify-end">
                                         <div className="text-right">
                                             <div className="font-semibold">{user?.displayName || "You"}</div>
-                                            <div className="p-3 rounded-lg bg-primary text-primary-foreground text-left text-sm">
-                                                {query}
+                                            <div className="p-3 rounded-lg bg-primary text-primary-foreground text-left text-sm max-w-prose">
+                                                {lastQuery}
                                             </div>
                                         </div>
                                          <Avatar>
@@ -97,11 +104,21 @@ export default function SchemeNavigatorPage() {
                                         </Avatar>
                                     </div>
                                 )}
+
+                                {/* Loading spinner */}
                                 {isLoading && (
-                                    <div className="flex items-center justify-center">
-                                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                    <div className="flex items-start gap-3">
+                                        <Avatar>
+                                            <AvatarImage src="/logo.svg" alt="KisaanConnect Assistant" />
+                                            <AvatarFallback>KC</AvatarFallback>
+                                        </Avatar>
+                                        <div className="p-3 rounded-lg bg-background text-sm">
+                                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                        </div>
                                     </div>
                                 )}
+                                
+                                {/* AI's response */}
                                 {result && (
                                     <div className="flex items-start gap-3">
                                         <Avatar>
@@ -115,9 +132,9 @@ export default function SchemeNavigatorPage() {
                                                    <Volume2 className="h-4 w-4" /> 
                                                 </Button>
                                             </div>
-                                            <div className="p-3 rounded-lg bg-background space-y-2 text-sm">
+                                            <div className="p-3 rounded-lg bg-background space-y-2 text-sm max-w-prose">
                                                 <p><span className="font-semibold">{t('schemes.summary')}:</span> {result.summary}</p>
-                                                <p><span className="font-semibold">{t('schemes.reasoning')}:</span> {result.reasoning}</p>
+                                                <p className="text-muted-foreground"><span className="font-semibold text-foreground">{t('schemes.reasoning')}:</span> {result.reasoning}</p>
                                                 <audio ref={audioRef} className="hidden" />
                                             </div>
                                         </div>
@@ -149,4 +166,3 @@ export default function SchemeNavigatorPage() {
         </AppLayout>
     );
 }
-

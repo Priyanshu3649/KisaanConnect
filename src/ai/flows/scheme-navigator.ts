@@ -14,13 +14,13 @@ import {z} from 'genkit';
 import wav from 'wav';
 
 const SchemeNavigatorInputSchema = z.object({
-  query: z.string().describe('The question about government subsidies.'),
+  query: z.string().describe('The question about government subsidies, crop advice, or market prices.'),
 });
 export type SchemeNavigatorInput = z.infer<typeof SchemeNavigatorInputSchema>;
 
 const SchemeNavigatorOutputSchema = z.object({
-  summary: z.string().describe('The summarized information about the relevant government subsidies.'),
-  reasoning: z.string().describe('The reasoning for the summarized information.'),
+  summary: z.string().describe('A concise, direct answer to the user\'s question.'),
+  reasoning: z.string().describe('A brief explanation of the reasoning or context behind the summary.'),
   audio: z.string().describe('The voice-based answer in base64 encoded WAV format.'),
 });
 export type SchemeNavigatorOutput = z.infer<typeof SchemeNavigatorOutputSchema>;
@@ -32,15 +32,20 @@ export async function schemeNavigator(input: SchemeNavigatorInput): Promise<Sche
 const schemeNavigatorPrompt = ai.definePrompt({
   name: 'schemeNavigatorPrompt',
   input: {schema: SchemeNavigatorInputSchema},
-  output: {schema: SchemeNavigatorOutputSchema},
-  prompt: `You are an expert in government subsidies for farmers. Answer the question in a way that is easy to understand.
+  output: {schema: z.object({
+      summary: z.string().describe('A concise, direct answer to the user\'s question.'),
+      reasoning: z.string().describe('A brief explanation of the reasoning or context behind the summary.'),
+  })},
+  prompt: `You are an expert AI assistant for Indian farmers. Your name is KisaanConnect Assistant. Answer the user's question in a clear, easy-to-understand way.
+
+The user's question could be about government schemes, crop management, pest control, market prices, or general farming advice.
+
+Your response must have two parts:
+1.  **Summary:** A direct and concise answer to the question.
+2.  **Reasoning:** A brief explanation providing more context, sources, or the "why" behind your answer.
 
 Question: {{{query}}}
-
-Summarize the information and provide reasoning for your answer.
-
-Summary:
-Reasoning:`,
+`,
 });
 
 const schemeNavigatorFlow = ai.defineFlow(
@@ -51,6 +56,7 @@ const schemeNavigatorFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await schemeNavigatorPrompt(input);
+    const textToSpeak = `Summary: ${output?.summary}\nReasoning: ${output?.reasoning}`;
 
     // Convert the summary and reasoning to speech
     const ttsResult = await ai.generate({
@@ -63,7 +69,7 @@ const schemeNavigatorFlow = ai.defineFlow(
           },
         },
       },
-      prompt: output?.summary + '\n' + output?.reasoning,
+      prompt: textToSpeak,
     });
 
     if (!ttsResult.media) {
