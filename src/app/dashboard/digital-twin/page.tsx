@@ -6,7 +6,7 @@ import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map as MapIcon, Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";

@@ -1,12 +1,12 @@
 
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, LocateFixed } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // Leaflet's default icon path can break in Next.js. This fixes it.
@@ -30,31 +30,32 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
     const { toast } = useToast();
 
     // Map initialization effect
     useEffect(() => {
-        if (mapRef.current || !mapContainerRef.current) return; // Prevent re-initialization
+        if (mapContainerRef.current && !mapRef.current) {
+            mapRef.current = L.map(mapContainerRef.current, {
+                center: markerPosition,
+                zoom: 13,
+                zoomControl: false,
+            });
+            
+            L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
 
-        mapRef.current = L.map(mapContainerRef.current, {
-            center: markerPosition,
-            zoom: 13,
-            zoomControl: false,
-        });
-        
-        L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(mapRef.current);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mapRef.current);
+            markerRef.current = L.marker(markerPosition, { draggable: true }).addTo(mapRef.current);
 
-        markerRef.current = L.marker(markerPosition, { draggable: true }).addTo(mapRef.current);
-
-        markerRef.current.on('dragend', (e) => {
-            const { lat, lng } = e.target.getLatLng();
-            setMarkerPosition([lat, lng]);
-            setSearchQuery('');
-        });
+            markerRef.current.on('dragend', (e) => {
+                const { lat, lng } = e.target.getLatLng();
+                setMarkerPosition([lat, lng]);
+                setSearchQuery('');
+            });
+        }
         
         // Cleanup function to run when component unmounts
         return () => {
@@ -65,13 +66,15 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
         };
     }, []); // Empty dependency array ensures this runs only once
 
-    // Effect to update marker position when prop changes from outside
+    // Effect to update map/marker when position changes from outside
     useEffect(() => {
-        if (markerRef.current) {
-            markerRef.current.setLatLng(markerPosition);
-        }
-        if (mapRef.current) {
-            mapRef.current.panTo(markerPosition, { animate: true });
+        if (mapRef.current && markerRef.current) {
+            if (!markerRef.current.getLatLng().equals(L.latLng(markerPosition))) {
+                markerRef.current.setLatLng(markerPosition);
+            }
+            if (!mapRef.current.getCenter().equals(L.latLng(markerPosition))) {
+                 mapRef.current.panTo(markerPosition, { animate: true });
+            }
         }
     }, [markerPosition]);
     
@@ -113,9 +116,34 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
         setSuggestions([]);
     };
 
+    const handleGetCurrentLocation = () => {
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setMarkerPosition([latitude, longitude]);
+                setSearchQuery('Current Location');
+                setIsLocating(false);
+                toast({
+                    title: "Location Found",
+                    description: "Your current location has been set on the map.",
+                });
+            },
+            (error) => {
+                setIsLocating(false);
+                toast({
+                    variant: 'destructive',
+                    title: "Location Error",
+                    description: "Could not retrieve your location. Please ensure you have granted location permissions.",
+                });
+                console.error('Geolocation error:', error);
+            }
+        );
+    };
+
     return (
         <div className="relative h-full w-full">
-            <div className="absolute top-2 left-2 z-[1000] w-[calc(100%-1rem)] sm:w-80 flex flex-col gap-2">
+            <div className="absolute top-2 left-2 z-[1000] w-[calc(100%-1rem)] sm:w-96 flex flex-col gap-2">
                  <div className="flex gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg">
                     <Input
                         type="text"
@@ -124,8 +152,8 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="flex-grow"
                     />
-                     <Button type="submit" size="icon" variant="default" disabled>
-                        <Search className="h-4 w-4" />
+                     <Button type="button" size="icon" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating}>
+                        {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
                     </Button>
                 </div>
                 { (isSearching || suggestions.length > 0) && (
