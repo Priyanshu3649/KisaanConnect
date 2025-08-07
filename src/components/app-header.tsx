@@ -96,6 +96,18 @@ export default function AppHeader({ navItems }: AppHeaderProps) {
                     <DropdownMenuItem onClick={() => setLanguage('hi')} disabled={language === 'hi'}>
                         हिंदी
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('pa')} disabled={language === 'pa'}>
+                        ਪੰਜਾਬੀ
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('mr')} disabled={language === 'mr'}>
+                        मराठी
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('ta')} disabled={language === 'ta'}>
+                        தமிழ்
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('te')} disabled={language === 'te'}>
+                        తెలుగు
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             <UserNav />

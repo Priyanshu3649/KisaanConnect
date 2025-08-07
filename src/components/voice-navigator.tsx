@@ -11,6 +11,15 @@ import { useTranslation } from '@/context/translation-context';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
+const languageToCode: { [key: string]: string } = {
+  en: 'en-US',
+  hi: 'hi-IN',
+  pa: 'pa-IN',
+  mr: 'mr-IN',
+  ta: 'ta-IN',
+  te: 'te-IN',
+};
+
 const VoiceNavigator = () => {
   const { t, language } = useTranslation();
   const [isListening, setIsListening] = useState(false);
@@ -24,9 +33,14 @@ const VoiceNavigator = () => {
       return;
     }
 
+    // Abort any existing recognition
+    if (recognitionRef.current) {
+        recognitionRef.current.abort();
+    }
+
     const recognition = new window.webkitSpeechRecognition();
     recognitionRef.current = recognition;
-    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    recognition.lang = languageToCode[language] || 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
 

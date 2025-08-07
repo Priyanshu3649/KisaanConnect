@@ -4,9 +4,14 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import en from '@/translations/en.json';
 import hi from '@/translations/hi.json';
+import pa from '@/translations/pa.json';
+import mr from '@/translations/mr.json';
+import ta from '@/translations/ta.json';
+import te from '@/translations/te.json';
+
 
 type Translations = typeof en;
-type Language = 'en' | 'hi';
+type Language = 'en' | 'hi' | 'pa' | 'mr' | 'ta' | 'te';
 
 interface TranslationContextType {
   language: Language;
@@ -14,7 +19,7 @@ interface TranslationContextType {
   t: (key: keyof Translations, options?: { [key: string]: string | number }) => string;
 }
 
-const translations = { en, hi };
+const translations = { en, hi, pa, mr, ta, te };
 
 const TranslationContext = createContext<TranslationContextType | undefined>(undefined);
 
@@ -24,7 +29,7 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // You could persist language preference in localStorage
     const savedLang = localStorage.getItem('language') as Language | null;
-    if (savedLang && ['en', 'hi'].includes(savedLang)) {
+    if (savedLang && ['en', 'hi', 'pa', 'mr', 'ta', 'te'].includes(savedLang)) {
       setLanguage(savedLang);
     }
   }, []);
