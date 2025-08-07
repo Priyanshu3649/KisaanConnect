@@ -54,9 +54,29 @@ const digitalTwinFlow = ai.defineFlow(
 
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
-    // Generate mock data
+    // Generate mock data based on a hash of the fieldId to make it unique but consistent
     const generateMockData = (fieldId: string): DigitalTwinOutput => {
         const hash = fieldId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        
+        if (fieldId === 'field_2') {
+             return {
+                soilHealthScore: 65 + (hash % 10), // 65-74
+                moistureLevel: 35 + (hash % 15), // 35-49
+                expectedYield: {
+                    value: 22 + (hash % 4), // 22-25
+                    unit: 'quintal/acre',
+                },
+                alerts: [
+                    {
+                        type: 'infestation',
+                        severity: 'high',
+                        message: 'High probability of aphid infestation detected in the southern region. Immediate action required.'
+                    }
+                ]
+            };
+        }
+
+        // Default for field_1
         return {
             soilHealthScore: 78 + (hash % 15), // 78-92
             moistureLevel: 45 + (hash % 20), // 45-64
