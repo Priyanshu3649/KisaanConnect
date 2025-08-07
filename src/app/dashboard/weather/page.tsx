@@ -25,7 +25,15 @@ export default function WeatherPage() {
 
     useEffect(() => {
         const fetchWeather = () => {
+            if (!navigator.geolocation) {
+                setLocationStatus("Geolocation is not supported by your browser.");
+                setIsLoading(false);
+                return;
+            }
+            
             setIsLoading(true);
+            setLocationStatus("Requesting location permission...");
+            
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     setLocationStatus("Fetching weather for your location...");
@@ -56,7 +64,7 @@ export default function WeatherPage() {
         <>
             <PageHeader
                 title={t('nav.weather')}
-                description={!isLoading ? locationStatus : "Fetching weather data..."}
+                description={locationStatus}
             />
             {isLoading && (
                 <div className="grid gap-6">
@@ -123,7 +131,7 @@ export default function WeatherPage() {
             )}
              {!isLoading && !weatherData && (
                  <Card className="flex flex-col items-center justify-center p-12 text-center">
-                    <Loader2 className="h-10 w-10 text-muted-foreground mb-4 animate-spin" />
+                    <Loader2 className="h-10 w-10 text-muted-foreground mb-4" />
                     <CardTitle>{t('profile.weatherError')}</CardTitle>
                     <CardDescription>{t('weather.errorDesc')}</CardDescription>
                 </Card>
