@@ -9,6 +9,7 @@
     "nav.schemeNavigator": "AI सहायक",
     "nav.organicsSupport": "जैविक समर्थन",
     "nav.helpAndFeedback": "सहायता और प्रतिक्रिया",
+    "nav.digitalTwin": "डिजिटल ट्विन",
 
     "userNav.notifications": "सूचनाएं",
     "userNav.user": "उपयोगकर्ता",
@@ -256,5 +257,15 @@
     "alerts.disease": "खतरा! आपके क्षेत्र में झुलसा का एक नया प्रकार फैल रहा है। तुरंत निवारक उपाय करें।",
     "alerts.rainfall": "कल भारी बारिश की उम्मीद है। सिंचाई में देरी पर विचार करें।",
     "alerts.priceDrop": "बाजार चेतावनी: अगले सप्ताह टमाटर की कीमतों में 15% की गिरावट आने की उम्मीद है।",
-    "alerts.newScheme": "सौर जल पंपों के लिए एक नई सरकारी सब्सिडी अब उपलब्ध है। योजना नेविगेटर में पात्रता की जांच करें।"
+    "alerts.newScheme": "सौर जल पंपों के लिए एक नई सरकारी सब्सिडी अब उपलब्ध है। योजना नेविगेटर में पात्रता की जांच करें।",
+
+    "digitalTwin.pageDescription": "आपके खेत का एक जीवंत वर्चुअल मॉडल।",
+    "digitalTwin.fieldMapTitle": "आपके खेत",
+    "digitalTwin.fieldMapDescription": "इसका डिजिटल ट्विन देखने के लिए एक खेत चुनें।",
+    "digitalTwin.keyMetricsTitle": "मुख्य मेट्रिक्स",
+    "digitalTwin.soilHealth": "मृदा स्वास्थ्य स्कोर",
+    "digitalTwin.moistureLevel": "नमी का स्तर",
+    "digitalTwin.expectedYield": "अपेक्षित उपज",
+    "digitalTwin.alertsTitle": "लाइव अलर्ट",
+    "digitalTwin.noAlerts": "इस समय कोई अलर्ट नहीं। आपका खेत स्वस्थ दिखता है।"
 }

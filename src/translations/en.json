@@ -9,6 +9,7 @@
     "nav.schemeNavigator": "AI Assistant",
     "nav.organicsSupport": "Organics Support",
     "nav.helpAndFeedback": "Help & Feedback",
+    "nav.digitalTwin": "Digital Twin",
 
     "userNav.notifications": "Notifications",
     "userNav.user": "User",
@@ -257,5 +258,15 @@
     "alerts.disease": "Danger! A new strain of blight is spreading in your area. Take preventive measures immediately.",
     "alerts.rainfall": "Heavy rainfall expected tomorrow. Consider delaying irrigation.",
     "alerts.priceDrop": "Market Alert: Tomato prices are expected to drop by 15% next week.",
-    "alerts.newScheme": "A new government subsidy for solar water pumps is now available. Check eligibility in Scheme Navigator."
+    "alerts.newScheme": "A new government subsidy for solar water pumps is now available. Check eligibility in Scheme Navigator.",
+
+    "digitalTwin.pageDescription": "A live virtual model of your field.",
+    "digitalTwin.fieldMapTitle": "Your Fields",
+    "digitalTwin.fieldMapDescription": "Select a field to view its digital twin.",
+    "digitalTwin.keyMetricsTitle": "Key Metrics",
+    "digitalTwin.soilHealth": "Soil Health Score",
+    "digitalTwin.moistureLevel": "Moisture Level",
+    "digitalTwin.expectedYield": "Expected Yield",
+    "digitalTwin.alertsTitle": "Live Alerts",
+    "digitalTwin.noAlerts": "No alerts at this time. Your field looks healthy."
 }

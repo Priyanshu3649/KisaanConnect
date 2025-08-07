@@ -7,3 +7,4 @@ import '@/ai/flows/submit-feedback.ts';
 import '@/ai/flows/voice-navigator.ts';
 import '@/ai/flows/mandi-prices.ts';
 import '@/ai/flows/get-weather.ts';
+import '@/ai/flows/digital-twin.ts';

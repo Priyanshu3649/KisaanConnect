@@ -17,6 +17,7 @@ export interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/dashboard", icon: "LayoutDashboard", labelKey: "nav.dashboard" },
+  { href: "/dashboard/digital-twin", icon: "Map", labelKey: "nav.digitalTwin" },
   { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
   { href: "/dashboard/weather", icon: "CloudSun", labelKey: "nav.weather" },
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
