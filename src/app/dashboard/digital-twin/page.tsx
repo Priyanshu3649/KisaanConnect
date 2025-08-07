@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
@@ -24,6 +24,8 @@ const severityBorderColors = {
   medium: "border-orange-500/50",
   high: "border-red-500/50",
 };
+
+const METERS_PER_ACRE = 4046.86;
 
 export default function DigitalTwinPage() {
   const { t } = useTranslation();
@@ -57,6 +59,28 @@ export default function DigitalTwinPage() {
         description: `${t('digitalTwin.configSavedDesc')} ${length}m x ${width}m`,
     });
   };
+
+  const calculatedYield = useMemo(() => {
+    if (!data) return null;
+    const lengthNum = parseFloat(length);
+    const widthNum = parseFloat(width);
+
+    if (lengthNum > 0 && widthNum > 0) {
+      const areaM2 = lengthNum * widthNum;
+      const areaAcres = areaM2 / METERS_PER_ACRE;
+      const totalYield = areaAcres * data.expectedYield.value;
+      return {
+        value: totalYield.toFixed(2),
+        unit: "quintals", // The unit is now absolute for the field
+      };
+    }
+    // Default to per-unit value if dimensions are not set
+    return {
+      value: data.expectedYield.value.toFixed(2),
+      unit: data.expectedYield.unit,
+    };
+  }, [data, length, width]);
+
 
   return (
     <AppLayout>
@@ -131,7 +155,7 @@ export default function DigitalTwinPage() {
                         <>
                            <MetricDisplay icon={Tractor} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
                            <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
-                           <MetricDisplay icon={Wheat} label={t('digitalTwin.expectedYield')} value={`${data.expectedYield.value} ${data.expectedYield.unit}`} />
+                           {calculatedYield && <MetricDisplay icon={Wheat} label={t('digitalTwin.expectedYield')} value={`${calculatedYield.value} ${calculatedYield.unit}`} />}
                         </>
                      )}
                 </CardContent>
