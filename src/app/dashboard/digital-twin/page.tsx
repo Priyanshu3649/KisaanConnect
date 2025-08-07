@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import AppLayout from "@/components/app-layout";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import dynamic from 'next/dynamic';
+import { useDebouncedCallback } from "use-debounce";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -35,7 +36,6 @@ const METERS_PER_ACRE = 4046.86;
 
 export default function DigitalTwinPage() {
   const { t } = useTranslation();
-  const [selectedFieldId, setSelectedFieldId] = useState<string>("field_pune_1");
   const [data, setData] = useState<DigitalTwinOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -43,10 +43,9 @@ export default function DigitalTwinPage() {
   const [width, setWidth] = useState("");
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([18.5204, 73.8567]); // Default to Pune
 
-  useMemo(() => {
-    if (selectedFieldId) {
-      setIsLoading(true);
-      getDigitalTwinData({ fieldId: selectedFieldId })
+  const debouncedFetchData = useDebouncedCallback((lat, lon) => {
+    setIsLoading(true);
+    getDigitalTwinData({ latitude: lat, longitude: lon })
         .then(setData)
         .catch(err => {
           console.error("Failed to get digital twin data", err);
@@ -57,8 +56,14 @@ export default function DigitalTwinPage() {
           });
         })
         .finally(() => setIsLoading(false));
+  }, 1000); // 1-second debounce
+
+  useEffect(() => {
+    if (markerPosition) {
+        debouncedFetchData(markerPosition[0], markerPosition[1]);
     }
-  }, [selectedFieldId, toast, t]);
+  }, [markerPosition, debouncedFetchData]);
+  
 
   const handleSaveConfiguration = () => {
     toast({
@@ -171,7 +176,7 @@ export default function DigitalTwinPage() {
                             {data.alerts.length > 0 ? data.alerts.map((alert, index) => (
                                <Alert key={index} className={severityBorderColors[alert.severity]}>
                                     <AlertTriangle className={`h-4 w-4 ${severityColors[alert.severity].replace('bg-', 'text-')}`} />
-                                    <AlertTitle className="capitalize">{alert.type.replace('_', ' ')}</AlertTitle>
+                                    <AlertTitle className="capitalize">{alert.type.replace(/_/g, ' ')}</AlertTitle>
                                     <AlertDescription>
                                         {alert.message}
                                     </AlertDescription>
@@ -196,5 +201,3 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
         </div>
     </div>
 );
-
-    
