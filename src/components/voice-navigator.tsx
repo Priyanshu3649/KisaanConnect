@@ -20,83 +20,88 @@ const VoiceNavigator = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window)) {
-      const recognition = new window.webkitSpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
+    if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window)) {
+      return;
+    }
 
-      recognition.onresult = async (event) => {
-        const command = event.results[0][0].transcript;
-        setIsListening(false);
-        setIsProcessing(true);
-        toast({ title: t('voice.processing'), description: `${t('voice.heard')}: "${command}"` });
-        
-        try {
-          const result = await processVoiceCommand({ command, language });
-          if (result.action === 'navigate' && result.route) {
-            router.push(result.route);
-            toast({ title: t('voice.navigating'), description: result.reasoning });
-          } else if (result.action === 'logout') {
-            await signOut(auth);
-            router.push('/');
-            toast({ title: t('voice.loggingOut'), description: result.reasoning });
-          } else {
-             toast({ variant: "destructive", title: t('voice.notUnderstood'), description: result.reasoning });
-          }
-        } catch (error) {
-          console.error("Voice command processing failed:", error);
-          toast({ variant: "destructive", title: t('voice.error'), description: t('voice.tryAgain') });
-        } finally {
-            setIsProcessing(false);
+    const recognition = new window.webkitSpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = async (event) => {
+      const command = event.results[0][0].transcript;
+      setIsListening(false);
+      setIsProcessing(true);
+      toast({ title: t('voice.processing'), description: `${t('voice.heard')}: "${command}"` });
+
+      try {
+        const result = await processVoiceCommand({ command, language });
+        if (result.action === 'navigate' && result.route) {
+          router.push(result.route);
+          toast({ title: t('voice.navigating'), description: result.reasoning });
+        } else if (result.action === 'logout') {
+          await signOut(auth);
+          router.push('/');
+          toast({ title: t('voice.loggingOut'), description: result.reasoning });
+        } else {
+          toast({ variant: 'destructive', title: t('voice.notUnderstood'), description: result.reasoning });
         }
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
+      } catch (error) {
+        console.error('Voice command processing failed:', error);
+        toast({ variant: 'destructive', title: t('voice.error'), description: t('voice.tryAgain') });
+      } finally {
         setIsProcessing(false);
-        if (event.error !== 'no-speech' && event.error !== 'aborted') {
-            toast({ variant: "destructive", title: t('voice.micError'), description: t('voice.checkPermissions') });
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      setIsProcessing(false);
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        toast({ variant: 'destructive', title: t('voice.micError'), description: t('voice.checkPermissions') });
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setIsProcessing(false);
+    };
+    
+    // Cleanup function to abort recognition on component unmount or language change
+    return () => {
+        if (recognitionRef.current) {
+            recognitionRef.current.abort();
         }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        setIsProcessing(false);
-      };
-
-      recognitionRef.current = recognition;
     }
   }, [language, router, t, toast]);
-
-  useEffect(() => {
-    if (recognitionRef.current) {
-        recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-US';
-    }
-  }, [language]);
 
 
   const handleMicClick = () => {
     if (!recognitionRef.current) {
-      toast({ variant: "destructive", title: t('voice.notSupported') });
+      toast({ variant: 'destructive', title: t('voice.notSupported') });
       return;
     }
-    
+
     if (isListening || isProcessing) {
       recognitionRef.current.stop();
     } else {
       try {
         recognitionRef.current.start();
-      } catch(e) {
-        console.error("Error starting recognition:", e);
+      } catch (e) {
+        console.error('Error starting recognition:', e);
         if ((e as DOMException).name === 'InvalidStateError') {
-             toast({ variant: "destructive", title: t('voice.micError'), description: "The microphone is already active. Please wait." });
+          // This can happen if start() is called while it's already running.
+          // The isListening/isProcessing state should prevent this, but as a safeguard:
+          toast({ variant: 'destructive', title: t('voice.micError'), description: 'The microphone is already active. Please wait.' });
         } else {
-            toast({ variant: "destructive", title: t('voice.micError'), description: (e as Error).message });
+          toast({ variant: 'destructive', title: t('voice.micError'), description: (e as Error).message });
         }
       }
     }
@@ -124,10 +129,9 @@ const VoiceNavigator = () => {
 
 // Add SpeechRecognition to window type
 declare global {
-    interface Window {
-      webkitSpeechRecognition: any;
-    }
+  interface Window {
+    webkitSpeechRecognition: any;
+  }
 }
-
 
 export default VoiceNavigator;
