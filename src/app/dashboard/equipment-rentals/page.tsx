@@ -14,24 +14,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, PlusCircle, ArrowUpDown, UploadCloud } from "lucide-react";
+import { MapPin, PlusCircle, ArrowUpDown, UploadCloud, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
-const initialEquipmentData = [
-  { name: "Tractor", image: "/src/images/tractor.jpeg", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", distance: 12, available: true },
-  { name: "Cultivator", image: "/src/images/cultivator.jpeg", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
-  { name: "Rotavator", image: "/src/images/rotavator.webp", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
-  { name: "Plough", image: "/src/images/plough.png", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
-  { name: "Combine Harvester", image: "/src/images/combine harvestor.jpeg", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
-  { name: "Water Pump", image: "/src/images/water pump.jpeg", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
-  { name: "Sprayer", image: "/src/images/sprayer.jpg", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
-  { name: "Power Tiller", image: "/src/images/power tiller.jpeg", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
+interface Equipment {
+  id: number;
+  name: string;
+  image: string;
+  hint: string;
+  price: number; // Price per day
+  owner: string;
+  location: string;
+  distance: number;
+  available: boolean;
+}
+
+const initialEquipmentData: Equipment[] = [
+  { id: 1, name: "Tractor", image: "https://placehold.co/600x400.png", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", distance: 12, available: true },
+  { id: 2, name: "Cultivator", image: "https://placehold.co/600x400.png", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
+  { id: 3, name: "Rotavator", image: "https://placehold.co/600x400.png", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
+  { id: 4, name: "Plough", image: "https://placehold.co/600x400.png", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
+  { id: 5, name: "Combine Harvester", image: "https://placehold.co/600x400.png", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
+  { id: 6, name: "Water Pump", image: "https://placehold.co/600x400.png", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
+  { id: 7, name: "Sprayer", image: "https://placehold.co/600x400.png", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
+  { id: 8, name: "Power Tiller", image: "https://placehold.co/600x400.png", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
 ];
-
 
 const locations = ["All Locations", ...Array.from(new Set(initialEquipmentData.map(item => item.location)))];
 
@@ -41,6 +56,10 @@ export default function EquipmentRentalsPage() {
     const [selectedLocation, setSelectedLocation] = useState("All Locations");
     const [sortBy, setSortBy] = useState("distance");
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const [isRentDialogOpen, setIsRentDialogOpen] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+    const [rentalDate, setRentalDate] = useState<Date | undefined>(new Date());
+    const [rentalHours, setRentalHours] = useState<number>(8);
     const { toast } = useToast();
 
     // New state for the upload form
@@ -49,7 +68,6 @@ export default function EquipmentRentalsPage() {
     const [newItemLocation, setNewItemLocation] = useState('');
     const [newItemImage, setNewItemImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -73,19 +91,18 @@ export default function EquipmentRentalsPage() {
             });
             return;
         }
-        const newEquipment = {
+        const newEquipment: Equipment = {
+            id: equipmentData.length + 1,
             name: newItemName,
             price: parseInt(newItemPrice),
             location: newItemLocation,
-            image: previewUrl!, // In a real app, this would be a URL from a storage service
+            image: previewUrl!,
             hint: newItemName.toLowerCase(),
-            owner: "You", // Assuming the current user is the owner
-            distance: 0, // Assuming it's at the user's location
+            owner: "You",
+            distance: 0,
             available: true,
         };
         setEquipmentData([newEquipment, ...equipmentData]);
-
-        // Reset form and close dialog
         setNewItemName('');
         setNewItemPrice('');
         setNewItemLocation('');
@@ -98,6 +115,34 @@ export default function EquipmentRentalsPage() {
         });
     };
 
+    const handleRentClick = (item: Equipment) => {
+        setSelectedEquipment(item);
+        setIsRentDialogOpen(true);
+    };
+
+    const handleConfirmBooking = () => {
+        if (!selectedEquipment) return;
+        setEquipmentData(prevData =>
+            prevData.map(item =>
+                item.id === selectedEquipment.id ? { ...item, available: false } : item
+            )
+        );
+        setIsRentDialogOpen(false);
+        toast({
+            title: "Booking Confirmed!",
+            description: `You have successfully rented the ${selectedEquipment.name}.`,
+        });
+        // Reset state for next time
+        setRentalDate(new Date());
+        setRentalHours(8);
+    };
+    
+    const calculateTotal = () => {
+        if (!selectedEquipment) return 0;
+        const pricePerDay = selectedEquipment.price;
+        const pricePerHour = pricePerDay / 8; // Assuming an 8-hour workday
+        return pricePerHour * rentalHours;
+    };
 
     const filteredAndSortedData = equipmentData
         .filter(item => selectedLocation === "All Locations" || item.location === selectedLocation)
@@ -187,8 +232,8 @@ export default function EquipmentRentalsPage() {
         </div>
       </PageHeader>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredAndSortedData.map((item, index) => (
-          <Card key={index} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group">
+        {filteredAndSortedData.map((item) => (
+          <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group">
             <CardHeader className="p-0">
               <div className="relative">
                 <Image
@@ -213,11 +258,73 @@ export default function EquipmentRentalsPage() {
             </CardContent>
             <CardFooter className="flex justify-between items-center p-4 pt-0">
                 <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
-                <Button disabled={!item.available} className="bg-primary hover:bg-primary/90 text-primary-foreground">{t('equipmentRentals.rentNow')}</Button>
+                <Button disabled={!item.available} onClick={() => handleRentClick(item)}>{t('equipmentRentals.rentNow')}</Button>
             </CardFooter>
           </Card>
         ))}
       </div>
+      
+      {/* Rental Dialog */}
+      <Dialog open={isRentDialogOpen} onOpenChange={setIsRentDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                  <DialogTitle>Rent: {selectedEquipment?.name}</DialogTitle>
+                  <DialogDescription>Select a date and duration for your rental.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                  <div className="grid items-center gap-2">
+                      <Label htmlFor="date">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !rentalDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {rentalDate ? format(rentalDate, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={rentalDate}
+                            onSelect={setRentalDate}
+                            initialFocus
+                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                  </div>
+                   <div className="grid items-center gap-2">
+                      <Label htmlFor="hours">Number of Hours (1-12)</Label>
+                       <Input
+                         id="hours"
+                         type="number"
+                         min="1"
+                         max="12"
+                         value={rentalHours}
+                         onChange={(e) => setRentalHours(Math.max(1, Math.min(12, Number(e.target.value))))}
+                       />
+                  </div>
+                  <div className="mt-4 pt-4 border-t">
+                      <div className="flex justify-between items-center font-semibold text-lg">
+                          <span>Total Bill:</span>
+                          <span>₹{calculateTotal().toFixed(2)}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Based on ₹{selectedEquipment?.price}/day (8 hours)</p>
+                  </div>
+              </div>
+              <DialogFooter>
+                  <Button variant="secondary" onClick={() => setIsRentDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={handleConfirmBooking}>Confirm Booking & Pay</Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
     </>
   );
 }
+
+    
