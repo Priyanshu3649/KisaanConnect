@@ -103,19 +103,16 @@ const customerSupportIvrFlow = ai.defineFlow(
             else if (choice === '2') lang = 'hi';
             else if (choice === '3') lang = 'pa';
             
-            response = "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है।"; // Fixed welcome message
-            nextState = 'welcome';
-            newContext = { language: lang };
-            break;
-
-        case 'welcome':
+            // Welcome message in Hindi, as requested.
+            const welcomeMessage = "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है।";
+            // Menu prompts in the selected language.
              const menuPrompts: Record<string, string> = {
                 en: "For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4.",
                 hi: "मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं।",
                 pa: "ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ।",
             };
-            response = menuPrompts[lang];
-            nextState = 'main_menu';
+            response = `${welcomeMessage} ${menuPrompts[lang]}`;
+            nextState = 'main_menu'; // Go directly to main menu
             newContext = { language: lang };
             break;
 
@@ -148,7 +145,7 @@ const customerSupportIvrFlow = ai.defineFlow(
 
         default:
             response = "An error occurred. Returning to the main menu.";
-            nextState = 'welcome'; // Go back to the start of the main menu flow
+            nextState = 'start'; // Go back to the start of the entire flow
     }
 
     const audio = await textToSpeech(response, lang);

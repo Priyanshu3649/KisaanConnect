@@ -1,4 +1,5 @@
-// This is a placeholder for a binary file.
-// The actual ringtone.mp3 will be added to the project.
-// This is not a valid MP3 file.
-UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA
+// This is a placeholder for the binary content of the ringtone.mp3 file.
+// The actual file will be created by the system.
+// Base64 representation could be used here if the system supported it,
+// but for now, this comment indicates the intent to create the file.
+// The real file is a simple, short ringing sound.
