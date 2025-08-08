@@ -29,13 +29,6 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
         const context = new AudioContext();
         audioContextRef.current = context;
 
-        // Create a silent buffer to unlock audio playback on all browsers
-        const buffer = context.createBuffer(1, 1, 22050);
-        const source = context.createBufferSource();
-        source.buffer = buffer;
-        source.connect(context.destination);
-        source.start(0);
-
         if (context.state === 'suspended') {
             context.resume();
         }
@@ -75,7 +68,6 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
         audioRef.current = new Audio();
         audioRef.current.addEventListener('ended', handleAudioEnded);
     }
-    // Cleanup event listener when component unmounts
     return () => {
         if (audioRef.current) {
             audioRef.current.removeEventListener('ended', handleAudioEnded);
@@ -89,7 +81,6 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
     
     onEndedCallbackRef.current = onEnded || null;
 
-    // Smartly handle both base64 data URIs and regular URLs
     audioRef.current.src = audioSrc;
     const playPromise = audioRef.current.play();
 
@@ -99,7 +90,6 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
         }).catch(error => {
             console.error("Audio playback failed:", error);
             setIsPlaying(false);
-            // Manually trigger ended if playback fails
             handleAudioEnded();
         });
     }

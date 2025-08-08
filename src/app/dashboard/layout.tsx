@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { AudioPlayerProvider } from "@/context/audio-player-context";
 import AppLayout from "@/components/app-layout";
 import { useTranslation } from "@/context/translation-context";
 import type { Translations } from "@/context/translation-context";
@@ -66,16 +65,12 @@ export default function DashboardLayout({
 
     return () => clearTimeout(timer);
     
-    // The `t` function can be an unstable dependency. By calling it inside the timeout
-    // and passing it to a helper, we avoid re-triggering the effect unnecessarily.
   }, [t]);
 
 
   return (
-    <AudioPlayerProvider>
-        <AppLayout>
-            {children}
-        </AppLayout>
-    </AudioPlayerProvider>
+    <AppLayout>
+        {children}
+    </AppLayout>
   );
 }

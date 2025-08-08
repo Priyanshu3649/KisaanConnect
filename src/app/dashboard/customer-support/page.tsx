@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Phone, PhoneOff, Bot, Loader2, User } from 'lucide-react';
+import { Phone, PhoneOff, Bot, Loader2, User, Mic, AudioLines } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useAudioPlayer } from '@/context/audio-player-context';
 import { processSupportAction, type SupportActionInput, type CallState } from '@/ai/flows/customer-support-ivr';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 type CallStatus = 'idle' | 'ringing' | 'connected' | 'ended';
+type CallActivity = 'idle' | 'listening' | 'speaking' | 'processing';
 
 interface LogEntry {
   speaker: 'AI' | 'User';
@@ -21,26 +22,98 @@ interface LogEntry {
 }
 
 export default function CustomerSupportPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [status, setStatus] = useState<CallStatus>('idle');
+  const [activity, setActivity] = useState<CallActivity>('idle');
   const [callState, setCallState] = useState<CallState>('start');
   const [callContext, setCallContext] = useState<Record<string, any>>({});
-  const [isProcessing, setIsProcessing] = useState(false);
   const [callLog, setCallLog] = useState<LogEntry[]>([]);
   const { initAudio, playAudio, stopAudio } = useAudioPlayer();
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
+
+  const languageToCode: { [key: string]: string } = {
+    en: 'en-US',
+    hi: 'hi-IN',
+    pa: 'pa-IN',
+  };
+
+  const startListening = useCallback(() => {
+    if (recognitionRef.current && status === 'connected') {
+      recognitionRef.current.lang = languageToCode[callContext.language || language] || 'en-US';
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+         console.error("Speech recognition already started.", e);
+      }
+    }
+  }, [status, callContext.language, language]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
         ringtoneRef.current = new Audio('/ringtone.mp3');
         ringtoneRef.current.loop = true;
+
+        if ('webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = false;
+            recognitionRef.current.interimResults = false;
+
+            recognitionRef.current.onstart = () => setActivity('listening');
+            recognitionRef.current.onend = () => setActivity('idle');
+            recognitionRef.current.onerror = (e) => {
+                if(e.error !== 'no-speech') console.error('Speech recognition error:', e.error)
+            };
+
+            recognitionRef.current.onresult = (event) => {
+                const command = event.results[0][0].transcript;
+                setCallLog(prev => [...prev, { speaker: 'User', text: `"${command}"` }]);
+                processAction({ userInput: command });
+            };
+        }
     }
     return () => {
         ringtoneRef.current?.pause();
         stopAudio();
     };
   }, [stopAudio]);
+
+  const processAction = useCallback(async (input: Partial<SupportActionInput>) => {
+    setActivity('processing');
+    try {
+        const fullInput: SupportActionInput = {
+            state: input.state || callState,
+            language: callContext.language || 'hi',
+            context: callContext,
+            ...input,
+        };
+        
+        const result = await processSupportAction(fullInput);
+        
+        setCallState(result.nextState);
+        setCallContext(result.context || {});
+        setCallLog(prev => [...prev, { speaker: 'AI', text: result.response }]);
+        setActivity('speaking');
+        playAudio(result.audio, () => {
+            setActivity('idle');
+            if (result.listen) {
+                startListening();
+            }
+        });
+
+    } catch (error) {
+        console.error("IVR action failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Call Error",
+            description: "An error occurred during the call. Please try again.",
+        });
+        // In a real scenario, you might not want to end the call immediately.
+    }
+  }, [callState, callContext, playAudio, startListening, toast]);
+  
 
   const startCall = async () => {
     initAudio();
@@ -55,13 +128,18 @@ export default function CustomerSupportPage() {
             ringtoneRef.current.pause();
             ringtoneRef.current.currentTime = 0;
         }
-        setStatus('connected');
-        processAction({ state: 'start' });
+        if (status !== 'ended') { // Check if call was ended during ringing
+            setStatus('connected');
+            processAction({ state: 'start' });
+        }
     }, 3000);
   };
   
   const endCall = () => {
     setStatus('ended');
+     if (recognitionRef.current) {
+        recognitionRef.current.stop();
+    }
     if (ringtoneRef.current) {
         ringtoneRef.current.pause();
         ringtoneRef.current.currentTime = 0;
@@ -70,41 +148,20 @@ export default function CustomerSupportPage() {
     setTimeout(() => setStatus('idle'), 2000);
   };
 
-  const processAction = async (input: Partial<SupportActionInput>) => {
-    setIsProcessing(true);
-    try {
-        const fullInput: SupportActionInput = {
-            state: input.state || callState,
-            language: callContext.language || 'hi',
-            context: callContext,
-            ...input,
-        };
-        
-        const result = await processSupportAction(fullInput);
-        
-        setCallState(result.nextState);
-        setCallContext(result.context || {});
-        setCallLog(prev => [{ speaker: 'AI', text: result.response }, ...prev]);
-        playAudio(result.audio);
-
-    } catch (error) {
-        console.error("IVR action failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Call Error",
-            description: "An error occurred during the call. Please try again.",
-        });
-        endCall();
-    } finally {
-        setIsProcessing(false);
-    }
-  }
-
   const handleKeyPress = (key: string) => {
-    if (isProcessing || status !== 'connected') return;
-    setCallLog(prev => [{ speaker: 'User', text: `Pressed key: ${key}` }, ...prev]);
+    if (activity !== 'idle' || status !== 'connected') return;
+    setCallLog(prev => [...prev, { speaker: 'User', text: `Pressed key: ${key}` }]);
     processAction({ userInput: key });
   };
+
+  const renderActivityStatus = () => {
+      switch (activity) {
+          case 'listening': return <><Mic className="h-4 w-4 mr-2" />Listening...</>
+          case 'speaking': return <><AudioLines className="h-4 w-4 mr-2" />Speaking...</>
+          case 'processing': return <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Processing...</>
+          default: return status === 'ringing' ? 'Ringing...' : 'Connected';
+      }
+  }
 
 
   if (status === 'idle' || status === 'ended') {
@@ -149,17 +206,15 @@ export default function CustomerSupportPage() {
         {/* Call Header */}
         <div className="text-center">
             <p className="text-2xl font-semibold">KisaanConnect Support</p>
-            <p className="text-lg text-slate-300 flex items-center gap-2">
-                {status === 'ringing' && 'Ringing...'}
-                {status === 'connected' && 'Connected'}
-                {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
+            <p className="text-lg text-slate-300 flex items-center gap-2 justify-center">
+                {renderActivityStatus()}
             </p>
         </div>
 
         {/* Call Log / Main Content */}
-        <div className="w-full max-w-md my-4 p-4 bg-black/20 rounded-lg h-64 overflow-y-auto">
+        <div className="w-full max-w-md my-4 p-4 bg-black/20 rounded-lg h-64 overflow-y-auto flex flex-col-reverse">
             <div className="space-y-2">
-                {callLog.map((log, index) => (
+                {callLog.slice().reverse().map((log, index) => (
                     <div key={index} className={cn("p-2 rounded-lg text-sm", log.speaker === 'AI' ? 'bg-slate-700 text-left' : 'bg-green-800 text-right')}>
                        <p>{log.text}</p> 
                     </div>
@@ -170,7 +225,7 @@ export default function CustomerSupportPage() {
         {/* Dialpad */}
          <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
-                <Button key={key} onClick={() => handleKeyPress(key)} className="h-16 text-2xl bg-white/10 hover:bg-white/20" disabled={isProcessing || status !== 'connected'}>
+                <Button key={key} onClick={() => handleKeyPress(key)} className="h-16 text-2xl bg-white/10 hover:bg-white/20" disabled={activity !== 'idle' || status !== 'connected'}>
                     {key}
                 </Button>
             ))}
@@ -184,4 +239,11 @@ export default function CustomerSupportPage() {
         </div>
     </div>
   );
+}
+
+// Add SpeechRecognition types to window
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+  }
 }
