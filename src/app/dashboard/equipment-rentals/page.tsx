@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react";
 import { useState } from "react";
 import Image from "next/image";
 import PageHeader from "@/components/page-header";
@@ -51,13 +52,13 @@ const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment
     const [hours, setHours] = useState('8');
     const [totalBill, setTotalBill] = useState(0);
 
-    useState(() => {
+    React.useEffect(() => {
         if (equipment) {
             const numHours = parseInt(hours) || 0;
             const pricePerHour = equipment.price / 8; // Assuming 8-hour workday
             setTotalBill(pricePerHour * numHours);
         }
-    });
+    }, [equipment, hours]);
 
     if (!equipment) return null;
 
@@ -150,9 +151,18 @@ export default function EquipmentRentalsPage() {
 
         // Simulate upload delay
         await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const newEquipment: Equipment = {
+            id: (equipmentList.length + 1).toString(),
+            name: newItemName,
+            image: previewUrl || "https://placehold.co/600x400.png",
+            price: parseFloat(newItemPrice),
+            ownerName: "You",
+            location: newItemLocation,
+            available: true,
+        };
 
-        // In a real app, you would upload to a server/storage here.
-        // For this demo, we just show a success message.
+        setEquipmentList(prevList => [newEquipment, ...prevList]);
         
         setIsUploading(false);
         setIsUploadDialogOpen(false);
@@ -181,8 +191,7 @@ export default function EquipmentRentalsPage() {
     const sortedData = [...equipmentList].sort((a, b) => {
         if (sortBy === 'price_asc') return a.price - b.price;
         if (sortBy === 'price_desc') return b.price - a.price;
-        // Default sort (by ID for stability in this demo)
-        return parseInt(a.id) - parseInt(b.id);
+        return 0; // Default sort
     });
 
   return (
