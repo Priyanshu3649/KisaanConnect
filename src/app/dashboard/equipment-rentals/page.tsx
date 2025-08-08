@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, PlusCircle, ArrowUpDown, Tractor as TractorIcon, Loader2, UploadCloud, Calendar as CalendarIcon } from "lucide-react";
+import { MapPin, PlusCircle, ArrowUpDown, Tractor as TractorIcon, Loader2, UploadCloud, Calendar as CalendarIcon, Phone } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -36,15 +36,17 @@ interface Equipment {
   location: string;
   available: boolean;
   aiHint: string;
+  coords: { lat: number; lng: number };
+  distance?: number;
 }
 
-const initialEquipment: Equipment[] = [
-    { id: "1", name: "John Deere 5050D", image: "https://placehold.co/600x400/5A8B4C/FFFFFF.png", price: 2500, ownerName: "Sohan Singh", location: "Pune, Maharashtra", available: true, aiHint: "green tractor" },
-    { id: "2", name: "Mahindra JIVO 245 DI", image: "https://placehold.co/600x400/D64A3A/FFFFFF.png", price: 1800, ownerName: "Rina Patel", location: "Nashik, Maharashtra", available: true, aiHint: "red tractor" },
-    { id: "3", name: "Sonalika DI 745 III", image: "https://placehold.co/600x400/3A7AD6/FFFFFF.png", price: 2200, ownerName: "Amit Kumar", location: "Ludhiana, Punjab", available: false, aiHint: "blue tractor" },
-    { id: "4", name: "Power Tiller 15HP", image: "https://placehold.co/600x400/F2A63B/FFFFFF.png", price: 1200, ownerName: "Vijay More", location: "Bangalore, Karnataka", available: true, aiHint: "power tiller" },
-    { id: "5", name: "Rotary Tiller", image: "https://placehold.co/600x400/8E44AD/FFFFFF.png", price: 900, ownerName: "Sohan Singh", location: "Pune, Maharashtra", available: true, aiHint: "rotary tiller" },
-    { id: "6", name: "Crop Sprayer (Mounted)", image: "https://placehold.co/600x400/3498DB/FFFFFF.png", price: 750, ownerName: "Rina Patel", location: "Nashik, Maharashtra", available: true, aiHint: "crop sprayer" },
+const initialEquipment: Omit<Equipment, 'distance'>[] = [
+    { id: "1", name: "John Deere 5050D", image: "https://placehold.co/600x400.png", price: 2500, ownerName: "Sohan Singh", location: "Sonipat, Haryana", available: true, aiHint: "green tractor", coords: { lat: 28.9959, lng: 77.0178 } },
+    { id: "2", name: "Mahindra JIVO 245 DI", image: "https://placehold.co/600x400.png", price: 1800, ownerName: "Rina Patel", location: "Ludhiana, Punjab", available: true, aiHint: "red tractor", coords: { lat: 30.9010, lng: 75.8573 } },
+    { id: "3", name: "Sonalika DI 745 III", image: "https://placehold.co/600x400.png", price: 2200, ownerName: "Amit Kumar", location: "Rohini, Delhi", available: false, aiHint: "blue tractor", coords: { lat: 28.7041, lng: 77.1025 } },
+    { id: "4", name: "Power Tiller 15HP", image: "https://placehold.co/600x400.png", price: 1200, ownerName: "Vijay More", location: "Amritsar, Punjab", available: true, aiHint: "power tiller", coords: { lat: 31.6340, lng: 74.8723 } },
+    { id: "5", name: "Rotary Tiller", image: "https://placehold.co/600x400.png", price: 900, ownerName: "Sohan Singh", location: "Sonipat, Haryana", available: true, aiHint: "rotary tiller", coords: { lat: 29.0100, lng: 77.0200 } },
+    { id: "6", name: "Crop Sprayer (Mounted)", image: "https://placehold.co/600x400.png", price: 750, ownerName: "Rina Patel", location: "Dwarka, Delhi", available: true, aiHint: "crop sprayer", coords: { lat: 28.6193, lng: 77.0549 } },
 ];
 
 
@@ -112,10 +114,24 @@ const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment
     );
 }
 
+// Haversine formula to calculate distance
+const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+}
+
 export default function EquipmentRentalsPage() {
     const { t } = useTranslation();
-    const [equipmentList, setEquipmentList] = useState<Equipment[]>(initialEquipment);
-    const [sortBy, setSortBy] = useState("createdAt");
+    const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+    const [sortBy, setSortBy] = useState("distance");
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     const [isRentDialogOpen, setIsRentDialogOpen] = useState(false);
     const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
@@ -128,6 +144,17 @@ export default function EquipmentRentalsPage() {
     const [newItemImage, setNewItemImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+
+    // Simulate user's location (e.g., Central Delhi)
+    const userLocation = { lat: 28.6353, lng: 77.2250 };
+
+    useEffect(() => {
+        const equipmentWithDistance = initialEquipment.map(item => ({
+            ...item,
+            distance: getDistance(userLocation.lat, userLocation.lng, item.coords.lat, item.coords.lng)
+        }));
+        setEquipmentList(equipmentWithDistance);
+    }, []);
 
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,12 +183,14 @@ export default function EquipmentRentalsPage() {
         const newEquipment: Equipment = {
             id: (equipmentList.length + 1).toString(),
             name: newItemName,
-            image: previewUrl || "https://placehold.co/600x400/cccccc/FFFFFF.png", // Use preview or a default
+            image: previewUrl || "https://placehold.co/600x400.png", // Use preview or a default
             price: parseFloat(newItemPrice),
             ownerName: "You",
             location: newItemLocation,
             available: true,
-            aiHint: "new equipment"
+            aiHint: "new equipment",
+            coords: { lat: userLocation.lat, lng: userLocation.lng }, // Default to user's location
+            distance: 0,
         };
 
         setEquipmentList(prevList => [newEquipment, ...prevList]);
@@ -189,12 +218,21 @@ export default function EquipmentRentalsPage() {
         setSelectedEquipment(null);
         toast({ title: "Booking Confirmed!", description: "The equipment has been marked as rented." });
     };
+    
+    const handleContactSeller = (ownerName: string) => {
+        toast({
+            title: `Contacting ${ownerName}`,
+            description: `Calling +91 98765 43210...`,
+        });
+    }
 
-    const sortedData = [...equipmentList].sort((a, b) => {
-        if (sortBy === 'price_asc') return a.price - b.price;
-        if (sortBy === 'price_desc') return b.price - a.price;
-        return 0; // Default sort
-    });
+    const sortedData = useMemo(() => 
+        [...equipmentList].sort((a, b) => {
+            if (sortBy === 'price_asc') return a.price - b.price;
+            if (sortBy === 'price_desc') return b.price - a.price;
+            if (sortBy === 'distance') return (a.distance ?? Infinity) - (b.distance ?? Infinity);
+            return 0; // Default sort
+        }), [equipmentList, sortBy]);
 
   return (
     <>
@@ -209,7 +247,7 @@ export default function EquipmentRentalsPage() {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                  <SelectItem value="createdAt">{t('equipmentRentals.sortByDistance')}</SelectItem>
+                  <SelectItem value="distance">{t('equipmentRentals.sortByDistance')}</SelectItem>
                   <SelectItem value="price_asc">{t('equipmentRentals.sortByPriceAsc')}</SelectItem>
                   <SelectItem value="price_desc">{t('equipmentRentals.sortByPriceDesc')}</SelectItem>
               </SelectContent>
@@ -284,12 +322,22 @@ export default function EquipmentRentalsPage() {
               <CardTitle className="font-headline text-xl mb-2">{item.name}</CardTitle>
               <div className="text-muted-foreground text-sm space-y-2">
                 <p>{t('equipmentRentals.owner')}: {item.ownerName}</p>
-                <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location}</p>
+                <div className="flex items-center justify-between">
+                    <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location}</p>
+                    {item.distance !== undefined && <p className="font-semibold text-xs">{item.distance.toFixed(0)} km away</p>}
+                </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between items-center p-4 pt-0">
-                <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
-                <Button onClick={() => handleRentClick(item)} disabled={!item.available} variant="outline">{t('equipmentRentals.rentNow')}</Button>
+            <CardFooter className="flex flex-col sm:flex-row justify-between items-center p-4 pt-0 gap-2">
+                <div className="flex-1 text-center sm:text-left">
+                     <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <Button onClick={() => handleContactSeller(item.ownerName)} variant="secondary" className="flex-1">
+                        <Phone className="h-4 w-4" />
+                    </Button>
+                    <Button onClick={() => handleRentClick(item)} disabled={!item.available} variant="outline" className="flex-1">{t('equipmentRentals.rentNow')}</Button>
+                </div>
             </CardFooter>
           </Card>
         ))}
