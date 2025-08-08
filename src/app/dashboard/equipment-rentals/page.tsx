@@ -14,53 +14,40 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, PlusCircle, ArrowUpDown, UploadCloud, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { MapPin, PlusCircle, ArrowUpDown, UploadCloud, Loader2 } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { useCollectionData } from "react-firebase-hooks/firestore";
+import { auth, db, storage } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface Equipment {
-  id: number;
+  id?: string;
   name: string;
   image: string;
-  hint: string;
-  price: number; // Price per day
-  owner: string;
+  price: number;
+  ownerName: string;
+  ownerId: string;
   location: string;
-  distance: number;
   available: boolean;
+  createdAt: any;
 }
-
-const initialEquipmentData: Equipment[] = [
-  { id: 1, name: "Tractor", image: "https://picsum.photos/seed/tractor/600/400", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", distance: 12, available: true },
-  { id: 2, name: "Cultivator", image: "https://picsum.photos/seed/cultivator/600/400", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
-  { id: 3, name: "Rotavator", image: "https://picsum.photos/seed/rotavator/600/400", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
-  { id: 4, name: "Plough", image: "https://picsum.photos/seed/plough/600/400", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
-  { id: 5, name: "Combine Harvester", image: "https://picsum.photos/seed/harvester/600/400", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
-  { id: 6, name: "Water Pump", image: "https://picsum.photos/seed/pump/600/400", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
-  { id: 7, name: "Sprayer", image: "https://picsum.photos/seed/sprayer/600/400", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
-  { id: 8, name: "Power Tiller", image: "https://picsum.photos/seed/tiller/600/400", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
-];
-
-const locations = ["All Locations", ...Array.from(new Set(initialEquipmentData.map(item => item.location)))];
 
 export default function EquipmentRentalsPage() {
     const { t } = useTranslation();
-    const [equipmentData, setEquipmentData] = useState(initialEquipmentData);
-    const [selectedLocation, setSelectedLocation] = useState("All Locations");
-    const [sortBy, setSortBy] = useState("distance");
+    const [user] = useAuthState(auth);
+    const [sortBy, setSortBy] = useState("createdAt");
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-    const [isRentDialogOpen, setIsRentDialogOpen] = useState(false);
-    const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-    const [rentalDate, setRentalDate] = useState<Date | undefined>(new Date());
-    const [rentalHours, setRentalHours] = useState<number>(8);
     const { toast } = useToast();
+    
+    // Firestore query
+    const equipmentQuery = query(collection(db, "equipment"), orderBy(sortBy === 'price_asc' || sortBy === 'price_desc' ? 'price' : 'createdAt', sortBy === 'price_desc' ? 'desc' : 'asc'));
+    const [equipmentData, loading, error] = useCollectionData(equipmentQuery, { idField: 'id' });
 
     // New state for the upload form
     const [newItemName, setNewItemName] = useState('');
@@ -68,6 +55,7 @@ export default function EquipmentRentalsPage() {
     const [newItemLocation, setNewItemLocation] = useState('');
     const [newItemImage, setNewItemImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -81,9 +69,9 @@ export default function EquipmentRentalsPage() {
         }
     };
 
-    const handleUploadSubmit = (e: React.FormEvent) => {
+    const handleUploadSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newItemName || !newItemPrice || !newItemLocation || !newItemImage) {
+        if (!newItemName || !newItemPrice || !newItemLocation || !newItemImage || !user) {
              toast({
                 variant: "destructive",
                 title: "Missing Information",
@@ -91,67 +79,56 @@ export default function EquipmentRentalsPage() {
             });
             return;
         }
-        const newEquipment: Equipment = {
-            id: equipmentData.length + 1,
-            name: newItemName,
-            price: parseInt(newItemPrice),
-            location: newItemLocation,
-            image: previewUrl!,
-            hint: newItemName.toLowerCase(),
-            owner: "You",
-            distance: 0,
-            available: true,
-        };
-        setEquipmentData([newEquipment, ...equipmentData]);
-        setNewItemName('');
-        setNewItemPrice('');
-        setNewItemLocation('');
-        setNewItemImage(null);
-        setPreviewUrl(null);
-        setIsUploadDialogOpen(false);
-        toast({
-            title: "Upload Successful",
-            description: `${newItemName} has been listed for rent.`,
-        });
+        setIsUploading(true);
+
+        try {
+            // 1. Upload image to Firebase Storage
+            const storageRef = ref(storage, `equipment/${user.uid}/${Date.now()}_${newItemImage.name}`);
+            const snapshot = await uploadBytes(storageRef, newItemImage);
+            const imageUrl = await getDownloadURL(snapshot.ref);
+
+            // 2. Add equipment data to Firestore
+            const newEquipment = {
+                name: newItemName,
+                price: parseInt(newItemPrice),
+                location: newItemLocation,
+                image: imageUrl,
+                ownerName: user.displayName || "Anonymous",
+                ownerId: user.uid,
+                available: true,
+                createdAt: serverTimestamp(),
+            };
+            await addDoc(collection(db, "equipment"), newEquipment);
+            
+            // 3. Reset form and close dialog
+            setNewItemName('');
+            setNewItemPrice('');
+            setNewItemLocation('');
+            setNewItemImage(null);
+            setPreviewUrl(null);
+            setIsUploadDialogOpen(false);
+            toast({
+                title: "Upload Successful",
+                description: `${newItemName} has been listed for rent.`,
+            });
+        } catch(error) {
+            console.error("Error uploading equipment:", error);
+            toast({
+                variant: "destructive",
+                title: "Upload Failed",
+                description: "There was an error listing your equipment. Please try again.",
+            });
+        } finally {
+            setIsUploading(false);
+        }
     };
 
-    const handleRentClick = (item: Equipment) => {
-        setSelectedEquipment(item);
-        setIsRentDialogOpen(true);
-    };
-
-    const handleConfirmBooking = () => {
-        if (!selectedEquipment) return;
-        setEquipmentData(prevData =>
-            prevData.map(item =>
-                item.id === selectedEquipment.id ? { ...item, available: false } : item
-            )
-        );
-        setIsRentDialogOpen(false);
-        toast({
-            title: "Booking Confirmed!",
-            description: `You have successfully rented the ${selectedEquipment.name}.`,
-        });
-        // Reset state for next time
-        setRentalDate(new Date());
-        setRentalHours(8);
-    };
-    
-    const calculateTotal = () => {
-        if (!selectedEquipment) return 0;
-        const pricePerDay = selectedEquipment.price;
-        const pricePerHour = pricePerDay / 8; // Assuming an 8-hour workday
-        return pricePerHour * rentalHours;
-    };
-
-    const filteredAndSortedData = equipmentData
-        .filter(item => selectedLocation === "All Locations" || item.location === selectedLocation)
-        .sort((a, b) => {
-            if (sortBy === 'price_asc') return a.price - b.price;
-            if (sortBy === 'price_desc') return b.price - a.price;
-            if (sortBy === 'distance') return a.distance - b.distance;
-            return 0;
-        });
+    const sortedData = equipmentData?.sort((a, b) => {
+        if (sortBy === 'price_asc') return a.price - b.price;
+        if (sortBy === 'price_desc') return b.price - a.price;
+        // Default to newest first
+        return b.createdAt?.toMillis() - a.createdAt?.toMillis();
+    });
 
   return (
     <>
@@ -160,23 +137,13 @@ export default function EquipmentRentalsPage() {
         description={t('equipmentRentals.pageDescription')}
       >
         <div className="flex gap-2 flex-wrap">
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t('equipmentRentals.selectLocation')} />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map(location => (
-                  <SelectItem key={location} value={location}>{location === "All Locations" ? t('equipmentRentals.allLocations') : location}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                  <SelectItem value="distance">{t('equipmentRentals.sortByDistance')}</SelectItem>
+                  <SelectItem value="createdAt">{t('equipmentRentals.sortByDistance')}</SelectItem>
                   <SelectItem value="price_asc">{t('equipmentRentals.sortByPriceAsc')}</SelectItem>
                   <SelectItem value="price_desc">{t('equipmentRentals.sortByPriceDesc')}</SelectItem>
               </SelectContent>
@@ -191,6 +158,7 @@ export default function EquipmentRentalsPage() {
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle>{t('equipmentRentals.uploadTitle')}</DialogTitle>
+                        <DialogDescription>Your listing will be visible to all farmers on the platform.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleUploadSubmit}>
                         <div className="grid gap-4 py-4">
@@ -224,15 +192,29 @@ export default function EquipmentRentalsPage() {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit">{t('equipmentRentals.uploadSubmitButton')}</Button>
+                            <Button type="submit" disabled={isUploading}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {t('equipmentRentals.uploadSubmitButton')}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
         </div>
       </PageHeader>
+      {loading && (
+          <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+      )}
+      {!loading && (!equipmentData || equipmentData.length === 0) && (
+          <div className="text-center py-10 text-muted-foreground">
+              <p>No equipment listed yet.</p>
+              <p>Be the first to list something for rent!</p>
+          </div>
+      )}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredAndSortedData.map((item) => (
+        {sortedData?.map((item) => (
           <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group">
             <CardHeader className="p-0">
               <div className="relative">
@@ -242,7 +224,6 @@ export default function EquipmentRentalsPage() {
                   width={600}
                   height={400}
                   className="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  data-ai-hint={item.hint}
                 />
                 <Badge className={`absolute top-2 right-2 border-none ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
                   {item.available ? t('equipmentRentals.available') : t('equipmentRentals.rented')}
@@ -252,77 +233,17 @@ export default function EquipmentRentalsPage() {
             <CardContent className="p-4">
               <CardTitle className="font-headline text-xl mb-2">{item.name}</CardTitle>
               <div className="text-muted-foreground text-sm space-y-2">
-                <p>{t('equipmentRentals.owner')}: {item.owner}</p>
-                <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location} (~{item.distance}km away)</p>
+                <p>{t('equipmentRentals.owner')}: {item.ownerName}</p>
+                <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location}</p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between items-center p-4 pt-0">
                 <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
-                <Button disabled={!item.available} onClick={() => handleRentClick(item)}>{t('equipmentRentals.rentNow')}</Button>
+                <Button disabled={!item.available} variant="outline">{t('equipmentRentals.rentNow')}</Button>
             </CardFooter>
           </Card>
         ))}
       </div>
-      
-      {/* Rental Dialog */}
-      <Dialog open={isRentDialogOpen} onOpenChange={setIsRentDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                  <DialogTitle>Rent: {selectedEquipment?.name}</DialogTitle>
-                  <DialogDescription>Select a date and duration for your rental.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                  <div className="grid items-center gap-2">
-                      <Label htmlFor="date">Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !rentalDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {rentalDate ? format(rentalDate, "PPP") : <span>Pick a date</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={rentalDate}
-                            onSelect={setRentalDate}
-                            initialFocus
-                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                  </div>
-                   <div className="grid items-center gap-2">
-                      <Label htmlFor="hours">Number of Hours (1-12)</Label>
-                       <Input
-                         id="hours"
-                         type="number"
-                         min="1"
-                         max="12"
-                         value={rentalHours}
-                         onChange={(e) => setRentalHours(Math.max(1, Math.min(12, Number(e.target.value))))}
-                       />
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                      <div className="flex justify-between items-center font-semibold text-lg">
-                          <span>Total Bill:</span>
-                          <span>₹{calculateTotal().toFixed(2)}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Based on ₹{selectedEquipment?.price}/day (8 hours)</p>
-                  </div>
-              </div>
-              <DialogFooter>
-                  <Button variant="secondary" onClick={() => setIsRentDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleConfirmBooking}>Confirm Booking & Pay</Button>
-              </DialogFooter>
-          </DialogContent>
-      </Dialog>
     </>
   );
 }
