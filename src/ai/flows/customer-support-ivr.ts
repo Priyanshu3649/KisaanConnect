@@ -16,7 +16,6 @@ import wav from 'wav';
 const CallStateSchema = z.enum([
     'start',
     'language_select',
-    'welcome',
     'main_menu',
     'mandi_prices_commodity',
     'mandi_prices_state',
@@ -103,31 +102,30 @@ const customerSupportIvrFlow = ai.defineFlow(
             else if (choice === '2') lang = 'hi';
             else if (choice === '3') lang = 'pa';
             
-            // Welcome message in Hindi, as requested.
             const welcomeMessage = "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है।";
-            // Menu prompts in the selected language.
-             const menuPrompts: Record<string, string> = {
+            
+            const menuPrompts: Record<string, string> = {
                 en: "For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4.",
                 hi: "मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं।",
                 pa: "ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ।",
             };
             response = `${welcomeMessage} ${menuPrompts[lang]}`;
-            nextState = 'main_menu'; // Go directly to main menu
+            nextState = 'main_menu';
             newContext = { language: lang };
             break;
 
         case 'main_menu':
             switch(input.userInput) {
                 case '1':
-                    response = "You've selected Mandi Prices. This service is under development.";
-                    nextState = 'main_menu'; // Go back to main menu for now
+                    response = "You've selected Mandi Prices. This service is under development and will be available soon. Returning to the main menu.";
+                    nextState = 'main_menu';
                     break;
                 case '2':
-                    response = "For Crop Disease Diagnosis, please use the 'Crop Diagnosis' feature in the app. You can upload a photo of your crop for an instant AI analysis and recommended actions.";
+                    response = "For Crop Disease Diagnosis, please use the 'Crop Diagnosis' feature in the app. You can upload a photo of your crop for an instant AI analysis and recommended actions. Returning to the main menu.";
                     nextState = 'main_menu';
                     break;
                 case '3':
-                    response = "For Government Scheme Information, please use the 'Government Schemes' feature in the app to check your eligibility or ask our AI assistant on the main dashboard.";
+                    response = "For Government Scheme Information, please use the 'Government Schemes' feature in the app to check your eligibility or ask our AI assistant on the main dashboard. Returning to the main menu.";
                      nextState = 'main_menu';
                     break;
                 case '4':
@@ -140,12 +138,9 @@ const customerSupportIvrFlow = ai.defineFlow(
             }
              break;
 
-        // Future states for Mandi prices etc. can be built out here
-        // ...
-
         default:
-            response = "An error occurred. Returning to the main menu.";
-            nextState = 'start'; // Go back to the start of the entire flow
+            response = "An error occurred. Please hang up and try again.";
+            nextState = 'end';
     }
 
     const audio = await textToSpeech(response, lang);

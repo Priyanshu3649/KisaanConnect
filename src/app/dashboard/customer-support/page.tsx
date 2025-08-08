@@ -5,10 +5,10 @@ import { useState, useEffect, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Phone, PhoneOff, Bot, Loader2, Volume2, MicOff, AlertCircle } from 'lucide-react';
+import { Phone, PhoneOff, Bot } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useAudioPlayer } from '@/context/audio-player-context';
-import { processSupportAction, type SupportActionInput, type SupportActionOutput, type CallState } from '@/ai/flows/customer-support-ivr';
+import { processSupportAction, type SupportActionInput, type CallState } from '@/ai/flows/customer-support-ivr';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -44,10 +44,11 @@ export default function CustomerSupportPage() {
   const startCall = async () => {
     initAudio();
     setCallLog([]);
+    setCallState('start');
+    setCallContext({});
     setStatus('ringing');
     ringtoneRef.current?.play();
     
-    // Simulate call connection
     setTimeout(() => {
         ringtoneRef.current?.pause();
         setStatus('connected');
@@ -59,14 +60,14 @@ export default function CustomerSupportPage() {
     setStatus('ended');
     ringtoneRef.current?.pause();
     stopAudio();
-    setTimeout(() => setStatus('idle'), 2000); // Reset after a delay
+    setTimeout(() => setStatus('idle'), 2000);
   };
 
   const processAction = async (input: Partial<SupportActionInput>) => {
     setIsProcessing(true);
     try {
         const fullInput: SupportActionInput = {
-            state: callState,
+            state: input.state || callState,
             language: callContext.language || 'hi',
             context: callContext,
             ...input,
@@ -93,7 +94,7 @@ export default function CustomerSupportPage() {
   }
 
   const handleKeyPress = (key: string) => {
-    if (isProcessing) return;
+    if (isProcessing || status !== 'connected') return;
     setCallLog(prev => [...prev, { speaker: 'User', text: `Pressed key: ${key}` }]);
     processAction({ userInput: key });
   };
@@ -155,7 +156,7 @@ export default function CustomerSupportPage() {
         {/* Dialpad */}
          <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
-                <Button key={key} onClick={() => handleKeyPress(key)} className="h-16 text-2xl bg-white/10 hover:bg-white/20" disabled={isProcessing}>
+                <Button key={key} onClick={() => handleKeyPress(key)} className="h-16 text-2xl bg-white/10 hover:bg-white/20" disabled={isProcessing || status !== 'connected'}>
                     {key}
                 </Button>
             ))}
