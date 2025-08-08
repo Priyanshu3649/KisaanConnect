@@ -41,7 +41,7 @@ export type SupportActionInput = z.infer<typeof SupportActionInputSchema>;
 const SupportActionOutputSchema = z.object({
   nextState: CallStateSchema.describe('The next state of the call.'),
   response: z.string().describe('The text response to be displayed in the call log.'),
-  audio: z.string().describe('The voice response in base64 encoded WAV format or a URL to a public audio file.'),
+  audio: z.string().describe('The voice response in base64 encoded WAV format.'),
   context: z.record(z.any()).optional().describe('Updated context to be passed in the next request.'),
 });
 export type SupportActionOutput = z.infer<typeof SupportActionOutputSchema>;
@@ -51,25 +51,8 @@ export async function processSupportAction(input: SupportActionInput): Promise<S
   return customerSupportIvrFlow(input);
 }
 
-
-// --- MOCK TTS FOR STATIC CONTENT TO AVOID RATE LIMITS ---
-const MOCK_AUDIO_MAP: Record<string, string> = {
-  "For English, press 1. हिंदी के लिए 2 दबाएं। ਪੰਜਾਬੀ ਲਈ 3 ਦਬਾਓ।": "/audio/lang-select.mp3",
-  "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है। For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4. To go back to the main menu, press star.": "/audio/welcome-en.mp3",
-  "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है। मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं। मुख्य मेनू पर वापस जाने के लिए, स्टार दबाएं।": "/audio/welcome-hi.mp3",
-  "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है। ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ। ਮੁੱਖ ਮੇਨੂ 'ਤੇ ਵਾਪਸ ਜਾਣ ਲਈ, ਸਟਾਰ ਦਬਾਓ।": "/audio/welcome-pa.mp3",
-};
-// --- END MOCK TTS ---
-
-
 // Function to convert text to speech
 async function textToSpeech(text: string, language: string): Promise<string> {
-    // If a pre-recorded file exists for this exact text, use it.
-    if (MOCK_AUDIO_MAP[text]) {
-      return MOCK_AUDIO_MAP[text];
-    }
-
-    // Otherwise, generate audio using the API for dynamic content.
     const languageToVoice: Record<string, string> = {
         'en': 'Algenib', 
         'hi': 'en-IN-Wavenet-D',
