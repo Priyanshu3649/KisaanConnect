@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useRef, useCallback, ReactNode, useState } from 'react';
 
 interface AudioPlayerContextType {
+  initAudio: () => void;
   playAudio: (audioSrc: string, onEnded?: () => void) => void;
   playStartSound: () => void;
   stopAudio: () => void;
@@ -17,20 +18,34 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const onEndedCallbackRef = useRef<(() => void) | null>(null);
+  const isInitialized = useRef(false);
 
   // Initialize AudioContext on first user interaction
-  const initAudioContext = useCallback(() => {
-    if (!audioContextRef.current && typeof window !== 'undefined' && window.AudioContext) {
-      try {
-        audioContextRef.current = new window.AudioContext();
-      } catch (e) {
-        console.error("Failed to create AudioContext", e);
-      }
+  const initAudio = useCallback(() => {
+    if (isInitialized.current || typeof window === 'undefined') return;
+    isInitialized.current = true;
+    try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const context = new AudioContext();
+        audioContextRef.current = context;
+
+        // Create a silent buffer to unlock audio playback on all browsers
+        const buffer = context.createBuffer(1, 1, 22050);
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(context.destination);
+        source.start(0);
+
+        if (context.state === 'suspended') {
+            context.resume();
+        }
+    } catch (e) {
+        console.error("Could not create AudioContext:", e);
     }
   }, []);
 
+
   const playStartSound = useCallback(() => {
-    initAudioContext();
     if (!audioContextRef.current) return;
     if (audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume();
@@ -44,7 +59,7 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
     gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
     oscillator.start();
     oscillator.stop(audioContextRef.current.currentTime + 0.1);
-  }, [initAudioContext]);
+  }, []);
 
   const handleAudioEnded = useCallback(() => {
       setIsPlaying(false);
@@ -55,7 +70,6 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const playAudio = useCallback((audioSrc: string, onEnded?: () => void) => {
-    initAudioContext();
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.addEventListener('ended', handleAudioEnded);
@@ -71,7 +85,7 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
         console.error("Audio playback failed:", error)
         setIsPlaying(false);
     });
-  }, [handleAudioEnded, initAudioContext]);
+  }, [handleAudioEnded]);
 
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
@@ -83,7 +97,7 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
 
 
   return (
-    <AudioPlayerContext.Provider value={{ playAudio, playStartSound, stopAudio, isPlaying }}>
+    <AudioPlayerContext.Provider value={{ initAudio, playAudio, playStartSound, stopAudio, isPlaying }}>
       {children}
     </AudioPlayerContext.Provider>
   );

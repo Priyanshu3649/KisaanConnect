@@ -31,7 +31,7 @@ const VoiceAssistant = () => {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const router = useRouter();
   const { toast } = useToast();
-  const { playAudio, playStartSound, stopAudio, isPlaying } = useAudioPlayer();
+  const { initAudio, playAudio, playStartSound, stopAudio, isPlaying } = useAudioPlayer();
   const [currentLocation, setCurrentLocation] = useState<{lat: number, lon: number} | null>(null);
 
   // Function to get current location
@@ -57,15 +57,16 @@ const VoiceAssistant = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window)) {
+      console.warn('Speech recognition not supported');
       return;
     }
 
-    if (recognitionRef.current) {
-        recognitionRef.current.abort();
+    const SpeechRecognition = window.webkitSpeechRecognition;
+    if (!recognitionRef.current) {
+        recognitionRef.current = new SpeechRecognition();
     }
-
-    const recognition = new window.webkitSpeechRecognition();
-    recognitionRef.current = recognition;
+    const recognition = recognitionRef.current;
+    
     recognition.lang = languageToCode[language] || 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
@@ -75,7 +76,7 @@ const VoiceAssistant = () => {
       playStartSound();
     };
 
-    recognition.onresult = async (event) => {
+    recognition.onresult = async (event: SpeechRecognitionEvent) => {
       const command = event.results[0][0].transcript;
       setIsListening(false);
       setIsProcessing(true);
@@ -106,9 +107,8 @@ const VoiceAssistant = () => {
             playAudio(assistantResult.audio, () => {
                 // When audio finishes, re-activate microphone
                 setIsProcessing(false);
-                if (recognitionRef.current && !isListening) {
-                    recognitionRef.current.start();
-                }
+                // Re-enable listening after response if needed
+                // handleMicClick(); // Uncomment for continuous conversation
             });
           } else {
              setIsProcessing(false);
@@ -122,7 +122,7 @@ const VoiceAssistant = () => {
       }
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
       setIsListening(false);
       setIsProcessing(false);
@@ -132,19 +132,18 @@ const VoiceAssistant = () => {
     };
 
     recognition.onend = () => {
-      setIsListening(false);
-      // Don't set processing to false here, as it may still be processing async
+      if (isListening) {
+        setIsListening(false);
+      }
     };
     
-    return () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.abort();
-        }
-    }
-  }, [language, router, t, toast, playAudio, playStartSound, currentLocation]);
+    // No return cleanup needed if we are reusing the same instance.
+  }, [language, router, t, toast, playAudio, playStartSound, currentLocation, isListening]);
 
 
   const handleMicClick = () => {
+    initAudio(); // Ensure audio context is ready on first click.
+
     if (!recognitionRef.current) {
       toast({ variant: 'destructive', title: t('voice.notSupported') });
       return;
@@ -152,6 +151,7 @@ const VoiceAssistant = () => {
 
     if (isListening) {
       recognitionRef.current.stop();
+      setIsListening(false);
     } else if (isProcessing && isPlaying) {
       stopAudio(); // Stop TTS playback
       setIsProcessing(false);
@@ -161,10 +161,9 @@ const VoiceAssistant = () => {
         recognitionRef.current.start();
       } catch (e) {
         console.error('Error starting recognition:', e);
-         if ((e as DOMException).name === 'InvalidStateError') {
-          toast({ variant: 'destructive', title: t('voice.micError'), description: 'The microphone is already active. Please wait.' });
-        } else {
-          toast({ variant: 'destructive', title: t('voice.micError'), description: (e as Error).message });
+        // If it's already started, this will throw. We can safely ignore it.
+        if ((e as DOMException).name !== 'InvalidStateError') {
+             toast({ variant: 'destructive', title: t('voice.micError'), description: (e as Error).message });
         }
       }
     }
@@ -195,10 +194,16 @@ const VoiceAssistant = () => {
   );
 };
 
-// Add SpeechRecognition to window type
+// Add SpeechRecognitionEvent types to window
 declare global {
   interface Window {
     webkitSpeechRecognition: any;
+  }
+  interface SpeechRecognitionEvent extends Event {
+    results: SpeechRecognitionResultList;
+  }
+  interface SpeechRecognitionErrorEvent extends Event {
+      error: string;
   }
 }
 
