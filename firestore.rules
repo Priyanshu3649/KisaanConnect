@@ -1,21 +1,22 @@
-rules_version = '2';
 
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow any authenticated user to read and write to the equipment collection
-    match /equipment/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Lock down user data to the specific user
+
+    // Users can read and write to their own user document.
     match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read, update: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null;
     }
 
-    // Allow users to manage their own diagnoses
-    match /diagnoses/{diagnosisId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    // Users can read and write their own diagnosis documents.
+    match /diagnoses/{docId} {
+      allow read, write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Any authenticated user can read and write to the equipment collection for the marketplace.
+    match /equipment/{docId} {
+      allow read, write: if request.auth != null;
     }
   }
 }
