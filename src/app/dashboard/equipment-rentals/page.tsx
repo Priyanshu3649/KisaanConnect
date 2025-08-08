@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, PlusCircle, ArrowUpDown, UploadCloud, Loader2 } from "lucide-react";
+import { MapPin, PlusCircle, ArrowUpDown, Tractor as TractorIcon, Loader2 } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -22,20 +22,25 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { auth, db, storage } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp, query, orderBy, Timestamp } from "firebase/firestore";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
 
 interface Equipment {
   id?: string;
   name: string;
-  image: string;
+  image: string; // Will be a placeholder path
   price: number;
   ownerName: string;
   ownerId: string;
   location: string;
   available: boolean;
-  createdAt: any;
+  createdAt: Timestamp;
 }
 
 export default function EquipmentRentalsPage() {
@@ -45,54 +50,32 @@ export default function EquipmentRentalsPage() {
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     const { toast } = useToast();
     
-    // Firestore query
     const equipmentQuery = query(collection(db, "equipment"), orderBy(sortBy === 'price_asc' || sortBy === 'price_desc' ? 'price' : 'createdAt', sortBy === 'price_desc' ? 'desc' : 'asc'));
     const [equipmentData, loading, error] = useCollectionData(equipmentQuery, { idField: 'id' });
 
-    // New state for the upload form
     const [newItemName, setNewItemName] = useState('');
     const [newItemPrice, setNewItemPrice] = useState('');
     const [newItemLocation, setNewItemLocation] = useState('');
-    const [newItemImage, setNewItemImage] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setNewItemImage(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreviewUrl(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
 
     const handleUploadSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newItemName || !newItemPrice || !newItemLocation || !newItemImage || !user) {
+        if (!newItemName || !newItemPrice || !newItemLocation || !user) {
              toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "Please fill out all fields and upload an image.",
+                description: "Please fill out all fields.",
             });
             return;
         }
         setIsUploading(true);
 
         try {
-            // 1. Upload image to Firebase Storage
-            const storageRef = ref(storage, `equipment/${user.uid}/${Date.now()}_${newItemImage.name}`);
-            const snapshot = await uploadBytes(storageRef, newItemImage);
-            const imageUrl = await getDownloadURL(snapshot.ref);
-
-            // 2. Add equipment data to Firestore
             const newEquipment = {
                 name: newItemName,
                 price: parseInt(newItemPrice),
                 location: newItemLocation,
-                image: imageUrl,
+                image: "/tractor_placeholder.svg", // Using a static placeholder
                 ownerName: user.displayName || "Anonymous",
                 ownerId: user.uid,
                 available: true,
@@ -100,23 +83,20 @@ export default function EquipmentRentalsPage() {
             };
             await addDoc(collection(db, "equipment"), newEquipment);
             
-            // 3. Reset form and close dialog
             setNewItemName('');
             setNewItemPrice('');
             setNewItemLocation('');
-            setNewItemImage(null);
-            setPreviewUrl(null);
             setIsUploadDialogOpen(false);
             toast({
                 title: "Upload Successful",
                 description: `${newItemName} has been listed for rent.`,
             });
-        } catch(error) {
+        } catch(error: any) {
             console.error("Error uploading equipment:", error);
             toast({
                 variant: "destructive",
                 title: "Upload Failed",
-                description: "There was an error listing your equipment. Please try again.",
+                description: `There was an error listing your equipment: ${error.message}`,
             });
         } finally {
             setIsUploading(false);
@@ -124,11 +104,11 @@ export default function EquipmentRentalsPage() {
     };
 
     const sortedData = equipmentData?.sort((a, b) => {
-        if (sortBy === 'price_asc') return a.price - b.price;
-        if (sortBy === 'price_desc') return b.price - a.price;
+        if (sortBy === 'price_asc') return (a as Equipment).price - (b as Equipment).price;
+        if (sortBy === 'price_desc') return (b as Equipment).price - (a as Equipment).price;
         // Default to newest first
-        return b.createdAt?.toMillis() - a.createdAt?.toMillis();
-    });
+        return (b.createdAt as Timestamp)?.toMillis() - (a.createdAt as Timestamp)?.toMillis();
+    }) as Equipment[] | undefined;
 
   return (
     <>
@@ -176,20 +156,6 @@ export default function EquipmentRentalsPage() {
                                     <Input id="location" value={newItemLocation} onChange={(e) => setNewItemLocation(e.target.value)} placeholder={t('equipmentRentals.uploadLocationPlaceholder')} />
                                 </div>
                             </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="image-upload">{t('equipmentRentals.uploadImageLabel')}</Label>
-                                <label htmlFor="image-upload-input" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary">
-                                  {previewUrl ? (
-                                    <Image src={previewUrl} alt="Preview" width={100} height={100} className="h-full w-auto object-contain p-2" />
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">{t('register.clickToUpload')}</span></p>
-                                    </div>
-                                  )}
-                                  <Input id="image-upload-input" type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
-                              </label>
-                            </div>
                         </div>
                         <DialogFooter>
                             <Button type="submit" disabled={isUploading}>
@@ -217,14 +183,8 @@ export default function EquipmentRentalsPage() {
         {sortedData?.map((item) => (
           <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group">
             <CardHeader className="p-0">
-              <div className="relative">
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  width={600}
-                  height={400}
-                  className="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+              <div className="relative aspect-video w-full flex items-center justify-center bg-muted">
+                <TractorIcon className="w-16 h-16 text-muted-foreground" />
                 <Badge className={`absolute top-2 right-2 border-none ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
                   {item.available ? t('equipmentRentals.available') : t('equipmentRentals.rented')}
                 </Badge>
@@ -247,5 +207,3 @@ export default function EquipmentRentalsPage() {
     </>
   );
 }
-
-    
