@@ -35,15 +35,16 @@ interface Equipment {
   ownerName: string;
   location: string;
   available: boolean;
+  aiHint: string;
 }
 
 const initialEquipment: Equipment[] = [
-    { id: "1", name: "John Deere 5050D", image: "https://placehold.co/600x400.png", price: 2500, ownerName: "Sohan Singh", location: "Pune, Maharashtra", available: true },
-    { id: "2", name: "Mahindra JIVO 245 DI", image: "https://placehold.co/600x400.png", price: 1800, ownerName: "Rina Patel", location: "Nashik, Maharashtra", available: true },
-    { id: "3", name: "Sonalika DI 745 III", image: "https://placehold.co/600x400.png", price: 2200, ownerName: "Amit Kumar", location: "Ludhiana, Punjab", available: false },
-    { id: "4", name: "Power Tiller 15HP", image: "https://placehold.co/600x400.png", price: 1200, ownerName: "Vijay More", location: "Bangalore, Karnataka", available: true },
-    { id: "5", name: "Rotary Tiller", image: "https://placehold.co/600x400.png", price: 900, ownerName: "Sohan Singh", location: "Pune, Maharashtra", available: true },
-    { id: "6", name: "Crop Sprayer (Tractor Mounted)", image: "https://placehold.co/600x400.png", price: 750, ownerName: "Rina Patel", location: "Nashik, Maharashtra", available: true },
+    { id: "1", name: "John Deere 5050D", image: "https://placehold.co/600x400/5A8B4C/FFFFFF.png", price: 2500, ownerName: "Sohan Singh", location: "Pune, Maharashtra", available: true, aiHint: "green tractor" },
+    { id: "2", name: "Mahindra JIVO 245 DI", image: "https://placehold.co/600x400/D64A3A/FFFFFF.png", price: 1800, ownerName: "Rina Patel", location: "Nashik, Maharashtra", available: true, aiHint: "red tractor" },
+    { id: "3", name: "Sonalika DI 745 III", image: "https://placehold.co/600x400/3A7AD6/FFFFFF.png", price: 2200, ownerName: "Amit Kumar", location: "Ludhiana, Punjab", available: false, aiHint: "blue tractor" },
+    { id: "4", name: "Power Tiller 15HP", image: "https://placehold.co/600x400/F2A63B/FFFFFF.png", price: 1200, ownerName: "Vijay More", location: "Bangalore, Karnataka", available: true, aiHint: "power tiller" },
+    { id: "5", name: "Rotary Tiller", image: "https://placehold.co/600x400/8E44AD/FFFFFF.png", price: 900, ownerName: "Sohan Singh", location: "Pune, Maharashtra", available: true, aiHint: "rotary tiller" },
+    { id: "6", name: "Crop Sprayer (Mounted)", image: "https://placehold.co/600x400/3498DB/FFFFFF.png", price: 750, ownerName: "Rina Patel", location: "Nashik, Maharashtra", available: true, aiHint: "crop sprayer" },
 ];
 
 
@@ -143,8 +144,8 @@ export default function EquipmentRentalsPage() {
 
     const handleUploadSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newItemName || !newItemPrice || !newItemLocation || !newItemImage) {
-             toast({ variant: "destructive", title: "Missing Information", description: "Please fill out all fields and upload an image." });
+        if (!newItemName || !newItemPrice || !newItemLocation) {
+             toast({ variant: "destructive", title: "Missing Information", description: "Please fill out all fields." });
             return;
         }
         setIsUploading(true);
@@ -155,11 +156,12 @@ export default function EquipmentRentalsPage() {
         const newEquipment: Equipment = {
             id: (equipmentList.length + 1).toString(),
             name: newItemName,
-            image: previewUrl || "https://placehold.co/600x400.png",
+            image: previewUrl || "https://placehold.co/600x400/cccccc/FFFFFF.png", // Use preview or a default
             price: parseFloat(newItemPrice),
             ownerName: "You",
             location: newItemLocation,
             available: true,
+            aiHint: "new equipment"
         };
 
         setEquipmentList(prevList => [newEquipment, ...prevList]);
@@ -272,7 +274,7 @@ export default function EquipmentRentalsPage() {
           <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group flex flex-col">
             <CardHeader className="p-0">
               <div className="relative aspect-video w-full bg-muted overflow-hidden">
-                <Image src={item.image} alt={item.name} data-ai-hint="tractor farm equipment" fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                <Image src={item.image} alt={item.name} data-ai-hint={item.aiHint} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                 <Badge className={`absolute top-2 right-2 border-none ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
                   {item.available ? t('equipmentRentals.available') : t('equipmentRentals.rented')}
                 </Badge>
