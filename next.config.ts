@@ -15,12 +15,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'picsum.photos',
       },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
     ],
   },
 };
 
 export default nextConfig;
-
-    
-
-    
