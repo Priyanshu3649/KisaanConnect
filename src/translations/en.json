@@ -311,5 +311,15 @@
     "organics.faq3q": "What are the main challenges?",
     "organics.faq3a": "The main challenges include effective pest and weed control without chemicals, managing soil fertility, and a potential dip in yield during the initial transition years.",
     "organics.faq4q": "Where can I get organic seeds?",
-    "organics.faq4a": "Organic seeds can be sourced from certified organic seed producers, agricultural universities, and various government and non-government organizations that promote organic farming."
+    "organics.faq4a": "Organic seeds can be sourced from certified organic seed producers, agricultural universities, and various government and non-government organizations that promote organic farming.",
+
+    "customerSupport.pageDescription": "Get instant help by calling our AI-powered support line.",
+    "customerSupport.title": "AI Customer Support Hotline",
+    "customerSupport.description": "Our AI assistant is available 24/7 to answer your questions. Call the number below to get started.",
+    "customerSupport.callTimings": "Available 24 hours a day, 7 days a week.",
+    "customerSupport.whatToExpect.title": "What to expect when you call:",
+    "customerSupport.whatToExpect.li1": "An AI assistant will answer your call.",
+    "customerSupport.whatToExpect.li2": "You can ask for Mandi prices, weather updates, and scheme information.",
+    "customerSupport.whatToExpect.li3": "Use the keypad to navigate menus or just speak your query.",
+    "customerSupport.callNowButton": "Call Support Now"
 }
