@@ -145,8 +145,8 @@ export default function EquipmentRentalsPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
-    // Simulate user's location (e.g., Central Delhi)
-    const userLocation = { lat: 28.6353, lng: 77.2250 };
+    // Simulate user's location (Sonipat, Haryana)
+    const userLocation = { lat: 28.9959, lng: 77.0178 };
 
     useEffect(() => {
         const equipmentWithDistance = initialEquipment.map(item => ({
@@ -349,5 +349,3 @@ export default function EquipmentRentalsPage() {
     </>
   );
 }
-
-    
