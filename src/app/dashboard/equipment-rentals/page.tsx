@@ -38,14 +38,14 @@ interface Equipment {
 }
 
 const initialEquipmentData: Equipment[] = [
-  { id: 1, name: "Tractor", image: "https://placehold.co/600x400.png", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", distance: 12, available: true },
-  { id: 2, name: "Cultivator", image: "https://placehold.co/600x400.png", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
-  { id: 3, name: "Rotavator", image: "https://placehold.co/600x400.png", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
-  { id: 4, name: "Plough", image: "https://placehold.co/600x400.png", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
-  { id: 5, name: "Combine Harvester", image: "https://placehold.co/600x400.png", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
-  { id: 6, name: "Water Pump", image: "https://placehold.co/600x400.png", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
-  { id: 7, name: "Sprayer", image: "https://placehold.co/600x400.png", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
-  { id: 8, name: "Power Tiller", image: "https://placehold.co/600x400.png", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
+  { id: 1, name: "Tractor", image: "https://picsum.photos/seed/tractor/600/400", hint: "tractor farming", price: 1500, owner: "Ramesh Patel", location: "Pune", distance: 12, available: true },
+  { id: 2, name: "Cultivator", image: "https://picsum.photos/seed/cultivator/600/400", hint: "farm cultivator", price: 500, owner: "Sita Devi", location: "Nashik", distance: 85, available: true },
+  { id: 3, name: "Rotavator", image: "https://picsum.photos/seed/rotavator/600/400", hint: "farm rotavator", price: 700, owner: "Amit Singh", location: "Indore", distance: 250, available: false },
+  { id: 4, name: "Plough", image: "https://picsum.photos/seed/plough/600/400", hint: "field plough", price: 300, owner: "Sunita Pawar", location: "Pune", distance: 15, available: true },
+  { id: 5, name: "Combine Harvester", image: "https://picsum.photos/seed/harvester/600/400", hint: "combine harvester", price: 3000, owner: "Vikram Bhosle", location: "Ludhiana", distance: 1200, available: true },
+  { id: 6, name: "Water Pump", image: "https://picsum.photos/seed/pump/600/400", hint: "irrigation pump", price: 400, owner: "Meena Kumari", location: "Nashik", distance: 92, available: false },
+  { id: 7, name: "Sprayer", image: "https://picsum.photos/seed/sprayer/600/400", hint: "farm sprayer", price: 600, owner: "Ramesh Patel", location: "Pune", distance: 14, available: true },
+  { id: 8, name: "Power Tiller", image: "https://picsum.photos/seed/tiller/600/400", hint: "power tiller", price: 800, owner: "Amit Singh", location: "Indore", distance: 245, available: true },
 ];
 
 const locations = ["All Locations", ...Array.from(new Set(initialEquipmentData.map(item => item.location)))];
@@ -326,5 +326,7 @@ export default function EquipmentRentalsPage() {
     </>
   );
 }
+
+    
 
     
