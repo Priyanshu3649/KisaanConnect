@@ -2,19 +2,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users can read and write to their own user document.
+    // A user can create their own document, and only they can read or update it.
     match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+      allow read, update: if request.auth.uid == userId;
+      allow create: if request.auth.uid != null;
     }
 
-    // Users can read and write their own diagnosis documents.
-    match /diagnoses/{docId} {
-      allow read, write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    // A user can read and write their own diagnoses
+    match /diagnoses/{diagnosisId} {
+      allow read, write: if request.auth.uid == request.resource.data.userId;
     }
 
-    // Any authenticated user can read and write to the equipment collection for the marketplace.
+    // Any authenticated user can read and write to the equipment collection
     match /equipment/{docId} {
       allow read, write: if request.auth != null;
     }
