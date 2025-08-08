@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useRef, useCallback, ReactNode, useState } from 'react';
+import React, { createContext, useContext, useRef, useCallback, ReactNode, useState, useEffect } from 'react';
 
 interface AudioPlayerContextType {
   initAudio: () => void;
@@ -69,12 +69,23 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
       }
   }, []);
 
-  const playAudio = useCallback((audioSrc: string, onEnded?: () => void) => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.addEventListener('ended', handleAudioEnded);
-      // Removed the 'pause' event listener which was causing premature state changes
+  // Effect to set up the audio element and its event listeners once
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !audioRef.current) {
+        audioRef.current = new Audio();
+        audioRef.current.addEventListener('ended', handleAudioEnded);
     }
+    // Cleanup event listener when component unmounts
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.removeEventListener('ended', handleAudioEnded);
+        }
+    }
+  }, [handleAudioEnded]);
+
+
+  const playAudio = useCallback((audioSrc: string, onEnded?: () => void) => {
+    if (!audioRef.current) return;
     
     onEndedCallbackRef.current = onEnded || null;
 

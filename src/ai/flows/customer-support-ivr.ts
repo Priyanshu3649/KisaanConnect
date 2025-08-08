@@ -41,7 +41,7 @@ export type SupportActionInput = z.infer<typeof SupportActionInputSchema>;
 const SupportActionOutputSchema = z.object({
   nextState: CallStateSchema.describe('The next state of the call.'),
   response: z.string().describe('The text response to be displayed in the call log.'),
-  audio: z.string().describe('The voice response in base64 encoded WAV format.'),
+  audio: z.string().describe('The voice response as a URL to a local file or a base64 encoded WAV data URI.'),
   context: z.record(z.any()).optional().describe('Updated context to be passed in the next request.'),
 });
 export type SupportActionOutput = z.infer<typeof SupportActionOutputSchema>;
@@ -51,8 +51,21 @@ export async function processSupportAction(input: SupportActionInput): Promise<S
   return customerSupportIvrFlow(input);
 }
 
-// Function to convert text to speech
+// Map of static prompts to pre-recorded audio files to save on API quota
+const staticAudioMap: Record<string, string> = {
+    "For English, press 1. हिंदी के लिए 2 दबाएं। ਪੰਜਾਬੀ ਲਈ 3 ਦਬਾਓ।": "/audio/language-select.mp3",
+    "Welcome! For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4. To go back, press star.": "/audio/main-menu-en.mp3",
+    "नमस्ते! किसानकनेक्ट से जुड़ने के लिए धन्यवाद। मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं। वापस जाने के लिए, स्टार दबाएं।": "/audio/main-menu-hi.mp3",
+    "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਕਿਸਾਨਕਨੈਕਟ ਨਾਲ ਜੁੜਨ ਲਈ ਧੰਨਵਾਦ। ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ। ਵਾਪਸ ਜਾਣ ਲਈ, ਸਟਾਰ ਦਬਾਓ।": "/audio/main-menu-pa.mp3",
+};
+
+// Function to convert text to speech, using pre-recorded files where possible
 async function textToSpeech(text: string, language: string): Promise<string> {
+    if (staticAudioMap[text]) {
+        return staticAudioMap[text];
+    }
+    
+    // Fallback to live TTS for dynamic content
     const languageToVoice: Record<string, string> = {
         'en': 'Algenib', 
         'hi': 'en-IN-Wavenet-D',
@@ -100,9 +113,9 @@ const customerSupportIvrFlow = ai.defineFlow(
     let lang = input.language || 'hi';
 
     const menuPrompts: Record<string, string> = {
-        en: "For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4. To go back to the main menu, press star.",
-        hi: "मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं। मुख्य मेनू पर वापस जाने के लिए, स्टार दबाएं।",
-        pa: "ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ। ਮੁੱਖ ਮੇਨੂ 'ਤੇ ਵਾਪਸ ਜਾਣ ਲਈ, ਸਟਾਰ ਦਬਾਓ।",
+        en: "Welcome! For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4. To go back, press star.",
+        hi: "नमस्ते! किसानकनेक्ट से जुड़ने के लिए धन्यवाद। मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं। वापस जाने के लिए, स्टार दबाएं।",
+        pa: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਕਿਸਾਨਕਨੈਕਟ ਨਾਲ ਜੁੜਨ ਲਈ ਧੰਨਵਾਦ। ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ। ਵਾਪਸ ਜਾਣ ਲਈ, ਸਟਾਰ ਦਬਾਓ।",
     };
 
     if (input.userInput === '*') {
@@ -122,8 +135,7 @@ const customerSupportIvrFlow = ai.defineFlow(
                 else if (choice === '2') lang = 'hi';
                 else if (choice === '3') lang = 'pa';
                 
-                const welcomeMessage = "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है।";
-                response = `${welcomeMessage} ${menuPrompts[lang]}`;
+                response = menuPrompts[lang];
                 nextState = 'main_menu';
                 newContext = { language: lang };
                 break;
