@@ -11,6 +11,7 @@
     "nav.helpAndFeedback": "సహాయం & అభిప్రాయం",
     "nav.digitalTwin": "డిజిటల్ ట్విన్",
     "nav.governmentSchemes": "ప్రభుత్వ పథకాలు",
+    "nav.customerSupport": "కస్టమర్ మద్దతు",
 
     "optional": "ఐచ్ఛికం",
 
@@ -29,7 +30,7 @@
     "voice.error": "వాయిస్ లోపం",
     "voice.tryAgain": "దయచేసి మళ్లీ ప్రయత్నించండి.",
     "voice.micError": "మైక్రోఫోన్ లోపం",
-    "voice.checkPermissions": "దయచేసి మైక్రోఫోన్ అనుమతులను తనిఖీ చేయండి.",
+    "voice.checkPermissions": "దయచేసి మైక్రੋఫోన్ అనుమతులను తనిఖీ చేయండి.",
     "voice.notSupported": "ఈ బ్రౌజర్‌లో వాయిస్ గుర్తింపుకు మద్దతు లేదు.",
 
     "login.tagline": "సాంకేతికత ద్వారా భారతీయ రైతులను శక్తివంతం చేయడం.",
