@@ -5,12 +5,13 @@ import { useState, useEffect, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Phone, PhoneOff, Bot, Loader2 } from 'lucide-react';
+import { Phone, PhoneOff, Bot, Loader2, User } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useAudioPlayer } from '@/context/audio-player-context';
 import { processSupportAction, type SupportActionInput, type CallState } from '@/ai/flows/customer-support-ivr';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 type CallStatus = 'idle' | 'ringing' | 'connected' | 'ended';
 
@@ -83,7 +84,7 @@ export default function CustomerSupportPage() {
         
         setCallState(result.nextState);
         setCallContext(result.context || {});
-        setCallLog(prev => [...prev, { speaker: 'AI', text: result.response }]);
+        setCallLog(prev => [{ speaker: 'AI', text: result.response }, ...prev]);
         playAudio(result.audio);
 
     } catch (error) {
@@ -101,7 +102,7 @@ export default function CustomerSupportPage() {
 
   const handleKeyPress = (key: string) => {
     if (isProcessing || status !== 'connected') return;
-    setCallLog(prev => [...prev, { speaker: 'User', text: `Pressed key: ${key}` }]);
+    setCallLog(prev => [{ speaker: 'User', text: `Pressed key: ${key}` }, ...prev]);
     processAction({ userInput: key });
   };
 
@@ -122,7 +123,7 @@ export default function CustomerSupportPage() {
                 <CardTitle className="mt-4">{t('customerSupport.title')}</CardTitle>
                 <CardDescription>{t('customerSupport.description')}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
                 {status === 'ended' && (
                     <div className="p-4 mb-4 bg-muted text-muted-foreground rounded-lg">Call Ended</div>
                 )}
@@ -130,6 +131,12 @@ export default function CustomerSupportPage() {
                     <Phone className="mr-3 h-6 w-6" />
                     {t('customerSupport.callNowButton')}
                 </Button>
+                <Link href="tel:+919313686893">
+                    <Button size="lg" variant="outline" className="w-full h-16 text-lg">
+                        <User className="mr-3 h-6 w-6" />
+                        Call an Expert
+                    </Button>
+                </Link>
             </CardContent>
             </Card>
         </div>
@@ -150,9 +157,9 @@ export default function CustomerSupportPage() {
         </div>
 
         {/* Call Log / Main Content */}
-        <div className="w-full max-w-md my-4 p-4 bg-black/20 rounded-lg h-64 overflow-y-auto flex flex-col-reverse">
+        <div className="w-full max-w-md my-4 p-4 bg-black/20 rounded-lg h-64 overflow-y-auto">
             <div className="space-y-2">
-                {[...callLog].reverse().map((log, index) => (
+                {callLog.map((log, index) => (
                     <div key={index} className={cn("p-2 rounded-lg text-sm", log.speaker === 'AI' ? 'bg-slate-700 text-left' : 'bg-green-800 text-right')}>
                        <p>{log.text}</p> 
                     </div>

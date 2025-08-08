@@ -170,7 +170,7 @@ const VoiceAssistant = () => {
   };
 
   return (
-    <div className="fixed bottom-20 right-6 z-50 md:bottom-6">
+    <div className="fixed bottom-24 right-6 z-50 md:bottom-8 md:right-8">
       <Button
         size="icon"
         className={cn(
