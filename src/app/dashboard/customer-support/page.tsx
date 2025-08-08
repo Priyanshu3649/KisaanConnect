@@ -1,56 +1,172 @@
 
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Phone, Bot, Info } from 'lucide-react';
+import { Phone, PhoneOff, Bot, Loader2, Volume2, MicOff, AlertCircle } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
+import { useAudioPlayer } from '@/context/audio-player-context';
+import { processSupportAction, type SupportActionInput, type SupportActionOutput, type CallState } from '@/ai/flows/customer-support-ivr';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+
+type CallStatus = 'idle' | 'ringing' | 'connected' | 'ended';
+
+interface LogEntry {
+  speaker: 'AI' | 'User';
+  text: string;
+}
 
 export default function CustomerSupportPage() {
   const { t } = useTranslation();
-  const supportPhoneNumber = "+919876543210"; // A placeholder support number
+  const [status, setStatus] = useState<CallStatus>('idle');
+  const [callState, setCallState] = useState<CallState>('start');
+  const [callContext, setCallContext] = useState<Record<string, any>>({});
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [callLog, setCallLog] = useState<LogEntry[]>([]);
+  const { initAudio, playAudio, stopAudio } = useAudioPlayer();
+  const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+  const { toast } = useToast();
 
-  return (
-    <>
-      <PageHeader
-        title={t('nav.customerSupport')}
-        description={t('customerSupport.pageDescription')}
-      />
-      <div className="flex justify-center">
-        <Card className="w-full max-w-2xl text-center">
-          <CardHeader>
-             <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit">
-                <Bot className="h-12 w-12 text-primary" />
-             </div>
-            <CardTitle className="mt-4">{t('customerSupport.title')}</CardTitle>
-            <CardDescription>{t('customerSupport.description')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-4 bg-muted rounded-lg">
-                <p className="text-4xl font-bold tracking-wider text-primary">{supportPhoneNumber.replace('+91', '+91 ')}</p>
-                <p className="text-sm text-muted-foreground mt-1">{t('customerSupport.callTimings')}</p>
-            </div>
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        ringtoneRef.current = new Audio('/ringtone.mp3');
+        ringtoneRef.current.loop = true;
+    }
+    return () => {
+        ringtoneRef.current?.pause();
+        stopAudio();
+    };
+  }, [stopAudio]);
 
-            <div className="text-left p-4 border rounded-lg bg-background/50 space-y-2">
-                <h3 className="font-semibold flex items-center gap-2"><Info className="h-5 w-5 text-accent"/>{t('customerSupport.whatToExpect.title')}</h3>
-                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                    <li>{t('customerSupport.whatToExpect.li1')}</li>
-                    <li>{t('customerSupport.whatToExpect.li2')}</li>
-                    <li>{t('customerSupport.whatToExpect.li3')}</li>
-                </ul>
-            </div>
-            
-            <a href={`tel:${supportPhoneNumber}`}>
-                <Button size="lg" className="w-full h-12 text-lg">
+  const startCall = async () => {
+    initAudio();
+    setCallLog([]);
+    setStatus('ringing');
+    ringtoneRef.current?.play();
+    
+    // Simulate call connection
+    setTimeout(() => {
+        ringtoneRef.current?.pause();
+        setStatus('connected');
+        processAction({ state: 'start' });
+    }, 3000);
+  };
+  
+  const endCall = () => {
+    setStatus('ended');
+    ringtoneRef.current?.pause();
+    stopAudio();
+    setTimeout(() => setStatus('idle'), 2000); // Reset after a delay
+  };
+
+  const processAction = async (input: Partial<SupportActionInput>) => {
+    setIsProcessing(true);
+    try {
+        const fullInput: SupportActionInput = {
+            state: callState,
+            language: callContext.language || 'hi',
+            context: callContext,
+            ...input,
+        };
+        
+        const result = await processSupportAction(fullInput);
+        
+        setCallState(result.nextState);
+        setCallContext(result.context || {});
+        setCallLog(prev => [...prev, { speaker: 'AI', text: result.response }]);
+        playAudio(result.audio);
+
+    } catch (error) {
+        console.error("IVR action failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Call Error",
+            description: "An error occurred during the call. Please try again.",
+        });
+        endCall();
+    } finally {
+        setIsProcessing(false);
+    }
+  }
+
+  const handleKeyPress = (key: string) => {
+    if (isProcessing) return;
+    setCallLog(prev => [...prev, { speaker: 'User', text: `Pressed key: ${key}` }]);
+    processAction({ userInput: key });
+  };
+
+
+  if (status === 'idle' || status === 'ended') {
+    return (
+       <>
+        <PageHeader
+            title={t('nav.customerSupport')}
+            description={t('customerSupport.pageDescription')}
+        />
+        <div className="flex justify-center">
+            <Card className="w-full max-w-md text-center">
+            <CardHeader>
+                <div className="mx-auto bg-primary/10 rounded-full p-4 w-fit">
+                    <Bot className="h-12 w-12 text-primary" />
+                </div>
+                <CardTitle className="mt-4">{t('customerSupport.title')}</CardTitle>
+                <CardDescription>{t('customerSupport.description')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {status === 'ended' && (
+                    <div className="p-4 mb-4 bg-muted text-muted-foreground rounded-lg">Call Ended</div>
+                )}
+                 <Button size="lg" className="w-full h-16 text-lg" onClick={startCall}>
                     <Phone className="mr-3 h-6 w-6" />
                     {t('customerSupport.callNowButton')}
                 </Button>
-            </a>
-          </CardContent>
-        </Card>
-      </div>
-    </>
+            </CardContent>
+            </Card>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-slate-800 text-white flex flex-col items-center justify-between p-4 rounded-lg">
+        {/* Call Header */}
+        <div className="text-center">
+            <p className="text-2xl font-semibold">KisaanConnect Support</p>
+            <p className="text-lg text-slate-300">
+                {status === 'ringing' && 'Ringing...'}
+                {status === 'connected' && 'Connected'}
+            </p>
+        </div>
+
+        {/* Call Log / Main Content */}
+        <div className="w-full max-w-md my-4 p-4 bg-black/20 rounded-lg h-64 overflow-y-auto flex flex-col-reverse">
+            <div className="space-y-2">
+                {[...callLog].reverse().map((log, index) => (
+                    <div key={index} className={cn("p-2 rounded-lg text-sm", log.speaker === 'AI' ? 'bg-slate-700 text-left' : 'bg-green-800 text-right')}>
+                       <p>{log.text}</p> 
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        {/* Dialpad */}
+         <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
+                <Button key={key} onClick={() => handleKeyPress(key)} className="h-16 text-2xl bg-white/10 hover:bg-white/20" disabled={isProcessing}>
+                    {key}
+                </Button>
+            ))}
+        </div>
+        
+        {/* Call Controls */}
+        <div className="flex items-center justify-center gap-4 mt-8">
+             <Button variant="destructive" size="lg" className="rounded-full h-16 w-16" onClick={endCall}>
+                <PhoneOff className="h-7 w-7" />
+            </Button>
+        </div>
+    </div>
   );
 }
-

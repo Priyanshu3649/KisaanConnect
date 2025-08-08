@@ -79,9 +79,3 @@ export default function DashboardLayout({
     </AudioPlayerProvider>
   );
 }
-
-// Add Translations type to be accessible in this component.
-declare module '@/context/translation-context' {
-    type enTranslations = typeof import('@/translations/en.json');
-    export interface Translations extends enTranslations {}
-}
