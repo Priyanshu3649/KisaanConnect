@@ -73,18 +73,25 @@ export const AudioPlayerProvider = ({ children }: { children: ReactNode }) => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.addEventListener('ended', handleAudioEnded);
-      audioRef.current.addEventListener('pause', handleAudioEnded); // Also treat pause as ended for our purpose
+      // Removed the 'pause' event listener which was causing premature state changes
     }
     
     onEndedCallbackRef.current = onEnded || null;
 
+    // Smartly handle both base64 data URIs and regular URLs
     audioRef.current.src = audioSrc;
-    audioRef.current.play().then(() => {
-        setIsPlaying(true);
-    }).catch(error => {
-        console.error("Audio playback failed:", error)
-        setIsPlaying(false);
-    });
+    const playPromise = audioRef.current.play();
+
+    if (playPromise !== undefined) {
+        playPromise.then(() => {
+            setIsPlaying(true);
+        }).catch(error => {
+            console.error("Audio playback failed:", error);
+            setIsPlaying(false);
+            // Manually trigger ended if playback fails
+            handleAudioEnded();
+        });
+    }
   }, [handleAudioEnded]);
 
   const stopAudio = useCallback(() => {
