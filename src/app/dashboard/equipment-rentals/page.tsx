@@ -51,13 +51,13 @@ const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment
     const [hours, setHours] = useState('8');
     const [totalBill, setTotalBill] = useState(0);
 
-    React.useEffect(() => {
+    useState(() => {
         if (equipment) {
             const numHours = parseInt(hours) || 0;
             const pricePerHour = equipment.price / 8; // Assuming 8-hour workday
             setTotalBill(pricePerHour * numHours);
         }
-    }, [equipment, hours]);
+    });
 
     if (!equipment) return null;
 
@@ -290,3 +290,5 @@ export default function EquipmentRentalsPage() {
     </>
   );
 }
+
+    
