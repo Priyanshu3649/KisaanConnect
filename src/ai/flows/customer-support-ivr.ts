@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,6 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import wav from 'wav';
+import { getMandiPricesTool } from './mandi-prices';
 
 // State machine for the IVR call
 const CallStateSchema = z.enum([
@@ -20,9 +22,10 @@ const CallStateSchema = z.enum([
     'mandi_prices_commodity',
     'mandi_prices_state',
     'mandi_prices_market',
+    'mandi_prices_result',
     'crop_diagnosis_help',
-    'scheme_info_query',
-    'agent_transfer',
+    'scheme_info_help',
+    'agent_transfer_info',
     'end'
 ]);
 export type CallState = z.infer<typeof CallStateSchema>;
@@ -77,6 +80,13 @@ async function textToSpeech(text: string, language: string): Promise<string> {
     return 'data:audio/wav;base64,' + (await toWav(audioBuffer));
 }
 
+// Data for IVR menus
+const commodities = ["Potato", "Onion", "Tomato"];
+const states: Record<string, string[]> = {
+    "Maharashtra": ["Pune", "Nashik"],
+    "Punjab": ["Ludhiana", "Amritsar"],
+};
+
 // Main IVR Flow
 const customerSupportIvrFlow = ai.defineFlow(
   {
@@ -87,61 +97,121 @@ const customerSupportIvrFlow = ai.defineFlow(
   async (input) => {
     let response = '';
     let nextState: CallState = input.state;
-    let newContext = input.context || {};
+    let newContext = { ...(input.context || {}) };
     let lang = input.language || 'hi';
 
-    switch (input.state) {
-        case 'start':
-            response = "For English, press 1. हिंदी के लिए 2 दबाएं। ਪੰਜਾਬੀ ਲਈ 3 ਦਬਾਓ।";
-            nextState = 'language_select';
-            break;
-        
-        case 'language_select':
-            const choice = input.userInput;
-            if (choice === '1') lang = 'en';
-            else if (choice === '2') lang = 'hi';
-            else if (choice === '3') lang = 'pa';
-            
-            const welcomeMessage = "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है।";
-            
-            const menuPrompts: Record<string, string> = {
-                en: "For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4.",
-                hi: "मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं।",
-                pa: "ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ।",
-            };
-            response = `${welcomeMessage} ${menuPrompts[lang]}`;
-            nextState = 'main_menu';
-            newContext = { language: lang };
-            break;
+    const menuPrompts: Record<string, string> = {
+        en: "For live Mandi prices, press 1. For crop disease diagnosis help, press 2. For government scheme information, press 3. To talk to an agent, press 4. To go back to the main menu, press star.",
+        hi: "मंडी की कीमतों के लिए 1 दबाएं। फसल रोग निदान सहायता के लिए 2 दबाएं। सरकारी योजना की जानकारी के लिए 3 दबाएं। एजेंट से बात करने के लिए 4 दबाएं। मुख्य मेनू पर वापस जाने के लिए, स्टार दबाएं।",
+        pa: "ਮੰਡੀ ਦੀਆਂ ਕੀਮਤਾਂ ਲਈ 1 ਦਬਾਓ। ਫਸਲ ਰੋਗ ਨਿਦਾਨ ਸਹਾਇਤਾ ਲਈ 2 ਦਬਾਓ। ਸਰਕਾਰੀ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਲਈ 3 ਦਬਾਓ। ਏਜੰਟ ਨਾਲ ਗੱਲ ਕਰਨ ਲਈ 4 ਦਬਾਓ। ਮੁੱਖ ਮੇਨੂ 'ਤੇ ਵਾਪਸ ਜਾਣ ਲਈ, ਸਟਾਰ ਦਬਾਓ।",
+    };
 
-        case 'main_menu':
-            switch(input.userInput) {
-                case '1':
-                    response = "You've selected Mandi Prices. This service is under development and will be available soon. Returning to the main menu.";
-                    nextState = 'main_menu';
-                    break;
-                case '2':
-                    response = "For Crop Disease Diagnosis, please use the 'Crop Diagnosis' feature in the app. You can upload a photo of your crop for an instant AI analysis and recommended actions. Returning to the main menu.";
-                    nextState = 'main_menu';
-                    break;
-                case '3':
-                    response = "For Government Scheme Information, please use the 'Government Schemes' feature in the app to check your eligibility or ask our AI assistant on the main dashboard. Returning to the main menu.";
-                     nextState = 'main_menu';
-                    break;
-                case '4':
-                    response = "Connecting you to an agent... Please note that our agents are currently busy. We recommend using the in-app features for faster assistance. Returning to the main menu.";
-                    nextState = 'main_menu';
-                    break;
-                default:
-                    response = "Invalid option, please try again.";
-                    nextState = 'main_menu';
-            }
-             break;
+    if (input.userInput === '*') {
+        response = menuPrompts[lang];
+        nextState = 'main_menu';
+        newContext = { language: lang }; // Reset context
+    } else {
+        switch (input.state) {
+            case 'start':
+                response = "For English, press 1. हिंदी के लिए 2 दबाएं। ਪੰਜਾਬੀ ਲਈ 3 ਦਬਾਓ।";
+                nextState = 'language_select';
+                break;
+            
+            case 'language_select':
+                const choice = input.userInput;
+                if (choice === '1') lang = 'en';
+                else if (choice === '2') lang = 'hi';
+                else if (choice === '3') lang = 'pa';
+                
+                const welcomeMessage = "नमस्ते! आप किसानकनेक्ट से जुड़े हैं। यह सेवा मुफ्त है।";
+                response = `${welcomeMessage} ${menuPrompts[lang]}`;
+                nextState = 'main_menu';
+                newContext = { language: lang };
+                break;
 
-        default:
-            response = "An error occurred. Please hang up and try again.";
-            nextState = 'end';
+            case 'main_menu':
+                switch(input.userInput) {
+                    case '1':
+                        response = `For ${commodities[0]} press 1. For ${commodities[1]} press 2. For ${commodities[2]} press 3.`;
+                        nextState = 'mandi_prices_commodity';
+                        break;
+                    case '2':
+                        response = "For Crop Disease Diagnosis, please use the 'Crop Diagnosis' feature in the app. You can upload a photo for an instant AI analysis. " + menuPrompts[lang];
+                        nextState = 'main_menu';
+                        break;
+                    case '3':
+                        response = "For Government Scheme Information, please use the 'Government Schemes' feature in the app. " + menuPrompts[lang];
+                        nextState = 'main_menu';
+                        break;
+                    case '4':
+                        response = "Connecting you to an agent... Please note our agents are busy. We recommend using the in-app features. " + menuPrompts[lang];
+                        nextState = 'main_menu';
+                        break;
+                    default:
+                        response = "Invalid option. " + menuPrompts[lang];
+                        nextState = 'main_menu';
+                }
+                break;
+
+            case 'mandi_prices_commodity':
+                const commodityIndex = parseInt(input.userInput || '0') - 1;
+                if (commodityIndex >= 0 && commodityIndex < commodities.length) {
+                    newContext.commodity = commodities[commodityIndex];
+                    const stateNames = Object.keys(states);
+                    response = `For ${stateNames[0]} press 1. For ${stateNames[1]} press 2.`;
+                    nextState = 'mandi_prices_state';
+                } else {
+                    response = "Invalid commodity. Please try again. " + `For ${commodities[0]} press 1...`;
+                    nextState = 'mandi_prices_commodity';
+                }
+                break;
+
+            case 'mandi_prices_state':
+                const stateIndex = parseInt(input.userInput || '0') - 1;
+                const stateNames = Object.keys(states);
+                if (stateIndex >= 0 && stateIndex < stateNames.length) {
+                    newContext.state = stateNames[stateIndex];
+                    const markets = states[newContext.state];
+                    response = `For ${markets[0]} press 1. For ${markets[1]} press 2.`;
+                    nextState = 'mandi_prices_market';
+                } else {
+                    response = "Invalid state. Please try again. " + `For ${stateNames[0]} press 1...`;
+                    nextState = 'mandi_prices_state';
+                }
+                break;
+
+            case 'mandi_prices_market':
+                const marketIndex = parseInt(input.userInput || '0') - 1;
+                const markets = states[newContext.state];
+                 if (marketIndex >= 0 && marketIndex < markets.length) {
+                    newContext.market = markets[marketIndex];
+                    
+                    // Call the tool to get prices
+                    const prices = await getMandiPricesTool({
+                        commodity: newContext.commodity,
+                        state: newContext.state,
+                        market: newContext.market,
+                    });
+
+                    if (prices && prices.length > 0) {
+                        const latestPrice = prices[0];
+                        response = `The latest price for ${latestPrice.Commodity} in ${latestPrice.City} is ${latestPrice['Model Prize']} Rupees per quintal. ` + menuPrompts[lang];
+                    } else {
+                        response = `Sorry, I could not find prices for ${newContext.commodity} in ${newContext.market}. ` + menuPrompts[lang];
+                    }
+                    nextState = 'main_menu';
+                } else {
+                    response = "Invalid market. Please try again. " + `For ${markets[0]} press 1...`;
+                    nextState = 'mandi_prices_market';
+                }
+                break;
+
+            default:
+                response = "An error occurred. Returning to main menu. " + menuPrompts[lang];
+                nextState = 'main_menu';
+        }
     }
+
 
     const audio = await textToSpeech(response, lang);
 

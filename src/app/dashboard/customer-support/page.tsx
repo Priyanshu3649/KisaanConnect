@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Phone, PhoneOff, Bot } from 'lucide-react';
+import { Phone, PhoneOff, Bot, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useAudioPlayer } from '@/context/audio-player-context';
 import { processSupportAction, type SupportActionInput, type CallState } from '@/ai/flows/customer-support-ivr';
@@ -50,7 +50,10 @@ export default function CustomerSupportPage() {
     ringtoneRef.current?.play();
     
     setTimeout(() => {
-        ringtoneRef.current?.pause();
+        if (ringtoneRef.current) {
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+        }
         setStatus('connected');
         processAction({ state: 'start' });
     }, 3000);
@@ -58,7 +61,10 @@ export default function CustomerSupportPage() {
   
   const endCall = () => {
     setStatus('ended');
-    ringtoneRef.current?.pause();
+    if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+    }
     stopAudio();
     setTimeout(() => setStatus('idle'), 2000);
   };
@@ -136,9 +142,10 @@ export default function CustomerSupportPage() {
         {/* Call Header */}
         <div className="text-center">
             <p className="text-2xl font-semibold">KisaanConnect Support</p>
-            <p className="text-lg text-slate-300">
+            <p className="text-lg text-slate-300 flex items-center gap-2">
                 {status === 'ringing' && 'Ringing...'}
                 {status === 'connected' && 'Connected'}
+                {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
             </p>
         </div>
 
