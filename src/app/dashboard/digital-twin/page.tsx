@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft, View } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -155,8 +156,22 @@ export default function DigitalTwinPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
-                       <MapComponent markerPosition={[selectedField.location.lat, selectedField.location.lng]} setMarkerPosition={() => {}} />
+                       <MapComponent markerPosition={selectedField.location} setMarkerPosition={() => {}} />
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><View /> Simulated 3D Field View</CardTitle>
+                    <CardDescription>A visual representation of your field's health grid.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <Skeleton className="aspect-video w-full" />
+                    ) : (
+                        <ThreeDView healthScore={data?.soilHealthScore || 0} />
+                    )}
                 </CardContent>
             </Card>
 
@@ -390,5 +405,66 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+    );
+};
+
+const ThreeDView = ({ healthScore }: { healthScore: number }) => {
+    const grid = useMemo(() => {
+        const dots = [];
+        const healthThreshold = healthScore / 100; // 0 to 1
+        for(let i = 0; i < 100; i++) {
+            const randomValue = Math.random();
+            let color = 'bg-green-500'; // Healthy
+            if(randomValue > healthThreshold) {
+                // Unhealthy dot, color depends on how far it is from threshold
+                if (randomValue > healthThreshold + 0.2) {
+                    color = 'bg-red-500'; // Very unhealthy
+                } else {
+                    color = 'bg-yellow-500'; // Moderately unhealthy
+                }
+            }
+            dots.push({ id: i, color });
+        }
+        return dots;
+    }, [healthScore]);
+
+    return (
+        <div className="aspect-video w-full bg-gray-800 rounded-lg flex items-center justify-center relative overflow-hidden border">
+            <Image
+                src="https://placehold.co/600x400.png"
+                alt="3D Field View"
+                data-ai-hint="isometric farm field"
+                fill
+                className="object-cover opacity-30"
+            />
+            <div 
+                className="relative grid grid-cols-10 gap-1.5 sm:gap-2.5 p-4"
+                style={{ transform: 'perspective(1000px) rotateX(60deg) scale(1.2)' }}
+            >
+                {grid.map(dot => (
+                    <div 
+                        key={dot.id} 
+                        className={cn(
+                            "w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-colors duration-500", 
+                            dot.color
+                        )}
+                        style={{
+                            boxShadow: `0 0 5px 1px ${dot.color.replace('bg-', 'var(--tw-color-')})`,
+                            animation: `pulse 2s infinite ease-in-out ${Math.random() * 2}s`
+                        }}
+                    ></div>
+                ))}
+            </div>
+             <style jsx>{`
+                @keyframes pulse {
+                    0%, 100% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0.5;
+                    }
+                }
+            `}</style>
+        </div>
     );
 };
