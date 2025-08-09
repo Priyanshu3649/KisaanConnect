@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import dynamic from 'next/dynamic';
 import { useDebouncedCallback } from "use-debounce";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -32,18 +35,41 @@ const severityBorderColors = {
   high: "border-red-500/50",
 };
 
+type FieldShape = 'rectangle' | 'square' | 'trapezium' | 'parallelogram';
+interface Field {
+    id: string;
+    name: string;
+    location: { lat: number; lng: number };
+    shape: FieldShape;
+    measurements: Record<string, number | undefined>;
+    area: number;
+}
+
+const initialFields: Field[] = [{
+    id: 'field1',
+    name: 'North Field',
+    location: { lat: 28.9959, lng: 77.0178 },
+    shape: 'rectangle',
+    measurements: { length: 200, width: 100 },
+    area: 20000,
+}];
+
 
 export default function DigitalTwinPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<DigitalTwinOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [markerPosition, setMarkerPosition] = useState<[number, number]>([28.9959, 77.0178]); // Default to Sonipat, Haryana
+  
+  const [fields, setFields] = useState<Field[]>(initialFields);
+  const [selectedField, setSelectedField] = useState<Field>(fields[0]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingField, setEditingField] = useState<Partial<Field> | null>(null);
 
-  const debouncedFetchData = useDebouncedCallback((lat: number, lon: number) => {
+  const fetchDataForField = useCallback((field: Field) => {
     setIsLoading(true);
-    setData(null); // Clear old data
-    getDigitalTwinData({ latitude: lat, longitude: lon })
+    setData(null);
+    getDigitalTwinData({ latitude: field.location.lat, longitude: field.location.lng })
         .then(setData)
         .catch(err => {
           console.error("Failed to get digital twin data", err);
@@ -54,22 +80,65 @@ export default function DigitalTwinPage() {
           });
         })
         .finally(() => setIsLoading(false));
-  }, 1000); // 1-second debounce after user stops moving the pin
+  }, [toast, t]);
 
   useEffect(() => {
-    if (markerPosition) {
-        debouncedFetchData(markerPosition[0], markerPosition[1]);
+    if (selectedField) {
+        fetchDataForField(selectedField);
     }
-  }, [markerPosition, debouncedFetchData]);
-  
+  }, [selectedField, fetchDataForField]);
 
-  const handleSetLocation = () => {
-    toast({
-        title: "Analysis Triggered",
-        description: `Fetching new digital twin data for coordinates: ${markerPosition[0].toFixed(4)}, ${markerPosition[1].toFixed(4)}`,
-    });
-    // The useEffect hook will automatically call the debounced fetch function
+  const handleSelectField = (fieldId: string) => {
+    const field = fields.find(f => f.id === fieldId);
+    if (field) {
+        setSelectedField(field);
+    }
   };
+  
+  const handleAddNewField = () => {
+    setEditingField({
+        id: `field_${Date.now()}`,
+        name: '',
+        location: { lat: 28.9959, lng: 77.0178 }, // Default location
+        shape: 'rectangle',
+        measurements: {},
+        area: 0,
+    });
+    setIsFormOpen(true);
+  };
+  
+  const handleEditField = (field: Field) => {
+    setEditingField(JSON.parse(JSON.stringify(field))); // Deep copy
+    setIsFormOpen(true);
+  };
+  
+  const handleDeleteField = (fieldId: string) => {
+    setFields(prev => {
+        const newFields = prev.filter(f => f.id !== fieldId);
+        if(selectedField.id === fieldId) {
+            setSelectedField(newFields[0] || null);
+        }
+        return newFields;
+    });
+    toast({ title: "Field Deleted" });
+  };
+  
+  const handleSaveField = (fieldData: Field) => {
+    setFields(prev => {
+        const index = prev.findIndex(f => f.id === fieldData.id);
+        if (index > -1) {
+            const newFields = [...prev];
+            newFields[index] = fieldData;
+            return newFields;
+        }
+        return [...prev, fieldData];
+    });
+    setSelectedField(fieldData);
+    setIsFormOpen(false);
+    setEditingField(null);
+    toast({ title: "Field Saved!" });
+  };
+  
 
   return (
     <>
@@ -81,20 +150,14 @@ export default function DigitalTwinPage() {
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><MapPinned /> {t('digitalTwin.fieldMapTitle')}</CardTitle>
-                    <CardDescription>{t('digitalTwin.fieldMapDescription')}</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><MapPinned /> {selectedField?.name || 'Field Map'}</CardTitle>
+                    <CardDescription>Currently viewing the digital twin for your selected field.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
-                       <MapComponent markerPosition={markerPosition} setMarkerPosition={setMarkerPosition} />
+                       <MapComponent markerPosition={[selectedField.location.lat, selectedField.location.lng]} setMarkerPosition={() => {}} />
                     </div>
                 </CardContent>
-                 <CardFooter className="flex justify-end pt-4">
-                    <Button onClick={handleSetLocation}>
-                        <Pin className="mr-2 h-4 w-4" />
-                        Analyze this Location
-                    </Button>
-                </CardFooter>
             </Card>
 
             {isLoading ? (
@@ -123,7 +186,7 @@ export default function DigitalTwinPage() {
                             {data.yieldForecast.map(forecast => (
                                 <div key={forecast.crop} className="flex justify-between text-sm">
                                     <span>{forecast.crop}</span>
-                                    <span className="font-semibold">{forecast.value} {forecast.unit}</span>
+                                    <span className="font-semibold">{ (selectedField.area * (forecast.value / 4046.86)).toFixed(2) } quintal (Total)</span>
                                 </div>
                             ))}
                         </CardContent>
@@ -134,6 +197,30 @@ export default function DigitalTwinPage() {
         </div>
 
         <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Fields</CardTitle>
+                    <CardDescription>Manage your farm fields here.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {fields.map(field => (
+                        <div key={field.id} onClick={() => handleSelectField(field.id)} className={cn("flex items-center justify-between p-2 rounded-lg cursor-pointer", selectedField?.id === field.id ? 'bg-secondary' : 'hover:bg-muted/50')}>
+                            <div>
+                                <p className="font-semibold">{field.name}</p>
+                                <p className="text-xs text-muted-foreground">{field.area.toFixed(0)} m²</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleEditField(field)}}><Edit className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => {e.stopPropagation(); handleDeleteField(field.id)}}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                        </div>
+                    ))}
+                     <Button onClick={handleAddNewField} variant="outline" className="w-full mt-2">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Field
+                    </Button>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>{t('digitalTwin.keyMetricsTitle')}</CardTitle>
@@ -174,6 +261,12 @@ export default function DigitalTwinPage() {
             </Card>
         </div>
       </div>
+      <FieldFormDialog
+        isOpen={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        onSave={handleSaveField}
+        fieldData={editingField}
+      />
     </>
   );
 }
@@ -201,3 +294,101 @@ const MetricSkeleton = ({ count }: { count: number }) => (
         ))}
     </div>
 );
+
+
+// Form Dialog Component
+const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (data: Field) => void, fieldData: Partial<Field> | null }) => {
+    const [field, setField] = useState<Partial<Field> | null>(fieldData);
+
+    useEffect(() => {
+        setField(fieldData);
+    }, [fieldData]);
+
+    const handleMeasurementChange = (key: string, value: string) => {
+        setField(prev => ({...prev, measurements: {...prev?.measurements, [key]: parseFloat(value) || undefined}}));
+    };
+
+    const calculatedArea = useMemo(() => {
+        if (!field || !field.shape || !field.measurements) return 0;
+        const m = field.measurements;
+        switch(field.shape) {
+            case 'rectangle': return (m.length || 0) * (m.width || 0);
+            case 'square': return (m.side || 0) * (m.side || 0);
+            case 'trapezium': return (((m.base1 || 0) + (m.base2 || 0)) / 2) * (m.height || 0);
+            case 'parallelogram': return (m.base || 0) * (m.height || 0);
+            default: return 0;
+        }
+    }, [field]);
+    
+    const handleSave = () => {
+        if (field) {
+            onSave({ ...field, area: calculatedArea } as Field);
+        }
+    };
+    
+    const shapeFields: Record<FieldShape, {key: string, label: string}[]> = {
+        rectangle: [{key: 'length', label: 'Length (m)'}, {key: 'width', label: 'Width (m)'}],
+        square: [{key: 'side', label: 'Side (m)'}],
+        trapezium: [{key: 'base1', label: 'Base 1 (m)'}, {key: 'base2', label: 'Base 2 (m)'}, {key: 'height', label: 'Height (m)'}],
+        parallelogram: [{key: 'base', label: 'Base (m)'}, {key: 'height', label: 'Height (m)'}],
+    };
+
+    if (!field) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{field.id?.startsWith('field_') ? 'Add New Field' : 'Edit Field'}</DialogTitle>
+                    <DialogDescription>Enter the details for your farm field below.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Field Location</Label>
+                        <div className="aspect-video w-full bg-muted rounded-lg relative overflow-hidden">
+                            <MapComponent 
+                                markerPosition={[field.location?.lat || 0, field.location?.lng || 0]} 
+                                setMarkerPosition={([lat, lng]) => setField(prev => ({...prev, location: {lat, lng}}))}
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="field-name">Field Name</Label>
+                        <Input id="field-name" value={field.name} onChange={(e) => setField(prev => ({...prev, name: e.target.value}))} placeholder="e.g., North Pasture" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="field-shape">Field Shape</Label>
+                        <Select value={field.shape} onValueChange={(v: FieldShape) => setField(prev => ({...prev, shape: v}))}>
+                            <SelectTrigger id="field-shape">
+                                <SelectValue placeholder="Select a shape" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="rectangle"><div className="flex items-center gap-2"><RectangleHorizontal className="h-4 w-4" /> Rectangle</div></SelectItem>
+                                <SelectItem value="square"><div className="flex items-center gap-2"><Square className="h-4 w-4" /> Square</div></SelectItem>
+                                <SelectItem value="trapezium"><div className="flex items-center gap-2"><LayoutPanelLeft className="h-4 w-4" /> Trapezium</div></SelectItem>
+                                <SelectItem value="parallelogram"><div className="flex items-center gap-2"><LayoutPanelLeft className="h-4 w-4" /> Parallelogram</div></SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4">
+                         {shapeFields[field.shape as FieldShape].map(f => (
+                             <div className="space-y-2" key={f.key}>
+                                 <Label htmlFor={f.key}>{f.label}</Label>
+                                 <Input id={f.key} type="number" value={field.measurements?.[f.key] || ''} onChange={(e) => handleMeasurementChange(f.key, e.target.value)} />
+                             </div>
+                         ))}
+                    </div>
+                    <div>
+                        <Label>Calculated Area</Label>
+                        <p className="font-bold text-lg">{calculatedArea.toFixed(2)} m²</p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSave}>
+                        <Save className="mr-2 h-4 w-4" /> Save Field
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
