@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft, View } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft, View, LocateFixed } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -63,9 +63,11 @@ export default function DigitalTwinPage() {
   const { toast } = useToast();
   
   const [fields, setFields] = useState<Field[]>(initialFields);
-  const [selectedField, setSelectedField] = useState<Field>(fields[0]);
+  const [selectedField, setSelectedField] = useState<Field | null>(fields.length > 0 ? fields[0] : null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingField, setEditingField] = useState<Partial<Field> | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
 
   const fetchDataForField = useCallback((field: Field) => {
     setIsLoading(true);
@@ -86,9 +88,12 @@ export default function DigitalTwinPage() {
   useEffect(() => {
     if (selectedField) {
         fetchDataForField(selectedField);
+    } else {
+        setIsLoading(false);
+        setData(null);
     }
   }, [selectedField, fetchDataForField]);
-
+  
   const handleSelectField = (fieldId: string) => {
     const field = fields.find(f => f.id === fieldId);
     if (field) {
@@ -116,8 +121,8 @@ export default function DigitalTwinPage() {
   const handleDeleteField = (fieldId: string) => {
     setFields(prev => {
         const newFields = prev.filter(f => f.id !== fieldId);
-        if(selectedField.id === fieldId) {
-            setSelectedField(newFields[0] || null);
+        if(selectedField?.id === fieldId) {
+            setSelectedField(newFields.length > 0 ? newFields[0] : null);
         }
         return newFields;
     });
@@ -125,6 +130,7 @@ export default function DigitalTwinPage() {
   };
   
   const handleSaveField = (fieldData: Field) => {
+    let newSelectedField = fieldData;
     setFields(prev => {
         const index = prev.findIndex(f => f.id === fieldData.id);
         if (index > -1) {
@@ -132,13 +138,70 @@ export default function DigitalTwinPage() {
             newFields[index] = fieldData;
             return newFields;
         }
+        // If it's a new field, it's already selected
         return [...prev, fieldData];
     });
-    setSelectedField(fieldData);
+    setSelectedField(newSelectedField);
     setIsFormOpen(false);
     setEditingField(null);
     toast({ title: "Field Saved!" });
   };
+
+  const handleSetFieldLocation = useCallback(([lat, lng]: [number, number]) => {
+    if (selectedField) {
+        const updatedField = { ...selectedField, location: { lat, lng } };
+        setSelectedField(updatedField);
+        setFields(prev => prev.map(f => f.id === updatedField.id ? updatedField : f));
+    }
+  }, [selectedField]);
+  
+  const handleGetCurrentLocation = () => {
+        if (!selectedField) {
+            toast({ variant: 'destructive', title: "No Field Selected", description: "Please select a field first."});
+            return;
+        }
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                handleSetFieldLocation([latitude, longitude]);
+                setIsLocating(false);
+                toast({ title: "Location Updated", description: "Field location updated to your current position."});
+            },
+            (error) => {
+                setIsLocating(false);
+                toast({ variant: 'destructive', title: "Location Error", description: "Could not retrieve your location."});
+            }
+        );
+  };
+
+  if (!selectedField && fields.length === 0 && !isLoading) {
+      return (
+          <>
+          <PageHeader
+            title={t('nav.digitalTwin')}
+            description={t('digitalTwin.pageDescription')}
+          />
+          <Card className="text-center py-12">
+            <CardHeader>
+                <CardTitle>No Fields Found</CardTitle>
+                <CardDescription>Get started by adding your first farm field.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Button onClick={handleAddNewField}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Field
+                </Button>
+            </CardContent>
+          </Card>
+          <FieldFormDialog
+            isOpen={isFormOpen}
+            onOpenChange={setIsFormOpen}
+            onSave={handleSaveField}
+            fieldData={editingField}
+           />
+         </>
+      )
+  }
   
 
   return (
@@ -151,12 +214,23 @@ export default function DigitalTwinPage() {
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><MapPinned /> {selectedField?.name || 'Field Map'}</CardTitle>
-                    <CardDescription>Currently viewing the digital twin for your selected field.</CardDescription>
+                    <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2"><MapPinned /> {selectedField?.name || 'Field Map'}</div>
+                        <Button size="sm" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating}>
+                            {isLocating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
+                            Use Current Location
+                        </Button>
+                    </CardTitle>
+                    <CardDescription>Currently viewing the digital twin for your selected field. Drag the pin to analyze a new location.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
-                       <MapComponent markerPosition={selectedField.location} setMarkerPosition={() => {}} />
+                       {selectedField ? (
+                            <MapComponent 
+                                markerPosition={[selectedField.location.lat, selectedField.location.lng]} 
+                                setMarkerPosition={handleSetFieldLocation} 
+                            />
+                       ) : <p>Select a field to see its map.</p>}
                     </div>
                 </CardContent>
             </Card>
@@ -198,7 +272,7 @@ export default function DigitalTwinPage() {
                     <Card>
                          <CardHeader><CardTitle className="flex items-center gap-2"><Wheat /> Yield Forecast</CardTitle></CardHeader>
                         <CardContent className="space-y-2">
-                            {data.yieldForecast.map(forecast => (
+                            {selectedField && data.yieldForecast.map(forecast => (
                                 <div key={forecast.crop} className="flex justify-between text-sm">
                                     <span>{forecast.crop}</span>
                                     <span className="font-semibold">{ (selectedField.area * (forecast.value / 4046.86)).toFixed(2) } quintal (Total)</span>
@@ -363,17 +437,17 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
                         <div className="aspect-video w-full bg-muted rounded-lg relative overflow-hidden">
                             <MapComponent 
                                 markerPosition={[field.location?.lat || 0, field.location?.lng || 0]} 
-                                setMarkerPosition={([lat, lng]) => setField(prev => ({...prev, location: {lat, lng}}))}
+                                setMarkerPosition={([lat, lng]) => setField(prev => prev ? ({...prev, location: {lat, lng}}) : null)}
                             />
                         </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="field-name">Field Name</Label>
-                        <Input id="field-name" value={field.name} onChange={(e) => setField(prev => ({...prev, name: e.target.value}))} placeholder="e.g., North Pasture" />
+                        <Input id="field-name" value={field.name} onChange={(e) => setField(prev => prev ? ({...prev, name: e.target.value}) : null)} placeholder="e.g., North Pasture" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="field-shape">Field Shape</Label>
-                        <Select value={field.shape} onValueChange={(v: FieldShape) => setField(prev => ({...prev, shape: v}))}>
+                        <Select value={field.shape} onValueChange={(v: FieldShape) => setField(prev => prev ? ({...prev, shape: v, measurements: {}}) : null)}>
                             <SelectTrigger id="field-shape">
                                 <SelectValue placeholder="Select a shape" />
                             </SelectTrigger>
@@ -414,13 +488,13 @@ const ThreeDView = ({ healthScore }: { healthScore: number }) => {
         const healthThreshold = healthScore / 100; // 0 to 1
         for(let i = 0; i < 100; i++) {
             const randomValue = Math.random();
-            let color = 'bg-green-500'; // Healthy
+            let color = 'bg-green-500/80'; // Healthy
             if(randomValue > healthThreshold) {
                 // Unhealthy dot, color depends on how far it is from threshold
                 if (randomValue > healthThreshold + 0.2) {
-                    color = 'bg-red-500'; // Very unhealthy
+                    color = 'bg-red-500/80'; // Very unhealthy
                 } else {
-                    color = 'bg-yellow-500'; // Moderately unhealthy
+                    color = 'bg-yellow-500/80'; // Moderately unhealthy
                 }
             }
             dots.push({ id: i, color });
@@ -432,25 +506,23 @@ const ThreeDView = ({ healthScore }: { healthScore: number }) => {
         <div className="aspect-video w-full bg-gray-800 rounded-lg flex items-center justify-center relative overflow-hidden border">
             <Image
                 src="https://placehold.co/600x400.png"
-                alt="3D Field View"
-                data-ai-hint="isometric farm field"
+                alt="Satellite view of a farm field"
+                data-ai-hint="satellite farm field"
                 fill
-                className="object-cover opacity-30"
+                className="object-cover opacity-100"
             />
             <div 
-                className="relative grid grid-cols-10 gap-1.5 sm:gap-2.5 p-4"
-                style={{ transform: 'perspective(1000px) rotateX(60deg) scale(1.2)' }}
+                className="absolute inset-0 grid grid-cols-10 grid-rows-10"
             >
                 {grid.map(dot => (
                     <div 
                         key={dot.id} 
                         className={cn(
-                            "w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-colors duration-500", 
+                            "w-full h-full transition-colors duration-500 mix-blend-multiply", 
                             dot.color
                         )}
                         style={{
-                            boxShadow: `0 0 5px 1px ${dot.color.replace('bg-', 'var(--tw-color-')})`,
-                            animation: `pulse 2s infinite ease-in-out ${Math.random() * 2}s`
+                            animation: `pulse 3s infinite ease-in-out ${Math.random() * 3}s`
                         }}
                     ></div>
                 ))}
@@ -458,10 +530,10 @@ const ThreeDView = ({ healthScore }: { healthScore: number }) => {
              <style jsx>{`
                 @keyframes pulse {
                     0%, 100% {
-                        opacity: 1;
+                        opacity: 0.7;
                     }
                     50% {
-                        opacity: 0.5;
+                        opacity: 0.4;
                     }
                 }
             `}</style>
