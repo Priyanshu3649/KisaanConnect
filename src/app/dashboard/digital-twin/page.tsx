@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, Soil, Lightbulb } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -143,7 +143,7 @@ export default function DigitalTwinPage() {
                         <>
                            <MetricDisplay icon={Tractor} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
                            <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
-                           <MetricDisplay icon={Soil} label="Soil Type" value={data.soilType} />
+                           <MetricDisplay icon={TestTube2} label="Soil Type" value={data.soilType} />
                         </>
                      )}
                 </CardContent>
