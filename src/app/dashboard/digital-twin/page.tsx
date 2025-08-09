@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, Soil, Lightbulb } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import dynamic from 'next/dynamic';
 import { useDebouncedCallback } from "use-debounce";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -21,9 +22,9 @@ const MapComponent = dynamic(() => import('@/components/map'), {
 });
 
 const severityColors = {
-  low: "bg-yellow-500",
-  medium: "bg-orange-500",
-  high: "bg-red-500",
+  low: "bg-yellow-500 text-yellow-900",
+  medium: "bg-orange-500 text-orange-900",
+  high: "bg-red-500 text-red-100",
 };
 const severityBorderColors = {
   low: "border-yellow-500/50",
@@ -31,19 +32,17 @@ const severityBorderColors = {
   high: "border-red-500/50",
 };
 
-const METERS_PER_ACRE = 4046.86;
 
 export default function DigitalTwinPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<DigitalTwinOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [length, setLength] = useState("");
-  const [width, setWidth] = useState("");
-  const [markerPosition, setMarkerPosition] = useState<[number, number]>([18.5204, 73.8567]); // Default to Pune
+  const [markerPosition, setMarkerPosition] = useState<[number, number]>([28.9959, 77.0178]); // Default to Sonipat, Haryana
 
-  const debouncedFetchData = useDebouncedCallback((lat, lon) => {
+  const debouncedFetchData = useDebouncedCallback((lat: number, lon: number) => {
     setIsLoading(true);
+    setData(null); // Clear old data
     getDigitalTwinData({ latitude: lat, longitude: lon })
         .then(setData)
         .catch(err => {
@@ -55,7 +54,7 @@ export default function DigitalTwinPage() {
           });
         })
         .finally(() => setIsLoading(false));
-  }, 1000); // 1-second debounce
+  }, 1000); // 1-second debounce after user stops moving the pin
 
   useEffect(() => {
     if (markerPosition) {
@@ -64,40 +63,13 @@ export default function DigitalTwinPage() {
   }, [markerPosition, debouncedFetchData]);
   
 
-  const handleSaveConfiguration = () => {
-    toast({
-        title: t('digitalTwin.configSavedTitle'),
-        description: `${t('digitalTwin.configSavedDesc')} ${length}m x ${width}m`,
-    });
-  };
-
   const handleSetLocation = () => {
     toast({
-        title: "Location Set",
-        description: `Field location confirmed at coordinates: ${markerPosition[0].toFixed(4)}, ${markerPosition[1].toFixed(4)}`,
+        title: "Analysis Triggered",
+        description: `Fetching new digital twin data for coordinates: ${markerPosition[0].toFixed(4)}, ${markerPosition[1].toFixed(4)}`,
     });
+    // The useEffect hook will automatically call the debounced fetch function
   };
-
-  const calculatedYield = useMemo(() => {
-    if (!data) return null;
-    const lengthNum = parseFloat(length);
-    const widthNum = parseFloat(width);
-
-    if (lengthNum > 0 && widthNum > 0) {
-      const areaM2 = lengthNum * widthNum;
-      const areaAcres = areaM2 / METERS_PER_ACRE;
-      const totalYield = areaAcres * data.expectedYield.value;
-      return {
-        value: totalYield.toFixed(2),
-        unit: "quintals",
-      };
-    }
-    return {
-      value: data.expectedYield.value.toFixed(2),
-      unit: data.expectedYield.unit,
-    };
-  }, [data, length, width]);
-
 
   return (
     <>
@@ -109,7 +81,7 @@ export default function DigitalTwinPage() {
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('digitalTwin.fieldMapTitle')}</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><MapPinned /> {t('digitalTwin.fieldMapTitle')}</CardTitle>
                     <CardDescription>{t('digitalTwin.fieldMapDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -120,33 +92,45 @@ export default function DigitalTwinPage() {
                  <CardFooter className="flex justify-end pt-4">
                     <Button onClick={handleSetLocation}>
                         <Pin className="mr-2 h-4 w-4" />
-                        Set Location
+                        Analyze this Location
                     </Button>
                 </CardFooter>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('digitalTwin.configTitle')}</CardTitle>
-                    <CardDescription>{t('digitalTwin.configDesc')}</CardDescription>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                        <Label htmlFor="length">{t('digitalTwin.lengthLabel')}</Label>
-                        <Input id="length" type="number" placeholder="e.g., 100" value={length} onChange={(e) => setLength(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="width">{t('digitalTwin.widthLabel')}</Label>
-                        <Input id="width" type="number" placeholder="e.g., 50" value={width} onChange={(e) => setWidth(e.target.value)} />
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button onClick={handleSaveConfiguration} disabled={!length || !width}>
-                        <Save className="mr-2 h-4 w-4" />
-                        {t('digitalTwin.saveConfigButton')}
-                    </Button>
-                </CardFooter>
-            </Card>
+            {isLoading ? (
+                <Card><CardContent className="p-6"><Skeleton className="h-40 w-full" /></CardContent></Card>
+            ) : data && (
+                <>
+                <Card className="bg-primary/5 border-primary/20">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Lightbulb /> Best Suggestion</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-lg text-foreground">{data.bestSuggestion}</p>
+                    </CardContent>
+                </Card>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Sprout /> Recommended Crops</CardTitle></CardHeader>
+                        <CardContent className="flex flex-wrap gap-2">
+                           {data.recommendedCrops.map(crop => <div key={crop} className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">{crop}</div>)}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                         <CardHeader><CardTitle className="flex items-center gap-2"><Wheat /> Yield Forecast</CardTitle></CardHeader>
+                        <CardContent className="space-y-2">
+                            {data.yieldForecast.map(forecast => (
+                                <div key={forecast.crop} className="flex justify-between text-sm">
+                                    <span>{forecast.crop}</span>
+                                    <span className="font-semibold">{forecast.value} {forecast.unit}</span>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+                </>
+            )}
         </div>
 
         <div className="space-y-6">
@@ -155,11 +139,11 @@ export default function DigitalTwinPage() {
                     <CardTitle>{t('digitalTwin.keyMetricsTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : data && (
+                     {isLoading ? <MetricSkeleton count={3} /> : data && (
                         <>
                            <MetricDisplay icon={Tractor} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
                            <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
-                           {calculatedYield && <MetricDisplay icon={Wheat} label={t('digitalTwin.expectedYield')} value={`${calculatedYield.value} ${calculatedYield.unit}`} />}
+                           <MetricDisplay icon={Soil} label="Soil Type" value={data.soilType} />
                         </>
                      )}
                 </CardContent>
@@ -168,13 +152,16 @@ export default function DigitalTwinPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>{t('digitalTwin.alertsTitle')}</CardTitle>
+                    <CardDescription>Live Farm Updates</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : data && (
+                    {isLoading ? <MetricSkeleton count={2} /> : data && (
                         <div className="space-y-4">
                             {data.alerts.length > 0 ? data.alerts.map((alert, index) => (
                                <Alert key={index} className={severityBorderColors[alert.severity]}>
-                                    <AlertTriangle className={`h-4 w-4 ${severityColors[alert.severity].replace('bg-', 'text-')}`} />
+                                    <div className={`h-5 w-5 rounded-full ${severityColors[alert.severity]} flex items-center justify-center mr-2`}>
+                                        <AlertTriangle className="h-3 w-3" />
+                                    </div>
                                     <AlertTitle className="capitalize">{alert.type.replace(/_/g, ' ')}</AlertTitle>
                                     <AlertDescription>
                                         {alert.message}
@@ -198,5 +185,19 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="font-bold text-lg">{value}</p>
         </div>
+    </div>
+);
+
+const MetricSkeleton = ({ count }: { count: number }) => (
+    <div className="space-y-4">
+        {Array.from({ length: count }).map((_, i) => (
+             <div key={i} className="flex items-center">
+                <Skeleton className="h-6 w-6 mr-4 rounded-full" />
+                <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-5 w-1/2" />
+                </div>
+            </div>
+        ))}
     </div>
 );

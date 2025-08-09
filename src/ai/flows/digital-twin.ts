@@ -20,15 +20,19 @@ export type DigitalTwinInput = z.infer<typeof DigitalTwinInputSchema>;
 const DigitalTwinOutputSchema = z.object({
   soilHealthScore: z.number().min(0).max(100).describe('The overall soil health score (0-100).'),
   moistureLevel: z.number().min(0).max(100).describe('The current soil moisture percentage.'),
-  expectedYield: z.object({
+  soilType: z.string().describe('The type of soil in the area (e.g., "Loamy Sand").'),
+  recommendedCrops: z.array(z.string()).describe('A list of crops best suited for the current conditions.'),
+  yieldForecast: z.array(z.object({
+    crop: z.string().describe('The name of the crop.'),
     value: z.number().describe('The numerical value of the yield.'),
     unit: z.string().describe('The unit of the yield (e.g., "quintal/acre").'),
-  }),
+  })).describe('Expected yield for various suitable crops.'),
+  bestSuggestion: z.string().describe('The single most important suggestion or takeaway for the farmer.'),
   alerts: z.array(z.object({
       type: z.enum(['weed', 'infestation', 'nutrient_deficiency', 'water_stress', 'heat_stress']),
       severity: z.enum(['low', 'medium', 'high']),
       message: z.string().describe('A descriptive message about the alert.'),
-  })).describe('A list of alerts for the field.'),
+  })).describe('A list of alerts for the field (live farm updates).'),
 });
 export type DigitalTwinOutput = z.infer<typeof DigitalTwinOutputSchema>;
 
@@ -46,58 +50,65 @@ const digitalTwinFlow = ai.defineFlow(
   },
   async (input) => {
     // DEVELOPER: This is a mock implementation.
-    // In a real application, you would use the coordinates to get real data.
+    // In a real application, you would use the coordinates to get real data from satellite imagery APIs (like Sentinel-2),
+    // weather APIs, and soil databases.
 
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
     const generateMockData = (lat: number, lon: number): DigitalTwinOutput => {
-        // Simple geo-fencing for different regions
+        // Simple geo-fencing for different regions to simulate varied data
         
-        // Haryana (e.g., for wheat)
+        // Haryana/Punjab (e.g., for wheat/rice)
         if (lat > 28.5 && lat < 30.5 && lon > 75.0 && lon < 77.5) {
              return {
                 soilHealthScore: 75,
                 moistureLevel: 45,
-                expectedYield: { value: 45, unit: 'quintal/acre' }, // Higher wheat yield
+                soilType: "Alluvial Clay",
+                recommendedCrops: ["Wheat", "Rice", "Sugarcane", "Maize"],
+                yieldForecast: [
+                    { crop: "Wheat", value: 45, unit: "quintal/acre" },
+                    { crop: "Rice", value: 40, unit: "quintal/acre" },
+                ],
+                bestSuggestion: "Soil moisture is slightly low for the current wheat crop stage. Consider light irrigation within the next 48 hours to prevent stress.",
                 alerts: [
                     { type: 'water_stress', severity: 'medium', message: 'Low moisture detected. Irrigation recommended for wheat crop.'},
-                    { type: 'weed', severity: 'low', message: 'Low density of Phalaris minor detected.'},
+                    { type: 'weed', severity: 'low', message: 'Low density of Phalaris minor detected. Monitor and control before it spreads.'},
                 ]
             };
         }
 
-        // Delhi (urban proximity)
-        if (lat > 28.4 && lat < 28.9 && lon > 76.8 && lon < 77.3) {
+        // Maharashtra - Pune/Nashik region (Horticulture)
+        if (lat > 18.4 && lat < 20.1 && lon > 73.5 && lon < 74.5) {
             return {
-                soilHealthScore: 68,
-                moistureLevel: 55,
-                expectedYield: { value: 150, unit: 'quintal/acre' }, // Vegetable yield
+                soilHealthScore: 82,
+                moistureLevel: 65,
+                soilType: "Black Cotton Soil",
+                recommendedCrops: ["Onion", "Grapes", "Sugarcane", "Tomato"],
+                yieldForecast: [
+                    { crop: "Onion", value: 100, unit: "quintal/acre"},
+                    { crop: "Sugarcane", value: 400, unit: "ton/acre"}, // Note different unit
+                ],
+                bestSuggestion: "High humidity poses a risk of fungal diseases for grapes. Ensure proper ventilation and consider a prophylactic organic spray.",
                 alerts: [
-                    { type: 'infestation', severity: 'low', message: 'Whitefly presence detected on vegetable crops. Monitor closely.'},
-                    { type: 'heat_stress', severity: 'medium', message: 'High temperatures expected. Ensure adequate shading for sensitive crops.'},
+                    { type: 'nutrient_deficiency', severity: 'medium', message: 'Signs of potassium deficiency observed. Consider appropriate fertilization for sugarcane.'},
+                    { type: 'infestation', severity: 'low', message: 'Minor thrips infestation detected in onion crop. Monitor population.'}
                 ]
             };
         }
         
-        // Mumbai (high humidity)
-        if (lat > 18.9 && lat < 19.2 && lon > 72.8 && lon < 73.0) {
-            return {
-                soilHealthScore: 62,
-                moistureLevel: 85,
-                expectedYield: { value: 80, unit: 'quintal/acre' }, // Rice/vegetable yield
-                alerts: [
-                    { type: 'infestation', severity: 'high', message: 'High humidity increases risk of fungal diseases. Prophylactic spray recommended.'},
-                ]
-            };
-        }
-
-        // Default for Pune (or other areas)
+        // Default (simulating Central India)
         return {
-            soilHealthScore: 82,
-            moistureLevel: 65,
-            expectedYield: { value: 25, unit: 'quintal/acre' }, // Sugarcane/Onion yield
+            soilHealthScore: 68,
+            moistureLevel: 55,
+            soilType: "Red Loam",
+            recommendedCrops: ["Soybean", "Cotton", "Gram"],
+            yieldForecast: [
+                { crop: "Soybean", value: 10, unit: "quintal/acre" },
+                { crop: "Cotton", value: 8, unit: "quintal/acre" },
+            ],
+            bestSuggestion: "High temperatures expected next week. Ensure cotton crop has adequate moisture to mitigate heat stress.",
             alerts: [
-                { type: 'nutrient_deficiency', severity: 'medium', message: 'Signs of potassium deficiency observed. Consider appropriate fertilization.'}
+                { type: 'heat_stress', severity: 'medium', message: 'High temperatures expected. Ensure adequate shading for sensitive crops.'},
             ]
         };
     }
