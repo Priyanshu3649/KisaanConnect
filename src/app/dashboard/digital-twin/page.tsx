@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
+import { useDebouncedCallback } from 'use-debounce';
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -69,21 +70,27 @@ export default function DigitalTwinPage() {
   const [isLocating, setIsLocating] = useState(false);
 
 
-  const fetchDataForField = useCallback((field: Field) => {
+  const fetchDataForField = useCallback(async (field: Field) => {
     setIsLoading(true);
     setData(null);
-    getDigitalTwinData({ latitude: field.location.lat, longitude: field.location.lng })
-        .then(setData)
-        .catch(err => {
-          console.error("Failed to get digital twin data", err);
-          toast({
+    try {
+        const result = await getDigitalTwinData({ latitude: field.location.lat, longitude: field.location.lng });
+        setData(result);
+    } catch (err) {
+        console.error("Failed to get digital twin data", err);
+        toast({
             variant: "destructive",
             title: t('digitalTwin.errorTitle'),
             description: t('digitalTwin.errorDesc'),
-          });
-        })
-        .finally(() => setIsLoading(false));
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }, [toast, t]);
+
+  const debouncedFetchData = useDebouncedCallback((field: Field) => {
+    fetchDataForField(field);
+  }, 1000); // 1-second debounce
 
   useEffect(() => {
     if (selectedField) {
@@ -92,7 +99,7 @@ export default function DigitalTwinPage() {
         setIsLoading(false);
         setData(null);
     }
-  }, [selectedField, fetchDataForField]);
+  }, [selectedField?.id]); // Only refetch when the selected field ID changes
   
   const handleSelectField = (fieldId: string) => {
     const field = fields.find(f => f.id === fieldId);
@@ -150,12 +157,14 @@ export default function DigitalTwinPage() {
   const handleSetFieldLocation = useCallback((lat: number, lng: number) => {
     if (selectedField) {
         const updatedField = { ...selectedField, location: { lat, lng } };
-        // Update the state for the selected field, which will trigger the useEffect to fetch new data.
+        // Update the state for the selected field.
         setSelectedField(updatedField);
         // Also update the list of all fields.
         setFields(prev => prev.map(f => f.id === updatedField.id ? updatedField : f));
+        // Trigger debounced data fetch
+        debouncedFetchData(updatedField);
     }
-  }, [selectedField]);
+  }, [selectedField, debouncedFetchData]);
   
   const handleGetCurrentLocation = () => {
         if (!selectedField) {
@@ -229,6 +238,7 @@ export default function DigitalTwinPage() {
                     <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
                        {selectedField ? (
                             <MapComponent 
+                                key={selectedField.id} // Re-mount map if field changes
                                 markerPosition={[selectedField.location.lat, selectedField.location.lng]} 
                                 setMarkerPosition={([lat, lng]) => handleSetFieldLocation(lat, lng)}
                             />
@@ -426,14 +436,14 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
     useEffect(() => {
         if (fieldData) {
             setField(fieldData);
-        } else {
+        } else if (isOpen) { // Reset only when opening for a new field
             setField({
                 location: { lat: 28.9959, lng: 77.0178 },
                 shape: 'rectangle',
                 measurements: {},
             });
         }
-    }, [fieldData]);
+    }, [fieldData, isOpen]);
 
     const handleMeasurementChange = (key: string, value: string) => {
         setField(prev => (prev ? {...prev, measurements: {...prev?.measurements, [key]: parseFloat(value) || undefined}} : null));
@@ -452,7 +462,7 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
     }, [field]);
     
     const handleSave = () => {
-        if (field) {
+        if (field && field.name) {
             onSave({ ...field, area: calculatedArea } as Field);
         }
     };
@@ -485,7 +495,7 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="field-name">Field Name</Label>
-                        <Input id="field-name" value={field.name} onChange={(e) => setField(prev => prev ? ({...prev, name: e.target.value}) : null)} placeholder="e.g., North Pasture" />
+                        <Input id="field-name" value={field.name || ''} onChange={(e) => setField(prev => prev ? ({...prev, name: e.target.value}) : null)} placeholder="e.g., North Pasture" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="field-shape">Field Shape</Label>
@@ -515,7 +525,7 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleSave}>
+                    <Button onClick={handleSave} disabled={!field.name}>
                         <Save className="mr-2 h-4 w-4" /> Save Field
                     </Button>
                 </DialogFooter>

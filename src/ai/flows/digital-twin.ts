@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -63,24 +64,47 @@ const digitalTwinFlow = ai.defineFlow(
         // Simple geo-fencing for different regions to simulate varied data
         
         // Haryana/Punjab (e.g., for wheat/rice)
-        if (lat > 28.5 && lat < 30.5 && lon > 75.0 && lon < 77.5) {
+        if (lat > 28.5 && lat < 32.5 && lon > 74.0 && lon < 78.0) {
              return {
-                soilHealthScore: 75,
-                moistureLevel: 45,
+                soilHealthScore: 85,
+                moistureLevel: 55,
                 soilType: "Alluvial Clay",
-                nitrogenLevel: 60,
+                nitrogenLevel: 80,
                 phosphorusLevel: 75,
-                potassiumLevel: 80,
+                potassiumLevel: 82,
                 phLevel: 7.2,
                 recommendedCrops: ["Wheat", "Rice", "Sugarcane", "Maize"],
                 yieldForecast: [
-                    { crop: "Wheat", value: 45, unit: "quintal/acre" },
-                    { crop: "Rice", value: 40, unit: "quintal/acre" },
+                    { crop: "Wheat", value: 48, unit: "quintal/acre" },
+                    { crop: "Rice", value: 42, unit: "quintal/acre" },
                 ],
-                bestSuggestion: "Soil moisture is slightly low for the current wheat crop stage. Consider light irrigation within the next 48 hours to prevent stress.",
+                bestSuggestion: "Soil nitrogen levels are optimal for wheat. Consider a top-dressing of urea after the first irrigation cycle to maximize tillering.",
                 alerts: [
-                    { type: 'water_stress', severity: 'medium', message: 'Low moisture detected. Irrigation recommended for wheat crop.'},
+                    { type: 'water_stress', severity: 'low', message: 'Slightly low moisture detected. Irrigation recommended for wheat crop within 3 days.'},
                     { type: 'weed', severity: 'low', message: 'Low density of Phalaris minor detected. Monitor and control before it spreads.'},
+                ]
+            };
+        }
+
+        // Rajasthan/Gujarat (Arid/Semi-Arid)
+        if (lat > 23.0 && lat < 28.0 && lon > 69.0 && lon < 74.0) {
+            return {
+                soilHealthScore: 45,
+                moistureLevel: 25,
+                soilType: "Sandy Loam",
+                nitrogenLevel: 40,
+                phosphorusLevel: 55,
+                potassiumLevel: 60,
+                phLevel: 8.1,
+                recommendedCrops: ["Millet (Bajra)", "Sorghum (Jowar)", "Guar", "Mustard"],
+                yieldForecast: [
+                    { crop: "Millet", value: 8, unit: "quintal/acre" },
+                    { crop: "Mustard", value: 7, unit: "quintal/acre" },
+                ],
+                bestSuggestion: "High soil pH may reduce nutrient availability. Incorporating organic matter like compost can help buffer pH and improve water retention.",
+                alerts: [
+                    { type: 'water_stress', severity: 'high', message: 'Critical water stress detected. Immediate irrigation is required to prevent crop loss.' },
+                    { type: 'heat_stress', severity: 'medium', message: 'High temperatures expected. Ensure crops are not water-stressed to mitigate heat damage.' },
                 ]
             };
         }
