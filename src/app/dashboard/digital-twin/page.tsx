@@ -150,7 +150,9 @@ export default function DigitalTwinPage() {
   const handleSetFieldLocation = useCallback((lat: number, lng: number) => {
     if (selectedField) {
         const updatedField = { ...selectedField, location: { lat, lng } };
+        // Update the state for the selected field, which will trigger the useEffect to fetch new data.
         setSelectedField(updatedField);
+        // Also update the list of all fields.
         setFields(prev => prev.map(f => f.id === updatedField.id ? updatedField : f));
     }
   }, [selectedField]);
@@ -228,7 +230,7 @@ export default function DigitalTwinPage() {
                        {selectedField ? (
                             <MapComponent 
                                 markerPosition={[selectedField.location.lat, selectedField.location.lng]} 
-                                setMarkerPosition={handleSetFieldLocation} 
+                                setMarkerPosition={([lat, lng]) => handleSetFieldLocation(lat, lng)}
                             />
                        ) : <p>Select a field to see its map.</p>}
                     </div>
