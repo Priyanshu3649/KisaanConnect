@@ -90,6 +90,7 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
   const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
+  const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const [isDataLoading, setIsDataLoading] = useState(true);
   const { t } = useTranslation();
@@ -105,19 +106,17 @@ export default function DashboardPage() {
         return;
     }
 
-    const fetchInitialData = async () => {
+    const fetchAllData = async () => {
         setIsDataLoading(true);
+        setIsCreditScoreLoading(true);
+
         try {
-            // Fetch user doc, static data, and credit score in parallel
-            const [userDoc, creditScore] = await Promise.all([
-                getDoc(doc(db, "users", user.uid)),
-                getAgriCreditScore({ userId: user.uid }),
-            ]);
+            // Fetch user doc and static data in parallel
+            const userDoc = await getDoc(doc(db, "users", user.uid));
 
             if (userDoc.exists()) {
                 setUserData(userDoc.data() as UserData);
             }
-            setCreditScoreData(creditScore);
 
             // Fetch static dashboard data
             const activeDiagnosesCount = recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || 0;
@@ -137,41 +136,45 @@ export default function DashboardPage() {
                 ]
             };
             setDashboardData(data);
+            setIsDataLoading(false);
+
+            // Fetch weather data
+            setLocationStatus("Fetching location...");
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    setLocationStatus("Fetching weather...");
+                    const weather = await getWeather({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
+                    setWeatherData(weather);
+                    setLocationStatus(weather ? `Weather for your location` : "Could not fetch weather.");
+                },
+                async (error) => {
+                    console.warn(`Geolocation error: ${error.message}. Falling back to default.`);
+                    setLocationStatus("Using default location...");
+                    const weather = await getWeather({ location: "Delhi" });
+                    setWeatherData(weather);
+                    setLocationStatus(weather ? "Weather for Delhi" : "Could not fetch weather for Delhi.");
+                },
+                { timeout: 10000 }
+            );
+
+            // Fetch credit score
+            const creditScore = await getAgriCreditScore({ userId: user.uid });
+            setCreditScoreData(creditScore);
+            setIsCreditScoreLoading(false);
+
 
         } catch (error) {
             console.error("Error fetching dashboard data: ", error);
-        } finally {
             setIsDataLoading(false);
+            setIsCreditScoreLoading(false);
         }
     };
-    
-    // Fetch weather data based on location
-    const fetchWeather = () => {
-        setLocationStatus("Fetching location...");
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                setLocationStatus("Fetching weather...");
-                const weather = await getWeather({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                });
-                setWeatherData(weather);
-                setLocationStatus(weather ? `Weather for your location` : "Could not fetch weather.");
-            },
-            async (error) => {
-                console.warn(`Geolocation error: ${error.message}. Falling back to default.`);
-                setLocationStatus("Using default location...");
-                const weather = await getWeather({ location: "Delhi" });
-                setWeatherData(weather);
-                setLocationStatus(weather ? "Weather for Delhi" : "Could not fetch weather for Delhi.");
-            },
-            { timeout: 10000 }
-        );
-    };
 
-    if(!diagnosesLoading && user) {
-      fetchInitialData();
-      fetchWeather();
+    if (!diagnosesLoading && user) {
+      fetchAllData();
     }
   }, [user, authLoading, router, diagnosesLoading]);
   
@@ -324,7 +327,24 @@ export default function DashboardPage() {
                   <CardDescription>{t('creditScore.description')}</CardDescription>
               </CardHeader>
               <CardContent>
-                  {isLoading ? <Skeleton className="h-40 w-full" /> : creditScoreData && (
+                  {isCreditScoreLoading ? (
+                    <div className="space-y-4">
+                        <Skeleton className="h-16 w-1/2 mx-auto" />
+                        <Skeleton className="h-4 w-1/3 mx-auto" />
+                        <div className="pt-4 space-y-2">
+                            <Skeleton className="h-5 w-1/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                        </div>
+                         <div className="pt-4 space-y-2">
+                            <Skeleton className="h-5 w-1/3" />
+                            <div className="flex gap-2">
+                                <Skeleton className="h-6 w-24" />
+                                <Skeleton className="h-6 w-24" />
+                            </div>
+                        </div>
+                    </div>
+                  ) : creditScoreData && (
                       <div className="space-y-4">
                            <div className="flex items-center justify-center text-center">
                                 <div>
