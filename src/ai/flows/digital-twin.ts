@@ -21,6 +21,10 @@ const DigitalTwinOutputSchema = z.object({
   soilHealthScore: z.number().min(0).max(100).describe('The overall soil health score (0-100).'),
   moistureLevel: z.number().min(0).max(100).describe('The current soil moisture percentage.'),
   soilType: z.string().describe('The type of soil in the area (e.g., "Loamy Sand").'),
+  nitrogenLevel: z.number().min(0).max(100).describe('The soil nitrogen (N) level percentage of optimum.'),
+  phosphorusLevel: z.number().min(0).max(100).describe('The soil phosphorus (P) level percentage of optimum.'),
+  potassiumLevel: z.number().min(0).max(100).describe('The soil potassium (K) level percentage of optimum.'),
+  phLevel: z.number().min(0).max(14).describe('The soil pH level.'),
   recommendedCrops: z.array(z.string()).describe('A list of crops best suited for the current conditions.'),
   yieldForecast: z.array(z.object({
     crop: z.string().describe('The name of the crop.'),
@@ -64,6 +68,10 @@ const digitalTwinFlow = ai.defineFlow(
                 soilHealthScore: 75,
                 moistureLevel: 45,
                 soilType: "Alluvial Clay",
+                nitrogenLevel: 60,
+                phosphorusLevel: 75,
+                potassiumLevel: 80,
+                phLevel: 7.2,
                 recommendedCrops: ["Wheat", "Rice", "Sugarcane", "Maize"],
                 yieldForecast: [
                     { crop: "Wheat", value: 45, unit: "quintal/acre" },
@@ -83,6 +91,10 @@ const digitalTwinFlow = ai.defineFlow(
                 soilHealthScore: 82,
                 moistureLevel: 65,
                 soilType: "Black Cotton Soil",
+                nitrogenLevel: 85,
+                phosphorusLevel: 70,
+                potassiumLevel: 65,
+                phLevel: 7.8,
                 recommendedCrops: ["Onion", "Grapes", "Sugarcane", "Tomato"],
                 yieldForecast: [
                     { crop: "Onion", value: 100, unit: "quintal/acre"},
@@ -101,6 +113,10 @@ const digitalTwinFlow = ai.defineFlow(
             soilHealthScore: 68,
             moistureLevel: 55,
             soilType: "Red Loam",
+            nitrogenLevel: 55,
+            phosphorusLevel: 65,
+            potassiumLevel: 70,
+            phLevel: 6.5,
             recommendedCrops: ["Soybean", "Cotton", "Gram"],
             yieldForecast: [
                 { crop: "Soybean", value: 10, unit: "quintal/acre" },

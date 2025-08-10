@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft, View, LocateFixed } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft, View, LocateFixed, Beaker } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -13,12 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import dynamic from 'next/dynamic';
-import { useDebouncedCallback } from "use-debounce";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Progress } from "@/components/ui/progress";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -147,7 +147,7 @@ export default function DigitalTwinPage() {
     toast({ title: "Field Saved!" });
   };
 
-  const handleSetFieldLocation = useCallback(([lat, lng]: [number, number]) => {
+  const handleSetFieldLocation = useCallback((lat: number, lng: number) => {
     if (selectedField) {
         const updatedField = { ...selectedField, location: { lat, lng } };
         setSelectedField(updatedField);
@@ -164,7 +164,7 @@ export default function DigitalTwinPage() {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                handleSetFieldLocation([latitude, longitude]);
+                handleSetFieldLocation(latitude, longitude);
                 setIsLocating(false);
                 toast({ title: "Location Updated", description: "Field location updated to your current position."});
             },
@@ -235,19 +235,37 @@ export default function DigitalTwinPage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><View /> Simulated Satellite View</CardTitle>
-                    <CardDescription>A visual representation of your field's health grid.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                        <Skeleton className="aspect-video w-full" />
-                    ) : (
-                        <SatelliteView healthScore={data?.soilHealthScore || 0} />
-                    )}
-                </CardContent>
-            </Card>
+            <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><View /> Satellite View</CardTitle>
+                        <CardDescription>Visual representation of field health.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? (
+                            <Skeleton className="aspect-video w-full" />
+                        ) : (
+                            <SatelliteView healthScore={data?.soilHealthScore || 0} />
+                        )}
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><TestTube2 /> Soil Analysis</CardTitle>
+                        <CardDescription>Key nutrient and composition metrics.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {isLoading ? <MetricSkeleton count={4} /> : data && (
+                            <>
+                                <NutrientProgress label="Nitrogen (N)" value={data.nitrogenLevel} />
+                                <NutrientProgress label="Phosphorus (P)" value={data.phosphorusLevel} />
+                                <NutrientProgress label="Potassium (K)" value={data.potassiumLevel} />
+                                <MetricDisplay icon={Beaker} label="Soil pH" value={data.phLevel.toFixed(1)} />
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
             {isLoading ? (
                 <Card><CardContent className="p-6"><Skeleton className="h-40 w-full" /></CardContent></Card>
@@ -367,6 +385,16 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="font-bold text-lg">{value}</p>
         </div>
+    </div>
+);
+
+const NutrientProgress = ({ label, value }: { label: string, value: number }) => (
+    <div>
+        <div className="flex justify-between items-center mb-1">
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <span className="text-xs font-semibold">{value}% of optimum</span>
+        </div>
+        <Progress value={value} />
     </div>
 );
 
