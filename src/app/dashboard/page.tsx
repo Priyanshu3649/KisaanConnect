@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb } from "lucide-react";
+import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -93,7 +93,7 @@ export default function DashboardPage() {
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { toast } = useToast();
 
   const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5)) : null;
@@ -169,7 +169,7 @@ export default function DashboardPage() {
         if (!user) return;
         setIsCreditScoreLoading(true);
         try {
-            const creditScore = await getAgriCreditScore({ userId: user.uid });
+            const creditScore = await getAgriCreditScore({ userId: user.uid, language: language });
             setCreditScoreData(creditScore);
         } catch (error) {
             console.error("Error fetching credit score:", error);
@@ -183,7 +183,7 @@ export default function DashboardPage() {
       fetchAllData();
       fetchCreditScore();
     }
-  }, [user, authLoading, router, diagnosesLoading]);
+  }, [user, authLoading, router, diagnosesLoading, language]);
   
   const isLoading = authLoading || isDataLoading;
 
@@ -202,6 +202,19 @@ export default function DashboardPage() {
         title: t('creditScore.shareTitle'),
         description: t('creditScore.shareDesc'),
     });
+  }
+  
+  const handleApplyLoan = () => {
+      toast({
+          title: t('creditScore.loanTitle'),
+          description: t('creditScore.loanDesc'),
+      });
+  }
+
+  const getLoanTip = () => {
+      if (!creditScoreData?.loanEligibility.isEligible) return null;
+      const loanTip = creditScoreData.improvementTips.find(tip => tip.includes(creditScoreData.loanEligibility.amount.toString()));
+      return loanTip;
   }
 
   return (
@@ -366,8 +379,16 @@ export default function DashboardPage() {
                             <div>
                                 <h4 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> {t('creditScore.tipsTitle')}</h4>
                                 <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                                    {creditScoreData.improvementTips.map((tip, i) => <li key={i}>{tip}</li>)}
+                                    {creditScoreData.improvementTips.filter(tip => !tip.includes(creditScoreData.loanEligibility.amount.toString())).map((tip, i) => <li key={i}>{tip}</li>)}
                                 </ul>
+                                {getLoanTip() && (
+                                     <div className="mt-3 p-3 rounded-md bg-secondary border border-primary/20">
+                                        <p className="text-sm font-semibold">{getLoanTip()}</p>
+                                        <Button size="sm" className="w-full mt-2" onClick={handleApplyLoan}>
+                                            <Banknote className="mr-2 h-4 w-4" /> {t('creditScore.applyLoan')}
+                                        </Button>
+                                     </div>
+                                )}
                             </div>
                             
                              <div>
@@ -376,7 +397,7 @@ export default function DashboardPage() {
                                     {creditScoreData.badges.map(badge => (
                                         <Badge key={badge.name} variant="secondary" className="pl-2">
                                             <BadgeIcon iconName={badge.icon} className="h-4 w-4 mr-1 text-primary"/>
-                                            {badge.name}
+                                            {t(`creditScore.badges.${badge.name.replace(/ /g, '')}` as any, { defaultValue: badge.name })}
                                         </Badge>
                                     ))}
                                 </div>
@@ -395,12 +416,11 @@ export default function DashboardPage() {
                     <CardDescription>{locationStatus}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {!weatherData && (
+                    {!weatherData ? (
                         <div className="flex items-center justify-center h-24">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
-                    )}
-                    {weatherData && (
+                    ) : (
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-yellow-500" />

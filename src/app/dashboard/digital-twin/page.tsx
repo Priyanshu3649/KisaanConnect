@@ -133,7 +133,7 @@ export default function DigitalTwinPage() {
         }
         return newFields;
     });
-    toast({ title: "Field Deleted" });
+    toast({ title: t('digitalTwin.fieldDeleted') });
   };
   
   const handleSaveField = (fieldData: Field) => {
@@ -151,7 +151,7 @@ export default function DigitalTwinPage() {
     setSelectedField(newSelectedField);
     setIsFormOpen(false);
     setEditingField(null);
-    toast({ title: "Field Saved!" });
+    toast({ title: t('digitalTwin.fieldSaved') });
   };
 
   const handleSetFieldLocation = useCallback((lat: number, lng: number) => {
@@ -168,7 +168,7 @@ export default function DigitalTwinPage() {
   
   const handleGetCurrentLocation = () => {
         if (!selectedField) {
-            toast({ variant: 'destructive', title: "No Field Selected", description: "Please select a field first."});
+            toast({ variant: 'destructive', title: t('digitalTwin.noFieldSelectedTitle'), description: t('digitalTwin.noFieldSelectedDesc')});
             return;
         }
         setIsLocating(true);
@@ -177,11 +177,11 @@ export default function DigitalTwinPage() {
                 const { latitude, longitude } = position.coords;
                 handleSetFieldLocation(latitude, longitude);
                 setIsLocating(false);
-                toast({ title: "Location Updated", description: "Field location updated to your current position."});
+                toast({ title: t('digitalTwin.locationUpdatedTitle'), description: t('digitalTwin.locationUpdatedDesc')});
             },
             (error) => {
                 setIsLocating(false);
-                toast({ variant: 'destructive', title: "Location Error", description: "Could not retrieve your location."});
+                toast({ variant: 'destructive', title: t('digitalTwin.locationErrorTitle'), description: t('digitalTwin.locationErrorDesc')});
             }
         );
   };
@@ -195,12 +195,12 @@ export default function DigitalTwinPage() {
           />
           <Card className="text-center py-12">
             <CardHeader>
-                <CardTitle>No Fields Found</CardTitle>
-                <CardDescription>Get started by adding your first farm field.</CardDescription>
+                <CardTitle>{t('digitalTwin.noFieldsTitle')}</CardTitle>
+                <CardDescription>{t('digitalTwin.noFieldsDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
                  <Button onClick={handleAddNewField}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Field
+                    <PlusCircle className="mr-2 h-4 w-4" /> {t('digitalTwin.addNewField')}
                 </Button>
             </CardContent>
           </Card>
@@ -226,13 +226,13 @@ export default function DigitalTwinPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2"><MapPinned /> {selectedField?.name || 'Field Map'}</div>
+                        <div className="flex items-center gap-2"><MapPinned /> {selectedField?.name || t('digitalTwin.fieldMap')}</div>
                         <Button size="sm" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating || !selectedField}>
                             {isLocating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
-                            Use Current Location
+                            {t('digitalTwin.useCurrentLocation')}
                         </Button>
                     </CardTitle>
-                    <CardDescription>Currently viewing the digital twin for your selected field. Drag the pin to analyze a new location.</CardDescription>
+                    <CardDescription>{t('digitalTwin.fieldMapDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
@@ -242,7 +242,7 @@ export default function DigitalTwinPage() {
                                 markerPosition={[selectedField.location.lat, selectedField.location.lng]} 
                                 setMarkerPosition={([lat, lng]) => handleSetFieldLocation(lat, lng)}
                             />
-                       ) : <p>Select a field to see its map.</p>}
+                       ) : <p>{t('digitalTwin.selectField')}</p>}
                     </div>
                 </CardContent>
             </Card>
@@ -250,8 +250,8 @@ export default function DigitalTwinPage() {
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><View /> Satellite View</CardTitle>
-                        <CardDescription>Visual representation of field health.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><View /> {t('digitalTwin.satelliteView')}</CardTitle>
+                        <CardDescription>{t('digitalTwin.satelliteViewDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
@@ -263,8 +263,8 @@ export default function DigitalTwinPage() {
                 </Card>
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><TestTube2 /> Soil Analysis</CardTitle>
-                        <CardDescription>Key nutrient and composition metrics.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><TestTube2 /> {t('digitalTwin.soilAnalysis')}</CardTitle>
+                        <CardDescription>{t('digitalTwin.soilAnalysisDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {isLoading ? <MetricSkeleton count={4} /> : data && (
@@ -285,7 +285,7 @@ export default function DigitalTwinPage() {
                 <>
                 <Card className="bg-primary/5 border-primary/20">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Lightbulb /> Best Suggestion</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Lightbulb /> {t('digitalTwin.bestSuggestion')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-lg text-foreground">{data.bestSuggestion}</p>
@@ -294,19 +294,19 @@ export default function DigitalTwinPage() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Sprout /> Recommended Crops</CardTitle></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Sprout /> {t('digitalTwin.recommendedCrops')}</CardTitle></CardHeader>
                         <CardContent className="flex flex-wrap gap-2">
                            {data.recommendedCrops.map(crop => <div key={crop} className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">{crop}</div>)}
                         </CardContent>
                     </Card>
                     <Card>
-                         <CardHeader><CardTitle className="flex items-center gap-2"><Wheat /> Yield Forecast</CardTitle></CardHeader>
+                         <CardHeader><CardTitle className="flex items-center gap-2"><Wheat /> {t('digitalTwin.yieldForecast')}</CardTitle></CardHeader>
                         <CardContent className="space-y-2">
                             {data.yieldForecast.map(forecast => (
                                 <div key={forecast.crop} className="flex justify-between text-sm">
                                     <span>{forecast.crop}</span>
                                     {selectedField && selectedField.area > 0 ? (
-                                        <span className="font-semibold">{ (selectedField.area * (forecast.value / 4046.86)).toFixed(2) } quintal (Total)</span>
+                                        <span className="font-semibold">{ (selectedField.area * (forecast.value / 4046.86)).toFixed(2) } {t('digitalTwin.quintalTotal')}</span>
                                     ) : (
                                         <span className="font-semibold">{forecast.value} {forecast.unit}</span>
                                     )}
@@ -322,8 +322,8 @@ export default function DigitalTwinPage() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>My Fields</CardTitle>
-                    <CardDescription>Manage your farm fields here.</CardDescription>
+                    <CardTitle>{t('digitalTwin.myFields')}</CardTitle>
+                    <CardDescription>{t('digitalTwin.myFieldsDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {fields.map(field => (
@@ -339,7 +339,7 @@ export default function DigitalTwinPage() {
                         </div>
                     ))}
                      <Button onClick={handleAddNewField} variant="outline" className="w-full mt-2">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Field
+                        <PlusCircle className="mr-2 h-4 w-4" /> {t('digitalTwin.addNewField')}
                     </Button>
                 </CardContent>
             </Card>
@@ -353,7 +353,7 @@ export default function DigitalTwinPage() {
                         <>
                            <MetricDisplay icon={Tractor} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
                            <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
-                           <MetricDisplay icon={TestTube2} label="Soil Type" value={data.soilType} />
+                           <MetricDisplay icon={TestTube2} label={t('digitalTwin.soilType')} value={data.soilType} />
                         </>
                      )}
                 </CardContent>
@@ -362,7 +362,7 @@ export default function DigitalTwinPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>{t('digitalTwin.alertsTitle')}</CardTitle>
-                    <CardDescription>Live Farm Updates</CardDescription>
+                    <CardDescription>{t('digitalTwin.alertsDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? <MetricSkeleton count={2} /> : data && (
@@ -389,6 +389,7 @@ export default function DigitalTwinPage() {
         onOpenChange={setIsFormOpen}
         onSave={handleSaveField}
         fieldData={editingField}
+        t={t}
       />
     </>
   );
@@ -404,15 +405,18 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
     </div>
 );
 
-const NutrientProgress = ({ label, value }: { label: string, value: number }) => (
-    <div>
-        <div className="flex justify-between items-center mb-1">
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <span className="text-xs font-semibold">{value}% of optimum</span>
+const NutrientProgress = ({ label, value }: { label: string, value: number }) => {
+    const { t } = useTranslation();
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-1">
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <span className="text-xs font-semibold">{value}% {t('digitalTwin.ofOptimum')}</span>
+            </div>
+            <Progress value={value} />
         </div>
-        <Progress value={value} />
-    </div>
-);
+    )
+};
 
 const MetricSkeleton = ({ count }: { count: number }) => (
     <div className="space-y-4">
@@ -430,7 +434,7 @@ const MetricSkeleton = ({ count }: { count: number }) => (
 
 
 // Form Dialog Component
-const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (data: Field) => void, fieldData: Partial<Field> | null }) => {
+const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData, t }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (data: Field) => void, fieldData: Partial<Field> | null, t: any }) => {
     const [field, setField] = useState<Partial<Field> | null>(null);
 
     useEffect(() => {
@@ -468,10 +472,10 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
     };
     
     const shapeFields: Record<FieldShape, {key: string, label: string}[]> = {
-        rectangle: [{key: 'length', label: 'Length (m)'}, {key: 'width', label: 'Width (m)'}],
-        square: [{key: 'side', label: 'Side (m)'}],
-        trapezium: [{key: 'base1', label: 'Base 1 (m)'}, {key: 'base2', label: 'Base 2 (m)'}, {key: 'height', label: 'Height (m)'}],
-        parallelogram: [{key: 'base', label: 'Base (m)'}, {key: 'height', label: 'Height (m)'}],
+        rectangle: [{key: 'length', label: t('digitalTwin.lengthLabel')}, {key: 'width', label: t('digitalTwin.widthLabel')}],
+        square: [{key: 'side', label: t('digitalTwin.sideLabel')}],
+        trapezium: [{key: 'base1', label: t('digitalTwin.base1Label')}, {key: 'base2', label: t('digitalTwin.base2Label')}, {key: 'height', label: t('digitalTwin.heightLabel')}],
+        parallelogram: [{key: 'base', label: t('digitalTwin.baseLabel')}, {key: 'height', label: t('digitalTwin.heightLabel')}],
     };
 
     if (!field) return null;
@@ -480,12 +484,12 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{field.id?.startsWith('field_') ? 'Add New Field' : 'Edit Field'}</DialogTitle>
-                    <DialogDescription>Enter the details for your farm field below.</DialogDescription>
+                    <DialogTitle>{field.id?.startsWith('field_') ? t('digitalTwin.addNewField') : t('digitalTwin.editField')}</DialogTitle>
+                    <DialogDescription>{t('digitalTwin.dialogDesc')}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label>Field Location</Label>
+                        <Label>{t('digitalTwin.fieldLocation')}</Label>
                         <div className="aspect-video w-full bg-muted rounded-lg relative overflow-hidden">
                             <MapComponent 
                                 markerPosition={[field.location?.lat || 28.9959, field.location?.lng || 77.0178]} 
@@ -494,20 +498,20 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="field-name">Field Name</Label>
-                        <Input id="field-name" value={field.name || ''} onChange={(e) => setField(prev => prev ? ({...prev, name: e.target.value}) : null)} placeholder="e.g., North Pasture" />
+                        <Label htmlFor="field-name">{t('digitalTwin.fieldName')}</Label>
+                        <Input id="field-name" value={field.name || ''} onChange={(e) => setField(prev => prev ? ({...prev, name: e.target.value}) : null)} placeholder={t('digitalTwin.fieldNamePlaceholder')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="field-shape">Field Shape</Label>
+                        <Label htmlFor="field-shape">{t('digitalTwin.fieldShape')}</Label>
                         <Select value={field.shape} onValueChange={(v: FieldShape) => setField(prev => prev ? ({...prev, shape: v, measurements: {}}) : null)}>
                             <SelectTrigger id="field-shape">
-                                <SelectValue placeholder="Select a shape" />
+                                <SelectValue placeholder={t('digitalTwin.selectShape')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="rectangle"><div className="flex items-center gap-2"><RectangleHorizontal className="h-4 w-4" /> Rectangle</div></SelectItem>
-                                <SelectItem value="square"><div className="flex items-center gap-2"><Square className="h-4 w-4" /> Square</div></SelectItem>
-                                <SelectItem value="trapezium"><div className="flex items-center gap-2"><LayoutPanelLeft className="h-4 w-4" /> Trapezium</div></SelectItem>
-                                <SelectItem value="parallelogram"><div className="flex items-center gap-2"><LayoutPanelLeft className="h-4 w-4" /> Parallelogram</div></SelectItem>
+                                <SelectItem value="rectangle"><div className="flex items-center gap-2"><RectangleHorizontal className="h-4 w-4" /> {t('digitalTwin.rectangle')}</div></SelectItem>
+                                <SelectItem value="square"><div className="flex items-center gap-2"><Square className="h-4 w-4" /> {t('digitalTwin.square')}</div></SelectItem>
+                                <SelectItem value="trapezium"><div className="flex items-center gap-2"><LayoutPanelLeft className="h-4 w-4" /> {t('digitalTwin.trapezium')}</div></SelectItem>
+                                <SelectItem value="parallelogram"><div className="flex items-center gap-2"><LayoutPanelLeft className="h-4 w-4" /> {t('digitalTwin.parallelogram')}</div></SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -520,13 +524,13 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
                          ))}
                     </div>
                     <div>
-                        <Label>Calculated Area</Label>
+                        <Label>{t('digitalTwin.calculatedArea')}</Label>
                         <p className="font-bold text-lg">{calculatedArea.toFixed(2)} m²</p>
                     </div>
                 </div>
                 <DialogFooter>
                     <Button onClick={handleSave} disabled={!field.name}>
-                        <Save className="mr-2 h-4 w-4" /> Save Field
+                        <Save className="mr-2 h-4 w-4" /> {t('digitalTwin.saveField')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
