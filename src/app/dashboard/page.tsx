@@ -108,7 +108,6 @@ export default function DashboardPage() {
 
     const fetchAllData = async () => {
         setIsDataLoading(true);
-        setIsCreditScoreLoading(true);
 
         try {
             // Fetch user doc and static data in parallel
@@ -160,21 +159,29 @@ export default function DashboardPage() {
                 { timeout: 10000 }
             );
 
-            // Fetch credit score
-            const creditScore = await getAgriCreditScore({ userId: user.uid });
-            setCreditScoreData(creditScore);
-            setIsCreditScoreLoading(false);
-
-
         } catch (error) {
             console.error("Error fetching dashboard data: ", error);
             setIsDataLoading(false);
+        }
+    };
+
+    const fetchCreditScore = async () => {
+        if (!user) return;
+        setIsCreditScoreLoading(true);
+        try {
+            const creditScore = await getAgriCreditScore({ userId: user.uid });
+            setCreditScoreData(creditScore);
+        } catch (error) {
+            console.error("Error fetching credit score:", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not load Agri-Credit Score."});
+        } finally {
             setIsCreditScoreLoading(false);
         }
     };
 
     if (!diagnosesLoading && user) {
       fetchAllData();
+      fetchCreditScore();
     }
   }, [user, authLoading, router, diagnosesLoading]);
   

@@ -41,12 +41,8 @@ const agriCreditScoreFlow = ai.defineFlow(
     outputSchema: AgriCreditScoreOutputSchema,
   },
   async (input) => {
-    // DEVELOPER: This is a mock implementation.
-    // In a real application, you would use the userId to fetch real data from various sources:
-    // - Sales data from KisaanConnect marketplace
-    // - Loan repayment history from financial partners
-    // - Satellite yield records for their registered fields
-    // This data would then be processed to calculate a score.
+    // DEVELOPER: This is a mock implementation using static demo data.
+    // In a real application, you would use the userId to fetch real data from various sources.
 
     // Simulate a delay for fetching and processing data.
     await new Promise(resolve => setTimeout(resolve, 1000));
