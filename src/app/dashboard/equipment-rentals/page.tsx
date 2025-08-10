@@ -364,7 +364,7 @@ export default function EquipmentRentalsPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedData.map((item) => (
-            <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group flex flex-col">
+            <Card key={item.id || item.name} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group flex flex-col">
                 <CardHeader className="p-0">
                 <div className="relative aspect-video w-full bg-muted overflow-hidden">
                     <Image src={item.image} alt={item.name} data-ai-hint={item.aiHint} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
