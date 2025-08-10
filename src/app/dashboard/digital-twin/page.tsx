@@ -290,10 +290,14 @@ export default function DigitalTwinPage() {
                     <Card>
                          <CardHeader><CardTitle className="flex items-center gap-2"><Wheat /> Yield Forecast</CardTitle></CardHeader>
                         <CardContent className="space-y-2">
-                            {selectedField && data.yieldForecast.map(forecast => (
+                            {data.yieldForecast.map(forecast => (
                                 <div key={forecast.crop} className="flex justify-between text-sm">
                                     <span>{forecast.crop}</span>
-                                    <span className="font-semibold">{ (selectedField.area * (forecast.value / 4046.86)).toFixed(2) } quintal (Total)</span>
+                                    {selectedField && selectedField.area > 0 ? (
+                                        <span className="font-semibold">{ (selectedField.area * (forecast.value / 4046.86)).toFixed(2) } quintal (Total)</span>
+                                    ) : (
+                                        <span className="font-semibold">{forecast.value} {forecast.unit}</span>
+                                    )}
                                 </div>
                             ))}
                         </CardContent>
