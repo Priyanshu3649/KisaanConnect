@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, Droplets, Wind, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb } from "lucide-react";
+import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -21,7 +21,6 @@ import { getAgriCreditScore, type AgriCreditScoreOutput } from "@/ai/flows/agri-
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import * as LucideIcons from 'lucide-react';
 
 
 interface UserData {
@@ -174,7 +173,7 @@ export default function DashboardPage() {
       fetchInitialData();
       fetchWeather();
     }
-  }, [user, authLoading, router, recentDiagnoses, diagnosesLoading]);
+  }, [user, authLoading, router, diagnosesLoading]);
   
   const isLoading = authLoading || isDataLoading;
 
@@ -229,7 +228,7 @@ export default function DashboardPage() {
                 <Leaf className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+{dashboardData?.activeDiagnosesCount || '0'}</div>
+                <div className="text-2xl font-bold">+{recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || '0'}</div>
                 <p className="text-xs text-muted-foreground">
                   {dashboardData?.resolvedThisWeek || '0'} {t('profile.resolvedThisWeek')}
                 </p>

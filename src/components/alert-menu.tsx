@@ -10,10 +10,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Bell, AlertTriangle, CloudRain, ChevronsDown, Award } from "lucide-react";
+import { Bell, AlertTriangle, CloudRain, ChevronsDown, Award, TrendingUp } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 
 const alerts = [
+    {
+        type: 'success',
+        icon: TrendingUp,
+        textKey: 'alerts.creditScore'
+    },
     {
         type: 'danger',
         icon: AlertTriangle,
@@ -68,7 +73,7 @@ export default function AlertMenu() {
                 return (
                      <DropdownMenuItem key={index} className="flex items-start gap-3">
                         <Icon className={`h-5 w-5 mt-0.5 ${iconColors[alert.type as keyof typeof iconColors]}`} />
-                        <span className="whitespace-normal">{t(alert.textKey as any)}</span>
+                        <span className="whitespace-normal">{t(alert.textKey as any, { points: 25 })}</span>
                     </DropdownMenuItem>
                 )
             })}

@@ -258,6 +258,7 @@
     "schemes.error.apiDesc": "Could not check eligibility at this time. Please try again later.",
 
     "alerts.title": "Notifications",
+    "alerts.creditScore": "Your credit score went up by {{points}} points this month!",
     "alerts.disease": "Danger! A new strain of blight is spreading in your area. Take preventive measures immediately.",
     "alerts.rainfall": "Heavy rainfall expected tomorrow. Consider delaying irrigation.",
     "alerts.priceDrop": "Market Alert: Tomato prices are expected to drop by 15% next week.",
