@@ -28,7 +28,6 @@ const navItems: NavItem[] = [
   { href: "/dashboard/government-schemes", icon: "Landmark", labelKey: "nav.governmentSchemes" },
   { href: "/dashboard/customer-support", icon: "Phone", labelKey: "nav.customerSupport" },
   { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
-  { href: "/dashboard/help-feedback", icon: "LifeBuoy", labelKey: "nav.helpAndFeedback" },
 ];
 
 // For mobile, we have a different set for the bottom nav

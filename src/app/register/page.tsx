@@ -169,7 +169,7 @@ export default function RegisterPage() {
                             
                             <div className="space-y-2 text-left">
                                 <Label htmlFor="name">{t('register.fullName')}</Label>
-                                <Input id="name" placeholder="Ramesh Kumar" value={name} onChange={(e) => setName(e.target.value)} required />
+                                <Input id="name" placeholder={t('register.namePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} required />
                             </div>
                             <div className="space-y-2 text-left">
                                 <Label htmlFor="email">{t('register.email')}</Label>

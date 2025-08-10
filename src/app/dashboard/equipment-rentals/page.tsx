@@ -50,6 +50,8 @@ const demoRentalsData: Omit<Equipment, 'id'|'distance'|'ownerId'|'ownerName'>[] 
     { name: "Mahindra Rotavator", image: "https://placehold.co/600x400.png", price: 1200, location: "Karnal, Haryana", available: true, aiHint: "red rotavator", coords: { lat: 29.6857, lng: 76.9905 } },
     { name: "Power Tiller", image: "https://placehold.co/600x400.png", price: 800, location: "Pune, Maharashtra", available: false, aiHint: "small tiller", coords: { lat: 18.5204, lng: 73.8567 } },
     { name: "Sonalika Thresher", image: "https://placehold.co/600x400.png", price: 1800, location: "Ludhiana, Punjab", available: true, aiHint: "large thresher", coords: { lat: 30.9010, lng: 75.8573 } },
+    { name: "Massey Ferguson 241", image: "https://placehold.co/600x400.png", price: 2200, location: "Hisar, Haryana", available: true, aiHint: "red tractor", coords: { lat: 29.1492, lng: 75.7217 } },
+    { name: "Crop Sprayer", image: "https://placehold.co/600x400.png", price: 500, location: "Nashik, Maharashtra", available: true, aiHint: "sprayer machine", coords: { lat: 19.9975, lng: 73.7898 } },
 ];
 
 
@@ -71,12 +73,12 @@ const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment
     return (
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Rent: {equipment.name}</DialogTitle>
-                <DialogDescription>Select your rental date and duration.</DialogDescription>
+                <DialogTitle>{t('equipmentRentals.rentDialogTitle')} {equipment.name}</DialogTitle>
+                <DialogDescription>{t('equipmentRentals.rentDialogDesc')}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                    <Label>Rental Date</Label>
+                    <Label>{t('equipmentRentals.rentDateLabel')}</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button
@@ -87,7 +89,7 @@ const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment
                             )}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {date ? format(date, "PPP") : <span>Pick a date</span>}
+                            {date ? format(date, "PPP") : <span>{t('equipmentRentals.pickDate')}</span>}
                         </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
@@ -101,17 +103,17 @@ const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment
                     </Popover>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="hours">Number of Hours</Label>
+                    <Label htmlFor="hours">{t('equipmentRentals.hoursLabel')}</Label>
                     <Input id="hours" type="number" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g., 8" />
                 </div>
                 <div className="mt-4">
-                    <p className="font-semibold">Total Bill:</p>
+                    <p className="font-semibold">{t('equipmentRentals.totalBill')}</p>
                     <p className="text-2xl font-bold">₹{totalBill.toLocaleString('en-IN')}</p>
-                    <p className="text-xs text-muted-foreground">Calculated at ₹{equipment.price / 8}/hour</p>
+                    <p className="text-xs text-muted-foreground">{t('equipmentRentals.priceCalc', { price: (equipment.price / 8) })}</p>
                 </div>
             </div>
             <DialogFooter>
-                <Button onClick={() => onConfirm(equipment.id, date!, parseInt(hours))} disabled={!date || !hours || parseInt(hours) <= 0}>Confirm Booking</Button>
+                <Button onClick={() => onConfirm(equipment.id, date!, parseInt(hours))} disabled={!date || !hours || parseInt(hours) <= 0}>{t('equipmentRentals.confirmBooking')}</Button>
             </DialogFooter>
         </DialogContent>
     );
@@ -177,7 +179,7 @@ export default function EquipmentRentalsPage() {
     const handleUploadSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user || !newItemName || !newItemPrice || !newItemLocation || !newItemImage) {
-             toast({ variant: "destructive", title: "Missing Information", description: "Please fill out all fields and upload an image." });
+             toast({ variant: "destructive", title: t('equipmentRentals.missingInfoTitle'), description: t('equipmentRentals.missingInfoDesc') });
             return;
         }
         setIsUploading(true);
@@ -202,7 +204,7 @@ export default function EquipmentRentalsPage() {
             
             setIsUploading(false);
             setIsUploadDialogOpen(false);
-            toast({ title: "Upload Successful", description: `${newItemName} has been listed for rent.` });
+            toast({ title: t('equipmentRentals.uploadSuccessTitle'), description: t('equipmentRentals.uploadSuccessDesc', { name: newItemName }) });
 
             // Reset form
             setNewItemName('');
@@ -212,14 +214,14 @@ export default function EquipmentRentalsPage() {
             setPreviewUrl(null);
         } catch (err) {
             console.error("Error uploading equipment:", err);
-            toast({ variant: "destructive", title: "Upload Failed", description: "Could not list your equipment."});
+            toast({ variant: "destructive", title: t('equipmentRentals.uploadFailTitle'), description: t('equipmentRentals.uploadFailDesc')});
             setIsUploading(false);
         }
     };
 
     const handleRentClick = (equipment: Equipment) => {
         if (equipment.ownerId === user?.uid) {
-            toast({ variant: "default", title: "This is your equipment", description: "You cannot rent your own equipment."});
+            toast({ variant: "default", title: t('equipmentRentals.ownEquipmentTitle'), description: t('equipmentRentals.ownEquipmentDesc')});
             return;
         }
         setSelectedEquipment(equipment);
@@ -231,17 +233,17 @@ export default function EquipmentRentalsPage() {
             await updateDoc(doc(db, "rentals", id), { available: false });
             setIsRentDialogOpen(false);
             setSelectedEquipment(null);
-            toast({ title: "Booking Confirmed!", description: "The equipment has been marked as rented." });
+            toast({ title: t('equipmentRentals.bookingSuccessTitle'), description: t('equipmentRentals.bookingSuccessDesc') });
         } catch (err) {
              console.error("Error confirming rental:", err);
-            toast({ variant: "destructive", title: "Booking Failed", description: "Could not confirm the booking."});
+            toast({ variant: "destructive", title: t('equipmentRentals.bookingFailTitle'), description: t('equipmentRentals.bookingFailDesc')});
         }
     };
     
     const handleContactSeller = (ownerName: string) => {
         toast({
-            title: `Contacting ${ownerName}`,
-            description: `Calling +91 98765 43210...`,
+            title: t('equipmentRentals.contactingTitle', { name: ownerName }),
+            description: t('equipmentRentals.contactingDesc'),
         });
     }
 
@@ -261,12 +263,12 @@ export default function EquipmentRentalsPage() {
             });
             await batch.commit();
             toast({
-                title: "Demo Data Added",
-                description: "4 sample rental items have been added to your database.",
+                title: t('equipmentRentals.seedSuccessTitle'),
+                description: t('equipmentRentals.seedSuccessDesc', { count: demoRentalsData.length }),
             });
         } catch (e) {
             console.error("Error seeding rental data:", e);
-            toast({ variant: 'destructive', title: "Error", description: "Could not add demo rental data." });
+            toast({ variant: 'destructive', title: t('equipmentRentals.seedFailTitle'), description: t('equipmentRentals.seedFailDesc') });
         } finally {
             setIsSeeding(false);
         }
@@ -290,7 +292,7 @@ export default function EquipmentRentalsPage() {
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
                 <ArrowUpDown className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder={t('equipmentRentals.sortBy')} />
               </SelectTrigger>
               <SelectContent>
                   <SelectItem value="distance">{t('equipmentRentals.sortByDistance')}</SelectItem>
@@ -308,7 +310,7 @@ export default function EquipmentRentalsPage() {
                 <DialogContent className="sm:max-w-[480px]">
                     <DialogHeader>
                         <DialogTitle>{t('equipmentRentals.uploadTitle')}</DialogTitle>
-                        <DialogDescription>Your listing will be visible to all farmers on the platform.</DialogDescription>
+                        <DialogDescription>{t('equipmentRentals.uploadDesc')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleUploadSubmit}>
                         <div className="grid gap-4 py-4">
@@ -320,7 +322,7 @@ export default function EquipmentRentalsPage() {
                                       ) : (
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
+                                            <p className="text-sm text-muted-foreground"><span className="font-semibold">{t('cropDiagnosis.clickToUpload')}</span></p>
                                         </div>
                                       )}
                                       <Input id="image-upload-input" type="file" className="hidden" onChange={handleImageChange} accept="image/png, image/jpeg" />
@@ -352,7 +354,7 @@ export default function EquipmentRentalsPage() {
             </Dialog>
              <Button variant="outline" onClick={handleSeedData} disabled={isSeeding || (rentals && rentals.length > 0)}>
                 <Database className="mr-2 h-4 w-4" />
-                {isSeeding ? "Seeding..." : "Seed Demo Data"}
+                {isSeeding ? t('equipmentRentals.seeding') : t('equipmentRentals.seedButton')}
             </Button>
         </div>
       </PageHeader>
@@ -364,7 +366,7 @@ export default function EquipmentRentalsPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedData.map((item) => (
-            <Card key={item.id || item.name} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group flex flex-col">
+            <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group flex flex-col">
                 <CardHeader className="p-0">
                 <div className="relative aspect-video w-full bg-muted overflow-hidden">
                     <Image src={item.image} alt={item.name} data-ai-hint={item.aiHint} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -376,10 +378,10 @@ export default function EquipmentRentalsPage() {
                 <CardContent className="p-4 flex-grow">
                 <CardTitle className="font-headline text-xl mb-2">{item.name}</CardTitle>
                 <div className="text-muted-foreground text-sm space-y-2">
-                    <p>{t('equipmentRentals.owner')}: {item.ownerId === user?.uid ? "You" : item.ownerName}</p>
+                    <p>{t('equipmentRentals.owner')}: {item.ownerId === user?.uid ? t('equipmentRentals.you') : item.ownerName}</p>
                     <div className="flex items-center justify-between">
                         <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location}</p>
-                        {item.distance !== undefined && <p className="font-semibold text-xs">{item.distance.toFixed(0)} km away</p>}
+                        {item.distance !== undefined && <p className="font-semibold text-xs">{t('equipmentRentals.distanceAway', { dist: item.distance.toFixed(0) })}</p>}
                     </div>
                 </div>
                 </CardContent>

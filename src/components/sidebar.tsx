@@ -28,7 +28,7 @@ export default function Sidebar({ navItems }: SidebarProps) {
             <span className="">KisaanConnect</span>
           </Link>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
             {navItems.map((item) => {
               const Icon = LucideIcons[item.icon] as React.ElementType;
@@ -49,12 +49,12 @@ export default function Sidebar({ navItems }: SidebarProps) {
             })}
           </nav>
         </div>
-        <div className="mt-auto p-4">
+        <div className="mt-auto p-4 border-t">
             <Card>
                 <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
                     <div className="mt-4 text-center">
-                    <h2 className="font-semibold">{t('customerSupport.title')}</h2>
-                    <p className="text-xs text-muted-foreground mt-1 mb-2">{t('customerSupport.description')}</p>
+                    <h2 className="font-semibold">{t('customerSupport.sidebarTitle')}</h2>
+                    <p className="text-xs text-muted-foreground mt-1 mb-2">{t('customerSupport.sidebarDesc')}</p>
                     <Link href="/dashboard/customer-support">
                         <Button size="sm" className="w-full">{t('nav.customerSupport')}</Button>
                     </Link>
