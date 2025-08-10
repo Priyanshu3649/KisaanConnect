@@ -22,6 +22,8 @@ const navItems: NavItem[] = [
   { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
   { href: "/dashboard/weather", icon: "CloudSun", labelKey: "nav.weather" },
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
+  { href: "/dashboard/sales-advisor", icon: "TrendingUp", labelKey: "nav.salesAdvisor" },
+  { href: "/dashboard/inventory", icon: "Archive", labelKey: "nav.inventory" },
   { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
   { href: "/dashboard/government-schemes", icon: "Landmark", labelKey: "nav.governmentSchemes" },
   { href: "/dashboard/customer-support", icon: "Phone", labelKey: "nav.customerSupport" },
@@ -34,8 +36,8 @@ const mobileNavItems: NavItem[] = [
     { href: "/dashboard", icon: "UserRound", labelKey: "nav.profile" },
     { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
     { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
+    { href: "/dashboard/sales-advisor", icon: "TrendingUp", labelKey: "nav.salesAdvisor" },
     { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
-    { href: "/dashboard/customer-support", icon: "Phone", labelKey: "nav.customerSupport" },
 ];
 
 
