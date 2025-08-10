@@ -237,14 +237,14 @@ export default function DigitalTwinPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><View /> Simulated 3D Field View</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><View /> Simulated Satellite View</CardTitle>
                     <CardDescription>A visual representation of your field's health grid.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <Skeleton className="aspect-video w-full" />
                     ) : (
-                        <ThreeDView healthScore={data?.soilHealthScore || 0} />
+                        <SatelliteView healthScore={data?.soilHealthScore || 0} />
                     )}
                 </CardContent>
             </Card>
@@ -482,7 +482,7 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
     );
 };
 
-const ThreeDView = ({ healthScore }: { healthScore: number }) => {
+const SatelliteView = ({ healthScore }: { healthScore: number }) => {
     const grid = useMemo(() => {
         const dots = [];
         const healthThreshold = healthScore / 100; // 0 to 1
@@ -503,13 +503,13 @@ const ThreeDView = ({ healthScore }: { healthScore: number }) => {
     }, [healthScore]);
 
     return (
-        <div className="aspect-video w-full bg-gray-800 rounded-lg flex items-center justify-center relative overflow-hidden border">
+        <div className="aspect-video w-full rounded-lg flex items-center justify-center relative overflow-hidden border">
             <Image
                 src="https://placehold.co/600x400.png"
                 alt="Satellite view of a farm field"
                 data-ai-hint="satellite farm field"
                 fill
-                className="object-cover opacity-100"
+                className="object-cover"
             />
             <div 
                 className="absolute inset-0 grid grid-cols-10 grid-rows-10"
