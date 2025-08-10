@@ -131,6 +131,15 @@
     "profile.weatherSunny": "Sunny",
     "profile.weatherClouds": "Clouds",
 
+    "creditScore.title": "Agri-Credit Score",
+    "creditScore.description": "Your financial health at a glance.",
+    "creditScore.pointsThisMonth": "points this month",
+    "creditScore.tipsTitle": "Improvement Tips",
+    "creditScore.badgesTitle": "Your Badges",
+    "creditScore.share": "Share Score Securely",
+    "creditScore.shareTitle": "Score Shared",
+    "creditScore.shareDesc": "A secure link to your score has been generated.",
+
     "weather.pageDescription": "Detailed weather forecast for {{location}}.",
     "weather.pageDescriptionNoLocation": "Detailed weather forecast for your location.",
     "weather.currentTitle": "Current Conditions",

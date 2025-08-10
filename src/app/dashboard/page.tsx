@@ -11,12 +11,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, Droplets, Wind } from "lucide-react";
+import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, Droplets, Wind, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/context/translation-context";
 import { getWeather, type GetWeatherOutput } from "@/ai/flows/get-weather";
+import { getAgriCreditScore, type AgriCreditScoreOutput } from "@/ai/flows/agri-credit-score";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import * as LucideIcons from 'lucide-react';
 
 
 interface UserData {
@@ -70,6 +75,14 @@ const WeatherIcon = ({ iconName, ...props }: { iconName: GetWeatherOutput['curre
     return <Icon {...props} />;
 };
 
+const BadgeIcon = ({ iconName, ...props }: { iconName: "Tractor" | "ShieldCheck" | "Star" | "BadgeCheck", [key: string]: any }) => {
+    const icons: { [key: string]: React.ElementType } = {
+        Tractor, ShieldCheck, Star, BadgeCheck
+    };
+    const Icon = icons[iconName] || Star;
+    return <Icon {...props} />;
+};
+
 
 export default function DashboardPage() {
   const [user, authLoading] = useAuthState(auth);
@@ -77,9 +90,11 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
+  const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const [isDataLoading, setIsDataLoading] = useState(true);
   const { t } = useTranslation();
+  const { toast } = useToast();
 
   const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5)) : null;
   const [recentDiagnoses, diagnosesLoading] = useCollectionData(diagnosesQuery, { idField: 'id' });
@@ -94,13 +109,16 @@ export default function DashboardPage() {
     const fetchInitialData = async () => {
         setIsDataLoading(true);
         try {
-            const userDocRef = doc(db, "users", user.uid);
-            const userDoc = await getDoc(userDocRef);
-            let fetchedUserData: UserData = {};
-             if (userDoc.exists()) {
-                fetchedUserData = userDoc.data() as UserData;
-                setUserData(fetchedUserData);
+            // Fetch user doc, static data, and credit score in parallel
+            const [userDoc, creditScore] = await Promise.all([
+                getDoc(doc(db, "users", user.uid)),
+                getAgriCreditScore({ userId: user.uid }),
+            ]);
+
+            if (userDoc.exists()) {
+                setUserData(userDoc.data() as UserData);
             }
+            setCreditScoreData(creditScore);
 
             // Fetch static dashboard data
             const activeDiagnosesCount = recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || 0;
@@ -170,6 +188,13 @@ export default function DashboardPage() {
 
   const pageDescription = isLoading ? t('profile.loadingDesc') : t('profile.pageDescription');
 
+  const handleShareScore = () => {
+    toast({
+        title: t('creditScore.shareTitle'),
+        description: t('creditScore.shareDesc'),
+    });
+  }
+
   return (
     <>
       <PageHeader
@@ -237,141 +262,188 @@ export default function DashboardPage() {
           </>
         )}
       </div>
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 mt-8">
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
-            <CardDescription>{t('profile.earningsDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EarningsChart />
-          </CardContent>
-        </Card>
-        <div className="space-y-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>{t('profile.weatherTitle')}</CardTitle>
-                <CardDescription>{locationStatus}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {!weatherData && (
-                    <div className="flex items-center justify-center h-24">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                )}
-                {weatherData && (
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-yellow-500" />
-                            <div>
-                                <div className="text-3xl font-bold">{weatherData.current.temperature}°C</div>
-                                <div className="text-muted-foreground">{weatherData.current.condition}</div>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-end text-sm">
-                            <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
-                            <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
-            <CardDescription>
-              {t('profile.diagnosesDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('profile.diagnosesCrop')}</TableHead>
-                  <TableHead>{t('profile.diagnosesStatus')}</TableHead>
-                  <TableHead className="text-right">{t('profile.diagnosesTreatment')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {diagnosesLoading && (
+      <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-3 xl:gap-8">
+        {/* Left column */}
+        <div className="grid auto-rows-max items-start gap-8 xl:col-span-2">
+            <Card className="xl:col-span-2">
+              <CardHeader>
+                <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
+                <CardDescription>{t('profile.earningsDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EarningsChart />
+              </CardContent>
+            </Card>
+             <Card>
+              <CardHeader>
+                <CardTitle>{t('profile.activeRentals')}</CardTitle>
+                <CardDescription>
+                  {t('profile.rentalsDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                 <Table>
+                  <TableHeader>
                     <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center">
-                            <div className="flex justify-center items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                <span>{t('profile.loadingDiagnoses')}</span>
-                            </div>
-                        </TableCell>
+                      <TableHead>{t('profile.rentalsEquipment')}</TableHead>
+                      <TableHead>{t('profile.rentalsType')}</TableHead>
+                      <TableHead className="text-right">{t('profile.rentalsDue')}</TableHead>
                     </TableRow>
-                )}
-                {recentDiagnoses && recentDiagnoses.map((diag) => (
-                  <TableRow key={diag.id}>
-                    <TableCell className="font-medium">{(diag as Diagnosis).crop}</TableCell>
-                    <TableCell>
-                      <Badge variant={(diag as Diagnosis).status === 'Active' ? 'destructive' : 'default'}>{t(`profile.status${(diag as Diagnosis).status}` as any)}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                            <span>{(diag as Diagnosis).progress}%</span>
-                            <Progress value={(diag as Diagnosis).progress} className="w-20 h-2" />
-                        </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                 {!diagnosesLoading && (!recentDiagnoses || recentDiagnoses.length === 0) && (
-                    <TableRow>
-                        <TableCell colSpan={3} className="text-center h-24">
-                           {t('profile.noDiagnoses')}
+                  </TableHeader>
+                  <TableBody>
+                    {dashboardData?.activeRentals.map((rental, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <div className="font-medium">{rental.equipment}</div>
                         </TableCell>
-                    </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                        <TableCell>
+                          <Badge variant="outline" className={rental.type === 'Lending' ? 'border-green-500 text-green-500' : 'border-blue-500 text-blue-500'}>
+                            {t(`profile.rentalType${rental.type}` as any)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{rental.due}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!dashboardData || dashboardData.activeRentals.length === 0) && (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">
+                                {t('profile.noActiveRentals')}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
         </div>
-      </div>
-       <div className="grid gap-4 md:gap-8 mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('profile.activeRentals')}</CardTitle>
-            <CardDescription>
-              {t('profile.rentalsDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('profile.rentalsEquipment')}</TableHead>
-                  <TableHead>{t('profile.rentalsType')}</TableHead>
-                  <TableHead className="text-right">{t('profile.rentalsDue')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dashboardData?.activeRentals.map((rental, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <div className="font-medium">{rental.equipment}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={rental.type === 'Lending' ? 'border-green-500 text-green-500' : 'border-blue-500 text-blue-500'}>
-                        {t(`profile.rentalType${rental.type}` as any)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{rental.due}</TableCell>
-                  </TableRow>
-                ))}
-                {(!dashboardData || dashboardData.activeRentals.length === 0) && (
+        
+        {/* Right Column */}
+        <div className="grid auto-rows-max items-start gap-8">
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader>
+                  <CardTitle>{t('creditScore.title')}</CardTitle>
+                  <CardDescription>{t('creditScore.description')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {isLoading ? <Skeleton className="h-40 w-full" /> : creditScoreData && (
+                      <div className="space-y-4">
+                           <div className="flex items-center justify-center text-center">
+                                <div>
+                                    <p className="text-6xl font-bold text-primary">{creditScoreData.score}</p>
+                                    <div className={cn("flex items-center justify-center font-semibold", creditScoreData.trend === 'up' ? "text-green-600" : "text-red-500")}>
+                                        <ArrowUp className="h-4 w-4 mr-1" />
+                                        {creditScoreData.trendPoints} {t('creditScore.pointsThisMonth')}
+                                    </div>
+                                </div>
+                           </div>
+
+                            <div>
+                                <h4 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> {t('creditScore.tipsTitle')}</h4>
+                                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                                    {creditScoreData.improvementTips.map((tip, i) => <li key={i}>{tip}</li>)}
+                                </ul>
+                            </div>
+                            
+                             <div>
+                                <h4 className="font-semibold mb-2">{t('creditScore.badgesTitle')}</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {creditScoreData.badges.map(badge => (
+                                        <Badge key={badge.name} variant="secondary" className="pl-2">
+                                            <BadgeIcon iconName={badge.icon} className="h-4 w-4 mr-1 text-primary"/>
+                                            {badge.name}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                             <Button className="w-full mt-2" onClick={handleShareScore}>
+                                <Share2 className="mr-2 h-4 w-4" />
+                                {t('creditScore.share')}
+                            </Button>
+                      </div>
+                  )}
+              </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('profile.weatherTitle')}</CardTitle>
+                    <CardDescription>{locationStatus}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {!weatherData && (
+                        <div className="flex items-center justify-center h-24">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                    )}
+                    {weatherData && (
+                         <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-yellow-500" />
+                                <div>
+                                    <div className="text-3xl font-bold">{weatherData.current.temperature}°C</div>
+                                    <div className="text-muted-foreground">{weatherData.current.condition}</div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-end text-sm">
+                                <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
+                                <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
+                <CardDescription>
+                  {t('profile.diagnosesDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                 <Table>
+                  <TableHeader>
                     <TableRow>
-                        <TableCell colSpan={3} className="text-center h-24">
-                            {t('profile.noActiveRentals')}
-                        </TableCell>
+                      <TableHead>{t('profile.diagnosesCrop')}</TableHead>
+                      <TableHead>{t('profile.diagnosesStatus')}</TableHead>
+                      <TableHead className="text-right">{t('profile.diagnosesTreatment')}</TableHead>
                     </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {diagnosesLoading && (
+                        <TableRow>
+                            <TableCell colSpan={3} className="h-24 text-center">
+                                <div className="flex justify-center items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    <span>{t('profile.loadingDiagnoses')}</span>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {recentDiagnoses && recentDiagnoses.map((diag) => (
+                      <TableRow key={diag.id}>
+                        <TableCell className="font-medium">{(diag as Diagnosis).crop}</TableCell>
+                        <TableCell>
+                          <Badge variant={(diag as Diagnosis).status === 'Active' ? 'destructive' : 'default'}>{t(`profile.status${(diag as Diagnosis).status}` as any)}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                                <span>{(diag as Diagnosis).progress}%</span>
+                                <Progress value={(diag as Diagnosis).progress} className="w-20 h-2" />
+                            </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                     {!diagnosesLoading && (!recentDiagnoses || recentDiagnoses.length === 0) && (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">
+                               {t('profile.noDiagnoses')}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+        </div>
       </div>
     </>
   );
