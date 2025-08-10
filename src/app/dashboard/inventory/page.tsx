@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { useCollectionData } from "react-firebase-hooks/firestore";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+
 
 type Category = 'Seeds' | 'Fertilizers' | 'Equipment' | 'Other';
 interface InventoryItem {
@@ -24,15 +29,8 @@ interface InventoryItem {
     quantity: number;
     unit: string;
     lowStockThreshold: number;
+    userId: string;
 }
-
-const initialInventory: InventoryItem[] = [
-    { id: '1', name: 'Urea Fertilizer', category: 'Fertilizers', quantity: 20, unit: 'bags (50kg)', lowStockThreshold: 10 },
-    { id: '2', name: 'Wheat Seeds (HD-2967)', category: 'Seeds', quantity: 5, unit: 'bags (40kg)', lowStockThreshold: 2 },
-    { id: '3', name: 'Power Tiller', category: 'Equipment', quantity: 1, unit: 'units', lowStockThreshold: 1 },
-    { id: '4', name: 'Organic Pesticide', category: 'Other', quantity: 15, unit: 'liters', lowStockThreshold: 5 },
-    { id: '5', name: 'DAP Fertilizer', category: 'Fertilizers', quantity: 8, unit: 'bags (50kg)', lowStockThreshold: 10 },
-];
 
 const categoryIcons: Record<Category, React.ElementType> = {
     'Seeds': Sprout,
@@ -43,34 +41,61 @@ const categoryIcons: Record<Category, React.ElementType> = {
 
 export default function InventoryPage() {
     const { t } = useTranslation();
-    const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
+    const [user] = useAuthState(auth);
+    
+    const inventoryQuery = user ? query(collection(db, "inventory"), where("userId", "==", user.uid)) : null;
+    const [inventory, loading, error] = useCollectionData(inventoryQuery, { idField: 'id' });
+    
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+    const [editingItem, setEditingItem] = useState<Partial<InventoryItem> | null>(null);
     const { toast } = useToast();
 
-    const openDialog = (item: InventoryItem | null = null) => {
-        setEditingItem(item ? { ...item } : null);
+    useEffect(() => {
+        if (error) {
+            console.error("Error fetching inventory:", error);
+            toast({ variant: 'destructive', title: "Error", description: "Could not fetch inventory data."});
+        }
+    }, [error, toast]);
+
+    const openDialog = (item: Partial<InventoryItem> | null = null) => {
+        setEditingItem(item);
         setIsDialogOpen(true);
     };
 
-    const handleDelete = (itemId: string) => {
-        setInventory(prev => prev.filter(item => item.id !== itemId));
-        toast({ title: t('inventory.itemDeleted'), description: t('inventory.itemDeletedDesc') });
+    const handleDelete = async (itemId: string) => {
+        try {
+            await deleteDoc(doc(db, "inventory", itemId));
+            toast({ title: t('inventory.itemDeleted'), description: t('inventory.itemDeletedDesc') });
+        } catch (e) {
+            console.error("Error deleting item:", e);
+            toast({ variant: 'destructive', title: "Error", description: "Could not delete item."});
+        }
     };
 
-    const handleSave = (item: InventoryItem) => {
-        if (editingItem) {
-            // Edit existing item
-            setInventory(prev => prev.map(i => i.id === item.id ? item : i));
-            toast({ title: t('inventory.itemUpdated'), description: `${item.name} ${t('inventory.itemUpdatedDesc')}` });
-        } else {
-            // Add new item
-            const newItem = { ...item, id: `inv_${Date.now()}` };
-            setInventory(prev => [newItem, ...prev]);
-             toast({ title: t('inventory.itemAdded'), description: `${item.name} ${t('inventory.itemAddedDesc')}` });
+    const handleSave = async (itemData: Partial<InventoryItem>) => {
+        if (!user) return;
+
+        try {
+            if (itemData.id) {
+                // Edit existing item
+                const { id, ...dataToUpdate } = itemData;
+                await updateDoc(doc(db, "inventory", id), dataToUpdate);
+                toast({ title: t('inventory.itemUpdated'), description: `${itemData.name} ${t('inventory.itemUpdatedDesc')}` });
+            } else {
+                // Add new item
+                await addDoc(collection(db, "inventory"), {
+                    ...itemData,
+                    userId: user.uid,
+                    createdAt: serverTimestamp(),
+                });
+                toast({ title: t('inventory.itemAdded'), description: `${itemData.name} ${t('inventory.itemAddedDesc')}` });
+            }
+            setIsDialogOpen(false);
+            setEditingItem(null);
+        } catch(e) {
+            console.error("Error saving item:", e);
+            toast({ variant: 'destructive', title: "Error", description: "Could not save item."});
         }
-        setIsDialogOpen(false);
-        setEditingItem(null);
     };
 
     return (
@@ -97,7 +122,11 @@ export default function InventoryPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {inventory.length > 0 ? inventory.map(item => {
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-48"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></TableCell>
+                                </TableRow>
+                            ) : inventory && inventory.length > 0 ? (inventory as InventoryItem[]).map(item => {
                                 const isLowStock = item.quantity < item.lowStockThreshold;
                                 const Icon = categoryIcons[item.category];
                                 return (
@@ -143,36 +172,35 @@ export default function InventoryPage() {
 }
 
 // Dialog Component for Add/Edit
-const InventoryFormDialog = ({ isOpen, onOpenChange, onSave, item, t }: { isOpen: boolean; onOpenChange: (open: boolean) => void; onSave: (item: InventoryItem) => void; item: InventoryItem | null, t: any }) => {
+const InventoryFormDialog = ({ isOpen, onOpenChange, onSave, item, t }: { isOpen: boolean; onOpenChange: (open: boolean) => void; onSave: (item: Partial<InventoryItem>) => void; item: Partial<InventoryItem> | null, t: any }) => {
     const [formData, setFormData] = useState<Partial<InventoryItem>>({});
     const [isSaving, setIsSaving] = useState(false);
 
-    useState(() => {
-        if (item) {
-            setFormData(item);
-        } else {
-            setFormData({
-                name: '',
-                category: 'Other',
-                quantity: 0,
-                unit: 'units',
-                lowStockThreshold: 1,
-            });
+    useEffect(() => {
+        if (isOpen) {
+            if (item) {
+                setFormData(item);
+            } else {
+                setFormData({
+                    name: '',
+                    category: 'Other',
+                    quantity: 0,
+                    unit: 'units',
+                    lowStockThreshold: 1,
+                });
+            }
         }
-    });
+    }, [item, isOpen]);
 
-    const handleChange = (field: keyof InventoryItem, value: string | number) => {
+    const handleChange = (field: keyof Omit<InventoryItem, 'id'|'userId'>, value: string | number) => {
         setFormData(prev => ({...prev, [field]: value}));
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
-        // Simulate save
-        setTimeout(() => {
-            onSave(formData as InventoryItem);
-            setIsSaving(false);
-        }, 500);
+        await onSave(formData);
+        setIsSaving(false);
     }
     
     return (

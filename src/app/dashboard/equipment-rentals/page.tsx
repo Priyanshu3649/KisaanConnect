@@ -25,7 +25,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-
+import { useAuthState } from "react-firebase-hooks/auth";
+import { useCollectionData } from "react-firebase-hooks/firestore";
+import { auth, db, storage } from "@/lib/firebase";
+import { collection, query, where, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface Equipment {
   id: string;
@@ -33,6 +37,7 @@ interface Equipment {
   image: string;
   price: number; // Price per day
   ownerName: string;
+  ownerId: string;
   location: string;
   available: boolean;
   aiHint: string;
@@ -40,17 +45,7 @@ interface Equipment {
   distance?: number;
 }
 
-const initialEquipment: Omit<Equipment, 'distance'>[] = [
-    { id: "1", name: "John Deere 5050D", image: "https://placehold.co/600x400.png", price: 2500, ownerName: "Sohan Singh", location: "Sonipat, Haryana", available: true, aiHint: "green tractor", coords: { lat: 28.9959, lng: 77.0178 } },
-    { id: "2", name: "Mahindra JIVO 245 DI", image: "https://placehold.co/600x400.png", price: 1800, ownerName: "Rina Patel", location: "Ludhiana, Punjab", available: true, aiHint: "red tractor", coords: { lat: 30.9010, lng: 75.8573 } },
-    { id: "3", name: "Sonalika DI 745 III", image: "https://placehold.co/600x400.png", price: 2200, ownerName: "Amit Kumar", location: "Rohini, Delhi", available: false, aiHint: "blue tractor", coords: { lat: 28.7041, lng: 77.1025 } },
-    { id: "4", name: "Power Tiller 15HP", image: "https://placehold.co/600x400.png", price: 1200, ownerName: "Vijay More", location: "Amritsar, Punjab", available: true, aiHint: "power tiller", coords: { lat: 31.6340, lng: 74.8723 } },
-    { id: "5", name: "Rotary Tiller", image: "https://placehold.co/600x400.png", price: 900, ownerName: "Sohan Singh", location: "Sonipat, Haryana", available: true, aiHint: "rotary tiller", coords: { lat: 29.0100, lng: 77.0200 } },
-    { id: "6", name: "Crop Sprayer (Mounted)", image: "https://placehold.co/600x400.png", price: 750, ownerName: "Rina Patel", location: "Dwarka, Delhi", available: true, aiHint: "crop sprayer", coords: { lat: 28.6193, lng: 77.0549 } },
-];
-
-
-const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment | null, onConfirm: (id: string) => void, t: (key: any) => string }) => {
+const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment | null, onConfirm: (id: string, date: Date, hours: number) => void, t: (key: any) => string }) => {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [hours, setHours] = useState('8');
     const [totalBill, setTotalBill] = useState(0);
@@ -108,7 +103,7 @@ const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment
                 </div>
             </div>
             <DialogFooter>
-                <Button onClick={() => onConfirm(equipment.id)} disabled={!date || !hours || parseInt(hours) <= 0}>Confirm Booking</Button>
+                <Button onClick={() => onConfirm(equipment.id, date!, parseInt(hours))} disabled={!date || !hours || parseInt(hours) <= 0}>Confirm Booking</Button>
             </DialogFooter>
         </DialogContent>
     );
@@ -130,14 +125,16 @@ const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => 
 
 export default function EquipmentRentalsPage() {
     const { t } = useTranslation();
-    const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+    const [user] = useAuthState(auth);
+    const rentalsQuery = query(collection(db, "rentals"));
+    const [rentals, loading, error] = useCollectionData(rentalsQuery, { idField: 'id' });
+    
     const [sortBy, setSortBy] = useState("distance");
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     const [isRentDialogOpen, setIsRentDialogOpen] = useState(false);
     const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
     const { toast } = useToast();
     
-    // Upload Dialog State
     const [newItemName, setNewItemName] = useState('');
     const [newItemPrice, setNewItemPrice] = useState('');
     const [newItemLocation, setNewItemLocation] = useState('');
@@ -145,17 +142,16 @@ export default function EquipmentRentalsPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
-    // Simulate user's location (Sonipat, Haryana)
+    // Simulate user's location (Sonipat, Haryana) for distance calculation
     const userLocation = { lat: 28.9959, lng: 77.0178 };
 
-    useEffect(() => {
-        const equipmentWithDistance = initialEquipment.map(item => ({
+    const equipmentList = useMemo(() => {
+        if (!rentals) return [];
+        return (rentals as Omit<Equipment, 'distance'>[]).map(item => ({
             ...item,
             distance: getDistance(userLocation.lat, userLocation.lng, item.coords.lat, item.coords.lng)
         }));
-        setEquipmentList(equipmentWithDistance);
-    }, []);
-
+    }, [rentals]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -171,52 +167,66 @@ export default function EquipmentRentalsPage() {
 
     const handleUploadSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newItemName || !newItemPrice || !newItemLocation) {
-             toast({ variant: "destructive", title: "Missing Information", description: "Please fill out all fields." });
+        if (!user || !newItemName || !newItemPrice || !newItemLocation || !newItemImage) {
+             toast({ variant: "destructive", title: "Missing Information", description: "Please fill out all fields and upload an image." });
             return;
         }
         setIsUploading(true);
 
-        // Simulate upload delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const newEquipment: Equipment = {
-            id: (equipmentList.length + 1).toString(),
-            name: newItemName,
-            image: previewUrl || "https://placehold.co/600x400.png", // Use preview or a default
-            price: parseFloat(newItemPrice),
-            ownerName: "You",
-            location: newItemLocation,
-            available: true,
-            aiHint: "new equipment",
-            coords: { lat: userLocation.lat, lng: userLocation.lng }, // Default to user's location
-            distance: 0,
-        };
+        try {
+            const storageRef = ref(storage, `rentals/${user.uid}/${Date.now()}_${newItemImage.name}`);
+            const snapshot = await uploadBytes(storageRef, newItemImage);
+            const imageUrl = await getDownloadURL(snapshot.ref);
 
-        setEquipmentList(prevList => [newEquipment, ...prevList]);
-        
-        setIsUploading(false);
-        setIsUploadDialogOpen(false);
-        toast({ title: "Upload Successful", description: `${newItemName} has been listed for rent.` });
+            await addDoc(collection(db, "rentals"), {
+                name: newItemName,
+                image: imageUrl,
+                price: parseFloat(newItemPrice),
+                ownerName: user.displayName || "Anonymous",
+                ownerId: user.uid,
+                location: newItemLocation,
+                available: true,
+                aiHint: "new equipment",
+                coords: { lat: userLocation.lat, lng: userLocation.lng }, // Use a geocoding API in a real app
+                createdAt: serverTimestamp(),
+            });
+            
+            setIsUploading(false);
+            setIsUploadDialogOpen(false);
+            toast({ title: "Upload Successful", description: `${newItemName} has been listed for rent.` });
 
-        // Reset form
-        setNewItemName('');
-        setNewItemPrice('');
-        setNewItemLocation('');
-        setNewItemImage(null);
-        setPreviewUrl(null);
+            // Reset form
+            setNewItemName('');
+            setNewItemPrice('');
+            setNewItemLocation('');
+            setNewItemImage(null);
+            setPreviewUrl(null);
+        } catch (err) {
+            console.error("Error uploading equipment:", err);
+            toast({ variant: "destructive", title: "Upload Failed", description: "Could not list your equipment."});
+            setIsUploading(false);
+        }
     };
 
     const handleRentClick = (equipment: Equipment) => {
+        if (equipment.ownerId === user?.uid) {
+            toast({ variant: "default", title: "This is your equipment", description: "You cannot rent your own equipment."});
+            return;
+        }
         setSelectedEquipment(equipment);
         setIsRentDialogOpen(true);
     };
     
-    const handleConfirmRental = (id: string) => {
-        setEquipmentList(prevList => prevList.map(item => item.id === id ? { ...item, available: false } : item));
-        setIsRentDialogOpen(false);
-        setSelectedEquipment(null);
-        toast({ title: "Booking Confirmed!", description: "The equipment has been marked as rented." });
+    const handleConfirmRental = async (id: string) => {
+        try {
+            await updateDoc(doc(db, "rentals", id), { available: false });
+            setIsRentDialogOpen(false);
+            setSelectedEquipment(null);
+            toast({ title: "Booking Confirmed!", description: "The equipment has been marked as rented." });
+        } catch (err) {
+             console.error("Error confirming rental:", err);
+            toast({ variant: "destructive", title: "Booking Failed", description: "Could not confirm the booking."});
+        }
     };
     
     const handleContactSeller = (ownerName: string) => {
@@ -307,44 +317,50 @@ export default function EquipmentRentalsPage() {
         </div>
       </PageHeader>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {sortedData.map((item) => (
-          <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group flex flex-col">
-            <CardHeader className="p-0">
-              <div className="relative aspect-video w-full bg-muted overflow-hidden">
-                <Image src={item.image} alt={item.name} data-ai-hint={item.aiHint} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-                <Badge className={`absolute top-2 right-2 border-none ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
-                  {item.available ? t('equipmentRentals.available') : t('equipmentRentals.rented')}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 flex-grow">
-              <CardTitle className="font-headline text-xl mb-2">{item.name}</CardTitle>
-              <div className="text-muted-foreground text-sm space-y-2">
-                <p>{t('equipmentRentals.owner')}: {item.ownerName}</p>
-                <div className="flex items-center justify-between">
-                    <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location}</p>
-                    {item.distance !== undefined && <p className="font-semibold text-xs">{item.distance.toFixed(0)} km away</p>}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {sortedData.map((item) => (
+            <Card key={item.id} className="overflow-hidden bg-card border-border hover:border-primary transition-all duration-300 group flex flex-col">
+                <CardHeader className="p-0">
+                <div className="relative aspect-video w-full bg-muted overflow-hidden">
+                    <Image src={item.image} alt={item.name} data-ai-hint={item.aiHint} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <Badge className={`absolute top-2 right-2 border-none ${item.available ? "bg-green-500" : "bg-red-500"} text-white`}>
+                    {item.available ? t('equipmentRentals.available') : t('equipmentRentals.rented')}
+                    </Badge>
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row justify-between items-center p-4 pt-0 gap-2">
-                <div className="flex-1 text-center sm:text-left">
-                     <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
+                </CardHeader>
+                <CardContent className="p-4 flex-grow">
+                <CardTitle className="font-headline text-xl mb-2">{item.name}</CardTitle>
+                <div className="text-muted-foreground text-sm space-y-2">
+                    <p>{t('equipmentRentals.owner')}: {item.ownerId === user?.uid ? "You" : item.ownerName}</p>
+                    <div className="flex items-center justify-between">
+                        <p className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {item.location}</p>
+                        {item.distance !== undefined && <p className="font-semibold text-xs">{item.distance.toFixed(0)} km away</p>}
+                    </div>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    <Button onClick={() => handleContactSeller(item.ownerName)} variant="secondary" className="flex-1">
-                        <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button onClick={() => handleRentClick(item)} disabled={!item.available} variant="outline" className="flex-1">{t('equipmentRentals.rentNow')}</Button>
-                </div>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+                <CardFooter className="flex flex-col sm:flex-row justify-between items-center p-4 pt-0 gap-2">
+                    <div className="flex-1 text-center sm:text-left">
+                        <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <Button onClick={() => handleContactSeller(item.ownerName)} variant="secondary" className="flex-1">
+                            <Phone className="h-4 w-4" />
+                        </Button>
+                        <Button onClick={() => handleRentClick(item)} disabled={!item.available} variant="outline" className="flex-1">{t('equipmentRentals.rentNow')}</Button>
+                    </div>
+                </CardFooter>
+            </Card>
+            ))}
+        </div>
+      )}
 
       <Dialog open={isRentDialogOpen} onOpenChange={setIsRentDialogOpen}>
-          <RentEquipmentDialog equipment={selectedEquipment} onConfirm={handleConfirmRental} t={t} />
+          <RentEquipmentDialog equipment={selectedEquipment} onConfirm={handleConfirmRental as any} t={t} />
       </Dialog>
     </>
   );

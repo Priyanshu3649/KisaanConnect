@@ -15,8 +15,9 @@ import { Lightbulb, Loader2, UploadCloud, CheckCircle2, AlertCircle, Leaf } from
 import { diagnoseCropDisease, type DiagnoseCropDiseaseOutput } from "@/ai/flows/crop-disease-diagnosis";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useTranslation } from "@/context/translation-context";
 
 
@@ -65,47 +66,54 @@ export default function CropDiagnosisPage() {
     setResult(null);
 
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const photoDataUri = reader.result as string;
-        const diagnosisResult = await diagnoseCropDisease({
-          photoDataUri,
-          cropDescription: description,
-          language: language,
-        });
-        setResult(diagnosisResult);
+        // 1. Upload image to Firebase Storage
+        const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const imageUrl = await getDownloadURL(snapshot.ref);
 
-        // Save to Firestore
-        const diagnosisData = {
-            userId: user.uid,
-            crop: description.split(' ')[0] || 'Unknown Crop', // Simple crop name extraction
-            disease: diagnosisResult.diseaseIdentification.isDiseased ? diagnosisResult.diseaseIdentification.likelyDisease : 'Healthy',
-            status: diagnosisResult.diseaseIdentification.isDiseased ? 'Active' : 'Resolved',
-            progress: diagnosisResult.diseaseIdentification.isDiseased ? 0 : 100, // Initial progress
-            createdAt: serverTimestamp(),
-            imageUrl: '', // In a real app, you'd upload the image and store the URL
-            isDiseased: diagnosisResult.diseaseIdentification.isDiseased,
-            confidence: diagnosisResult.diseaseIdentification.confidenceLevel,
-            recommendations: diagnosisResult.recommendedActions
+        // 2. Call AI flow with a Data URI
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            const photoDataUri = reader.result as string;
+            const diagnosisResult = await diagnoseCropDisease({
+            photoDataUri,
+            cropDescription: description,
+            language: language,
+            });
+            setResult(diagnosisResult);
+
+            // 3. Save to Firestore
+            const diagnosisData = {
+                userId: user.uid,
+                crop: description.split(' ')[0] || 'Unknown Crop', // Simple crop name extraction
+                disease: diagnosisResult.diseaseIdentification.isDiseased ? diagnosisResult.diseaseIdentification.likelyDisease : 'Healthy',
+                status: diagnosisResult.diseaseIdentification.isDiseased ? 'Active' : 'Resolved',
+                progress: diagnosisResult.diseaseIdentification.isDiseased ? 0 : 100, // Initial progress
+                createdAt: serverTimestamp(),
+                imageUrl: imageUrl, // Use the public URL from Firebase Storage
+                isDiseased: diagnosisResult.diseaseIdentification.isDiseased,
+                confidence: diagnosisResult.diseaseIdentification.confidenceLevel,
+                recommendations: diagnosisResult.recommendedActions
+            };
+
+            await addDoc(collection(db, "diagnoses"), diagnosisData);
+
+            toast({
+                title: t('cropDiagnosis.savedTitle'),
+                description: t('cropDiagnosis.savedDesc'),
+            });
+            setIsLoading(false);
         };
-
-        await addDoc(collection(db, "diagnoses"), diagnosisData);
-
-        toast({
-            title: t('cropDiagnosis.savedTitle'),
-            description: t('cropDiagnosis.savedDesc'),
-        });
-
-      };
-      reader.onerror = (error) => {
-        console.error("Error reading file:", error);
-        toast({
-          variant: "destructive",
-          title: t('cropDiagnosis.fileReadErrorTitle'),
-          description: t('cropDiagnosis.fileReadErrorDesc'),
-        });
-      };
+        reader.onerror = (error) => {
+            console.error("Error reading file:", error);
+            toast({
+            variant: "destructive",
+            title: t('cropDiagnosis.fileReadErrorTitle'),
+            description: t('cropDiagnosis.fileReadErrorDesc'),
+            });
+             setIsLoading(false);
+        };
     } catch (error) {
       console.error("Diagnosis failed:", error);
       toast({
@@ -113,7 +121,6 @@ export default function CropDiagnosisPage() {
         title: t('cropDiagnosis.failedTitle'),
         description: t('cropDiagnosis.failedDesc'),
       });
-    } finally {
       setIsLoading(false);
     }
   };
