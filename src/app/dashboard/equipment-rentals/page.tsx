@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, PlusCircle, ArrowUpDown, Tractor as TractorIcon, Loader2, UploadCloud, Calendar as CalendarIcon, Phone } from "lucide-react";
+import { MapPin, PlusCircle, ArrowUpDown, Tractor as TractorIcon, Loader2, UploadCloud, Calendar as CalendarIcon, Phone, Database } from "lucide-react";
 import { useTranslation } from "@/context/translation-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ import { format } from "date-fns";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { auth, db, storage } from "@/lib/firebase";
-import { collection, query, where, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, addDoc, doc, updateDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface Equipment {
@@ -44,6 +44,14 @@ interface Equipment {
   coords: { lat: number; lng: number };
   distance?: number;
 }
+
+const demoRentalsData: Omit<Equipment, 'id'|'distance'|'ownerId'|'ownerName'>[] = [
+    { name: "John Deere 5050D Tractor", image: "https://placehold.co/600x400.png", price: 2500, location: "Sonipat, Haryana", available: true, aiHint: "green tractor", coords: { lat: 28.9959, lng: 77.0178 } },
+    { name: "Mahindra Rotavator", image: "https://placehold.co/600x400.png", price: 1200, location: "Karnal, Haryana", available: true, aiHint: "red rotavator", coords: { lat: 29.6857, lng: 76.9905 } },
+    { name: "Power Tiller", image: "https://placehold.co/600x400.png", price: 800, location: "Pune, Maharashtra", available: false, aiHint: "small tiller", coords: { lat: 18.5204, lng: 73.8567 } },
+    { name: "Sonalika Thresher", image: "https://placehold.co/600x400.png", price: 1800, location: "Ludhiana, Punjab", available: true, aiHint: "large thresher", coords: { lat: 30.9010, lng: 75.8573 } },
+];
+
 
 const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment | null, onConfirm: (id: string, date: Date, hours: number) => void, t: (key: any) => string }) => {
     const [date, setDate] = useState<Date | undefined>(new Date());
@@ -141,6 +149,7 @@ export default function EquipmentRentalsPage() {
     const [newItemImage, setNewItemImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isSeeding, setIsSeeding] = useState(false);
 
     // Simulate user's location (Sonipat, Haryana) for distance calculation
     const userLocation = { lat: 28.9959, lng: 77.0178 };
@@ -236,6 +245,33 @@ export default function EquipmentRentalsPage() {
         });
     }
 
+    const handleSeedData = async () => {
+        if (!user) return;
+        setIsSeeding(true);
+        try {
+            const batch = writeBatch(db);
+            demoRentalsData.forEach(item => {
+                const docRef = doc(collection(db, "rentals"));
+                batch.set(docRef, { 
+                    ...item, 
+                    ownerId: "demo_user", 
+                    ownerName: "Demo Farmer", 
+                    createdAt: serverTimestamp() 
+                });
+            });
+            await batch.commit();
+            toast({
+                title: "Demo Data Added",
+                description: "4 sample rental items have been added to your database.",
+            });
+        } catch (e) {
+            console.error("Error seeding rental data:", e);
+            toast({ variant: 'destructive', title: "Error", description: "Could not add demo rental data." });
+        } finally {
+            setIsSeeding(false);
+        }
+    };
+
     const sortedData = useMemo(() => 
         [...equipmentList].sort((a, b) => {
             if (sortBy === 'price_asc') return a.price - b.price;
@@ -314,6 +350,10 @@ export default function EquipmentRentalsPage() {
                     </form>
                 </DialogContent>
             </Dialog>
+             <Button variant="outline" onClick={handleSeedData} disabled={isSeeding || (rentals && rentals.length > 0)}>
+                <Database className="mr-2 h-4 w-4" />
+                {isSeeding ? "Seeding..." : "Seed Demo Data"}
+            </Button>
         </div>
       </PageHeader>
       
@@ -365,3 +405,5 @@ export default function EquipmentRentalsPage() {
     </>
   );
 }
+
+    

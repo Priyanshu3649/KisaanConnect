@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit, Trash2, Archive, Droplets, Sprout, Tractor, Package, PackageOpen, Loader2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Archive, Droplets, Sprout, Tractor, Package, PackageOpen, Loader2, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 
 
 type Category = 'Seeds' | 'Fertilizers' | 'Equipment' | 'Other';
@@ -39,6 +39,14 @@ const categoryIcons: Record<Category, React.ElementType> = {
     'Other': Archive
 };
 
+const demoInventoryData: Omit<InventoryItem, 'id' | 'userId'>[] = [
+    { name: "Wheat Seeds (HD-3086)", category: "Seeds", quantity: 50, unit: "kg", lowStockThreshold: 10 },
+    { name: "Urea Fertilizer", category: "Fertilizers", quantity: 20, unit: "bags", lowStockThreshold: 5 },
+    { name: "Organic Compost", category: "Fertilizers", quantity: 15, unit: "bags", lowStockThreshold: 5 },
+    { name: "Power Tiller", category: "Equipment", quantity: 1, unit: "units", lowStockThreshold: 1 },
+    { name: "Pesticide Spray", category: "Other", quantity: 5, unit: "liters", lowStockThreshold: 2 },
+];
+
 export default function InventoryPage() {
     const { t } = useTranslation();
     const [user] = useAuthState(auth);
@@ -48,6 +56,7 @@ export default function InventoryPage() {
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Partial<InventoryItem> | null>(null);
+    const [isSeeding, setIsSeeding] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -98,16 +107,44 @@ export default function InventoryPage() {
         }
     };
 
+    const handleSeedData = async () => {
+        if (!user) return;
+        setIsSeeding(true);
+        try {
+            const batch = writeBatch(db);
+            demoInventoryData.forEach(item => {
+                const docRef = doc(collection(db, "inventory"));
+                batch.set(docRef, { ...item, userId: user.uid, createdAt: serverTimestamp() });
+            });
+            await batch.commit();
+            toast({
+                title: "Demo Data Added",
+                description: "5 sample inventory items have been added to your database.",
+            });
+        } catch (e) {
+            console.error("Error seeding data:", e);
+            toast({ variant: 'destructive', title: "Error", description: "Could not add demo data." });
+        } finally {
+            setIsSeeding(false);
+        }
+    };
+
     return (
         <>
             <PageHeader
                 title={t('nav.inventory')}
                 description={t('inventory.pageDescription')}
             >
-                <Button onClick={() => openDialog()}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    {t('inventory.addItem')}
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={() => openDialog()}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        {t('inventory.addItem')}
+                    </Button>
+                    <Button variant="outline" onClick={handleSeedData} disabled={isSeeding || (inventory && inventory.length > 0)}>
+                        <Database className="mr-2 h-4 w-4" />
+                        {isSeeding ? "Seeding..." : "Seed Demo Data"}
+                    </Button>
+                </div>
             </PageHeader>
             <Card>
                 <CardContent className="p-0">
@@ -257,3 +294,5 @@ const InventoryFormDialog = ({ isOpen, onOpenChange, onSave, item, t }: { isOpen
         </Dialog>
     );
 };
+
+    
