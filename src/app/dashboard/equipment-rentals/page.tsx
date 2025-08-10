@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ import { format } from "date-fns";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { auth, db, storage } from "@/lib/firebase";
-import { collection, query, where, addDoc, doc, updateDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { collection, query, addDoc, doc, updateDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface Equipment {
@@ -405,5 +405,3 @@ export default function EquipmentRentalsPage() {
     </>
   );
 }
-
-    
