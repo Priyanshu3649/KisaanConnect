@@ -216,7 +216,7 @@ export default function DigitalTwinPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><MapPinned /> {selectedField?.name || 'Field Map'}</div>
-                        <Button size="sm" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating}>
+                        <Button size="sm" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating || !selectedField}>
                             {isLocating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
                             Use Current Location
                         </Button>
@@ -419,14 +419,22 @@ const MetricSkeleton = ({ count }: { count: number }) => (
 
 // Form Dialog Component
 const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (data: Field) => void, fieldData: Partial<Field> | null }) => {
-    const [field, setField] = useState<Partial<Field> | null>(fieldData);
+    const [field, setField] = useState<Partial<Field> | null>(null);
 
     useEffect(() => {
-        setField(fieldData);
+        if (fieldData) {
+            setField(fieldData);
+        } else {
+            setField({
+                location: { lat: 28.9959, lng: 77.0178 },
+                shape: 'rectangle',
+                measurements: {},
+            });
+        }
     }, [fieldData]);
 
     const handleMeasurementChange = (key: string, value: string) => {
-        setField(prev => ({...prev, measurements: {...prev?.measurements, [key]: parseFloat(value) || undefined}}));
+        setField(prev => (prev ? {...prev, measurements: {...prev?.measurements, [key]: parseFloat(value) || undefined}} : null));
     };
 
     const calculatedArea = useMemo(() => {
@@ -468,7 +476,7 @@ const FieldFormDialog = ({ isOpen, onOpenChange, onSave, fieldData }: { isOpen: 
                         <Label>Field Location</Label>
                         <div className="aspect-video w-full bg-muted rounded-lg relative overflow-hidden">
                             <MapComponent 
-                                markerPosition={[field.location?.lat || 0, field.location?.lng || 0]} 
+                                markerPosition={[field.location?.lat || 28.9959, field.location?.lng || 77.0178]} 
                                 setMarkerPosition={([lat, lng]) => setField(prev => prev ? ({...prev, location: {lat, lng}}) : null)}
                             />
                         </div>
