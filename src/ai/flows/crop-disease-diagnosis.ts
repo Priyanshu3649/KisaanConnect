@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -28,6 +29,8 @@ const DiagnoseCropDiseaseOutputSchema = z.object({
     likelyDisease: z.string().describe('The likely disease affecting the crop.'),
     confidenceLevel: z
       .number()
+      .min(0)
+      .max(1)
       .describe('The confidence level of the disease identification (0-1).'),
   }),
   recommendedActions: z.array(z.string()).describe('Recommended actions to take to address the disease.'),
@@ -51,7 +54,7 @@ Photo: {{media url=photoDataUri}}
 Description: {{{cropDescription}}}
 {{/if}}
 
-Based on the image and any available description, determine if the crop is diseased. If so, identify the likely disease and your confidence level (as a number between 0 and 1).
+Based on the image and any available description, determine if the crop is diseased. If so, identify the likely disease and your confidence level (as a decimal number between 0 and 1, for example 0.95 for 95%).
 Also suggest some recommended actions to remediate the disease. All parts of your response must be in {{language}}.
 `,
 });
@@ -63,7 +66,24 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     outputSchema: DiagnoseCropDiseaseOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+        const {output} = await prompt(input);
+        return output!;
+    } catch(error) {
+        console.error("Error in diagnoseCropDiseaseFlow:", error);
+        // Return a default error object if the prompt fails validation or throws an error
+        return {
+            diseaseIdentification: {
+                isDiseased: true,
+                likelyDisease: "Analysis Failed",
+                confidenceLevel: 0,
+            },
+            recommendedActions: [
+                "The AI model failed to analyze the image. This can happen due to an unexpected format in the AI's response.",
+                "Please try uploading the image again.",
+                "If the problem persists, try a different image or add a more detailed description."
+            ]
+        };
+    }
   }
 );
