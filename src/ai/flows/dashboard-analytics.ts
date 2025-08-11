@@ -14,6 +14,7 @@ import { format, subMonths } from 'date-fns';
 
 const DashboardAnalyticsInputSchema = z.object({
   userId: z.string().describe("The unique identifier for the farmer."),
+  email: z.string().optional().describe("The user's email address."),
   language: z.string().optional().default('en').describe('The language for the response.'),
 });
 export type DashboardAnalyticsInput = z.infer<typeof DashboardAnalyticsInputSchema>;
@@ -50,6 +51,10 @@ const prompt = ai.definePrompt({
   Return the data strictly in the required JSON format. Be creative and vary the numbers to make it seem like a real, dynamic dashboard.`,
 });
 
+const demoUsers = [
+    'pandeypriyanshu53@gmail.com',
+    'admin@kissanconnect.com'
+];
 
 const dashboardAnalyticsFlow = ai.defineFlow(
   {
@@ -63,6 +68,18 @@ const dashboardAnalyticsFlow = ai.defineFlow(
         return format(subMonths(new Date(), 5 - i), 'MMM');
     });
 
+    // For new users, return a default zero state.
+    if (!input.email || !demoUsers.includes(input.email)) {
+        return {
+            totalRevenue: 0,
+            revenueChange: 0,
+            cropVarieties: 0,
+            cropChange: 0,
+            monthlyEarnings: lastSixMonths.map(month => ({ month, earnings: 0 })),
+        };
+    }
+
+    // For demo users, generate simulated data.
     const { output } = await prompt({ months: lastSixMonths });
     return output!;
   }

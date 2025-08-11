@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 interface UserData {
   name?: string;
   location?: string;
+  email?: string;
 }
 interface Diagnosis {
     id: string;
@@ -42,6 +43,11 @@ const demoDiagnosesData: Omit<Diagnosis, 'id' | 'createdAt' | 'userId'>[] = [
     { crop: "Tomato", disease: "Late Blight", status: "Active", progress: 25 },
     { crop: "Wheat", disease: "Rust", status: "Active", progress: 50 },
     { crop: "Potato", disease: "Healthy", status: "Resolved", progress: 100 },
+];
+
+const demoUsers = [
+    'pandeypriyanshu53@gmail.com',
+    'admin@kissanconnect.com'
 ];
 
 const StatCardSkeleton = () => (
@@ -87,6 +93,8 @@ export default function DashboardPage() {
   const { t, language } = useTranslation();
   const { toast } = useToast();
 
+  const isDemoUser = user?.email ? demoUsers.includes(user.email) : false;
+
   const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5)) : null;
   const [recentDiagnoses, diagnosesLoading] = useCollectionData(diagnosesQuery, { idField: 'id' });
 
@@ -106,12 +114,12 @@ export default function DashboardPage() {
             }
         });
         
-        getDashboardAnalytics({ userId: user.uid, language }).then(setAnalyticsData).catch(err => {
+        getDashboardAnalytics({ userId: user.uid, email: user.email || undefined, language }).then(setAnalyticsData).catch(err => {
             console.error("Error fetching analytics data:", err);
             toast({ variant: "destructive", title: "Error", description: "Could not load dashboard analytics." });
         });
 
-        getAgriCreditScore({ userId: user.uid, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
+        getAgriCreditScore({ userId: user.uid, email: user.email || undefined, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
 
         // Fetch weather data
         setLocationStatus("Fetching location...");
@@ -207,10 +215,12 @@ export default function DashboardPage() {
         title={getGreeting()}
         description={pageDescription}
       >
+        {isDemoUser && (
         <Button onClick={handleSeedData} disabled={isSeeding || (recentDiagnoses && recentDiagnoses.length > 0)}>
             <Database className="mr-2 h-4 w-4" />
             {isSeeding ? "Seeding..." : "Seed Demo Data"}
         </Button>
+        )}
       </PageHeader>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         {isLoading ? (
@@ -242,8 +252,7 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="text-2xl font-bold">+{recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || '0'}</div>
                 <p className="text-xs text-muted-foreground">
-                  {/* This could be added to analytics later */}
-                  1 {t('profile.resolvedThisWeek')}
+                  {isDemoUser ? `1 ${t('profile.resolvedThisWeek')}`: `0 ${t('profile.resolvedThisWeek')}`}
                 </p>
               </CardContent>
             </Card>
@@ -265,9 +274,9 @@ export default function DashboardPage() {
                 <Tractor className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+2 {t('profile.active')}</div>
+                <div className="text-2xl font-bold">{isDemoUser ? '+2' : '0'} {t('profile.active')}</div>
                  <p className="text-xs text-muted-foreground">
-                  1 {t('profile.lending')}, 1 {t('profile.borrowing')}
+                  {isDemoUser ? `1 ${t('profile.lending')}, 1 ${t('profile.borrowing')}` : `0 ${t('profile.lending')}, 0 ${t('profile.borrowing')}`}
                 </p>
               </CardContent>
             </Card>
@@ -303,28 +312,36 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                        <TableCell>
-                          <div className="font-medium">John Deere Tractor</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className='border-green-500 text-green-500'>
-                            {t(`profile.rentalTypeLending` as any)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">3 days</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>
-                          <div className="font-medium">Power Tiller</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className='border-blue-500 text-blue-500'>
-                            {t(`profile.rentalTypeBorrowing` as any)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">5 days</TableCell>
-                      </TableRow>
+                    {isDemoUser ? (
+                    <>
+                        <TableRow>
+                            <TableCell>
+                            <div className="font-medium">John Deere Tractor</div>
+                            </TableCell>
+                            <TableCell>
+                            <Badge variant="outline" className='border-green-500 text-green-500'>
+                                {t(`profile.rentalTypeLending` as any)}
+                            </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">3 days</TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>
+                            <div className="font-medium">Power Tiller</div>
+                            </TableCell>
+                            <TableCell>
+                            <Badge variant="outline" className='border-blue-500 text-blue-500'>
+                                {t(`profile.rentalTypeBorrowing` as any)}
+                            </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">5 days</TableCell>
+                        </TableRow>
+                    </>
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">{t('profile.noActiveRentals')}</TableCell>
+                        </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -361,8 +378,8 @@ export default function DashboardPage() {
                            <div className="flex items-center justify-center text-center">
                                 <div>
                                     <p className="text-6xl font-bold text-primary">{creditScoreData.score}</p>
-                                    <div className={cn("flex items-center justify-center font-semibold", creditScoreData.trend === 'up' ? "text-green-600" : "text-red-500")}>
-                                        <ArrowUp className="h-4 w-4 mr-1" />
+                                    <div className={cn("flex items-center justify-center font-semibold", creditScoreData.trend === 'up' ? "text-green-600" : "text-red-500", creditScoreData.trend === 'stable' && "text-muted-foreground")}>
+                                        {creditScoreData.trend !== 'stable' && <ArrowUp className={cn("h-4 w-4 mr-1", creditScoreData.trend === 'down' && "transform rotate-180")} />}
                                         {creditScoreData.trendPoints} {t('creditScore.pointsThisMonth')}
                                     </div>
                                 </div>
@@ -383,6 +400,7 @@ export default function DashboardPage() {
                                 )}
                             </div>
                             
+                            {creditScoreData.badges.length > 0 && (
                              <div>
                                 <h4 className="font-semibold mb-2">{t('creditScore.badgesTitle')}</h4>
                                 <div className="flex flex-wrap gap-2">
@@ -394,6 +412,7 @@ export default function DashboardPage() {
                                     ))}
                                 </div>
                             </div>
+                            )}
                              <Button className="w-full mt-2" onClick={handleShareScore}>
                                 <Share2 className="mr-2 h-4 w-4" />
                                 {t('creditScore.share')}

@@ -13,6 +13,7 @@ import { z } from 'genkit';
 
 const AgriCreditScoreInputSchema = z.object({
   userId: z.string().describe("The unique identifier for the farmer."),
+  email: z.string().optional().describe("The user's email address."),
   language: z.string().optional().default('en').describe('The language for the response.'),
 });
 export type AgriCreditScoreInput = z.infer<typeof AgriCreditScoreInputSchema>;
@@ -39,6 +40,10 @@ export async function getAgriCreditScore(input: AgriCreditScoreInput): Promise<A
   return agriCreditScoreFlow(input);
 }
 
+const demoUsers = [
+    'pandeypriyanshu53@gmail.com',
+    'admin@kissanconnect.com'
+];
 
 const agriCreditScoreFlow = ai.defineFlow(
   {
@@ -47,7 +52,27 @@ const agriCreditScoreFlow = ai.defineFlow(
     outputSchema: AgriCreditScoreOutputSchema,
   },
   async (input) => {
-    // DEVELOPER: This is a mock implementation using static demo data.
+    // For new users, return a default zero state.
+    if (!input.email || !demoUsers.includes(input.email)) {
+        return {
+            score: 300,
+            trend: 'stable',
+            trendPoints: 0,
+            improvementTips: [
+                "Complete your profile to get a baseline score.",
+                "Connect a bank account to start building your credit history.",
+                "Explore the app features to learn more."
+            ],
+            loanEligibility: {
+                isEligible: false,
+                amount: 0,
+                currency: "INR",
+            },
+            badges: [],
+        };
+    }
+
+    // DEVELOPER: This is a mock implementation using static demo data for specific users.
     // In a real application, you would use the userId to fetch real data from various sources.
 
     // Simulate a delay for fetching and processing data.
