@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDebouncedCallback } from 'use-debounce';
 import Image from "next/image";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
@@ -38,13 +37,14 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
 
 const NutrientDisplay = ({ label, value, color }: { label: string, value: number, color: string }) => (
     <div className="flex items-center gap-2">
-        <div className="w-24 shrink-0 text-sm font-semibold">{label}</div>
+        <div className="w-28 shrink-0 text-sm font-semibold">{label}</div>
         <div className="flex-1 bg-muted rounded-full h-2.5">
             <div className={`${color} h-2.5 rounded-full`} style={{ width: `${value}%` }}></div>
         </div>
-        <div className="w-12 text-right text-sm font-mono">{value}%</div>
+        <div className="w-12 shrink-0 text-right text-sm font-mono">{value}%</div>
     </div>
 );
+
 
 const MetricSkeleton = () => (
     <div className="space-y-4">
@@ -73,11 +73,17 @@ export default function DigitalTwinPage() {
   // Default to a location in Haryana, India
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([29.1492, 75.7217]); 
 
-  const debouncedFetchData = useDebouncedCallback(async (lat: number, lng: number) => {
+  const fetchData = useCallback(async (lat: number, lng: number) => {
     setIsLoading(true);
     setIsImageLoading(true);
     setError(null);
     setSatelliteImage(null);
+    setData(null);
+
+    toast({
+        title: "Analyzing Location",
+        description: `Fetching data for coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    });
 
     try {
       // Fetch both data and image in parallel
@@ -104,39 +110,25 @@ export default function DigitalTwinPage() {
       setIsLoading(false);
       setIsImageLoading(false);
     }
-  }, 1500); // Debounce API calls by 1.5 seconds
-
-  const fetchData = useCallback((lat: number, lng: number) => {
-      setIsLoading(true);
-      setIsImageLoading(true);
-      setError(null);
-      debouncedFetchData.cancel(); // Cancel any pending debounced call
-      debouncedFetchData(lat, lng);
-  }, [debouncedFetchData]);
+  }, [t, toast]);
 
 
+  // Effect for initial fetch or when user location is found
   useEffect(() => {
-    // Initial fetch for the default location
-    fetchData(markerPosition[0], markerPosition[1]);
-  }, []); // Run only once on mount
-
-  const handleMarkerChange = (newPosition: [number, number]) => {
-      setMarkerPosition(newPosition);
-      fetchData(newPosition[0], newPosition[1]);
-  };
-  
-  // Get user's current location on mount
-  useEffect(() => {
+    // Get user's current location on mount, then fetch data
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        handleMarkerChange([latitude, longitude]);
+        setMarkerPosition([latitude, longitude]);
+        fetchData(latitude, longitude); // Fetch for current location
       },
       (geoError) => {
         console.warn(`Geolocation Error: ${geoError.message}. Using default location.`);
+        fetchData(markerPosition[0], markerPosition[1]); // Fetch for default location
       }
     );
-  }, []);
+  }, []); // Run only once on mount
+  
 
   return (
     <>
@@ -154,7 +146,11 @@ export default function DigitalTwinPage() {
                 <CardContent className="p-0">
                     <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
                         <Suspense fallback={<div className="flex items-center justify-center w-full h-full"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
-                            <MapComponent markerPosition={markerPosition} setMarkerPosition={handleMarkerChange} />
+                            <MapComponent 
+                                markerPosition={markerPosition} 
+                                setMarkerPosition={setMarkerPosition} 
+                                onSetLocation={fetchData}
+                            />
                         </Suspense>
                     </div>
                 </CardContent>
@@ -168,21 +164,19 @@ export default function DigitalTwinPage() {
                     <div className="aspect-video w-full bg-muted rounded-b-lg flex items-center justify-center relative overflow-hidden">
                        {isImageLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : satelliteImage ? (
                            <Image src={satelliteImage.imageUrl} alt="Satellite view of the field" fill className="object-cover" />
-                       ) : <p className="text-sm text-destructive">{error}</p>}
+                       ) : <p className="text-sm text-destructive">{error || "Could not load image."}</p>}
                     </div>
                 </CardContent>
             </Card>
         </div>
         
-        {isLoading ? (
-            <Card><CardContent className="p-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
-        ) : data && (
+        {(isLoading || data) && (
             <Card className="bg-primary/5 border-primary/20">
                 <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2"><Lightbulb /> {t('digitalTwin.bestSuggestion')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-lg text-foreground">{data.bestSuggestion}</p>
+                    {isLoading ? <Skeleton className="h-6 w-full" /> : <p className="text-lg text-foreground">{data!.bestSuggestion}</p>}
                 </CardContent>
             </Card>
         )}

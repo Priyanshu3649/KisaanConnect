@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Search, Loader2, LocateFixed } from 'lucide-react';
+import { Search, Loader2, LocateFixed, Pin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // Leaflet's default icon path can break in Next.js. This fixes it.
@@ -21,9 +21,10 @@ L.Icon.Default.mergeOptions({
 interface MapComponentProps {
   markerPosition: [number, number];
   setMarkerPosition: (position: [number, number]) => void;
+  onSetLocation: (lat: number, lng: number) => void;
 }
 
-const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) => {
+const MapComponent = ({ markerPosition, setMarkerPosition, onSetLocation }: MapComponentProps) => {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
     const markerRef = useRef<L.Marker | null>(null);
@@ -69,11 +70,11 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
     // Effect to update map/marker when position changes from outside
     useEffect(() => {
         if (mapRef.current && markerRef.current) {
-            if (!markerRef.current.getLatLng().equals(L.latLng(markerPosition))) {
-                markerRef.current.setLatLng(markerPosition);
-            }
-            if (!mapRef.current.getCenter().equals(L.latLng(markerPosition))) {
-                 mapRef.current.panTo(markerPosition, { animate: true });
+            const currentMarkerPos = markerRef.current.getLatLng();
+            const newPos = L.latLng(markerPosition);
+            if (!currentMarkerPos.equals(newPos)) {
+                markerRef.current.setLatLng(newPos);
+                mapRef.current.panTo(newPos, { animate: true });
             }
         }
     }, [markerPosition]);
@@ -126,7 +127,7 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
                 setIsLocating(false);
                 toast({
                     title: "Location Found",
-                    description: "Your current location has been set on the map.",
+                    description: "Your current location has been set. Click 'Set Location' to analyze.",
                 });
             },
             (error) => {
@@ -140,21 +141,38 @@ const MapComponent = ({ markerPosition, setMarkerPosition }: MapComponentProps) 
             }
         );
     };
+    
+    const handleSetLocationClick = () => {
+        if (markerRef.current) {
+            const { lat, lng } = markerRef.current.getLatLng();
+            onSetLocation(lat, lng);
+        }
+    }
 
     return (
         <div className="relative h-full w-full">
-            <div className="absolute top-2 left-2 z-[1000] w-[calc(100%-1rem)] sm:w-96 flex flex-col gap-2">
-                 <div className="flex gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg">
-                    <Input
-                        type="text"
-                        placeholder="Search for a location..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex-grow"
-                    />
-                     <Button type="button" size="icon" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating}>
-                        {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                    </Button>
+            <div className="absolute top-2 left-2 z-[1000] w-[calc(100%-1rem)] sm:max-w-md flex flex-col gap-2">
+                 <div className="flex flex-col sm:flex-row gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg">
+                    <div className="flex-grow flex items-center gap-2">
+                        <Search className="h-4 w-4 text-muted-foreground shrink-0"/>
+                        <Input
+                            type="text"
+                            placeholder="Search for a location..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                        />
+                    </div>
+                     <div className="flex gap-2 justify-end">
+                        <Button type="button" size="sm" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating}>
+                            <LocateFixed className="h-4 w-4 mr-2" />
+                            Locate
+                        </Button>
+                         <Button type="button" size="sm" onClick={handleSetLocationClick}>
+                            <Pin className="h-4 w-4 mr-2" />
+                            Set Location
+                        </Button>
+                    </div>
                 </div>
                 { (isSearching || suggestions.length > 0) && (
                      <div className="bg-background/80 backdrop-blur-sm rounded-lg shadow-lg max-h-60 overflow-y-auto">
