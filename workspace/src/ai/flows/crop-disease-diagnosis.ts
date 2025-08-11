@@ -9,14 +9,11 @@
  * - DiagnoseCropOutput - The return type for the diagnoseCrop function.
  */
 
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const DiagnoseCropInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a crop, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+  images: z.array(z.string()).describe("A list of base64 encoded image strings."),
   language: z.string().describe('The language for the response (e.g., "en", "hi", "pa", "mr", "ta", "te").'),
 });
 export type DiagnoseCropInput = z.infer<typeof DiagnoseCropInputSchema>;
@@ -27,8 +24,10 @@ const DiagnoseCropOutputSchema = z.object({
 export type DiagnoseCropOutput = z.infer<typeof DiagnoseCropOutputSchema>;
 
 
-export async function diagnoseCrop(input: DiagnoseCropInput): Promise<DiagnoseCropOutput> {
-  return diagnoseCropFlow(input);
+export async function diagnoseCrop(input: { photoDataUri: string; language: string }): Promise<DiagnoseCropOutput> {
+  // Extract just the base64 part of the data URI
+  const base64Image = input.photoDataUri.split(',')[1];
+  return diagnoseCropFlow({ images: [base64Image], language: input.language });
 }
 
 // Helper function to format the API response
@@ -50,7 +49,6 @@ const formatPlantIdResponse = (response: any): string => {
     if (diseaseInfo && diseaseInfo.name !== "healthy") {
         diseaseName = diseaseInfo.name;
         // The API provides 'treatment' which can be split for our UI.
-        // This is a simplistic split; a real app might need more sophisticated logic.
         const treatmentDescription = diseaseInfo.details.treatment?.biological?.join(' ') || 'Consult an expert.';
         treatmentOrganic = treatmentDescription;
         treatmentChemical = diseaseInfo.details.treatment?.chemical?.join(' ') || 'Consult an expert.';
@@ -61,25 +59,30 @@ const formatPlantIdResponse = (response: any): string => {
 }
 
 
-const diagnoseCropFlow = async (input: DiagnoseCropInput): Promise<DiagnoseCropOutput> => {
+const diagnoseCropFlow = ai.defineFlow(
+  {
+    name: 'diagnoseCropWithPlantId',
+    inputSchema: DiagnoseCropInputSchema,
+    outputSchema: DiagnoseCropOutputSchema,
+  },
+  async (input) => {
     const apiKey = process.env.PLANT_ID_API_KEY;
     const apiUrl = 'https://plant.id/api/v3/identification';
 
     if (!apiKey) {
         console.error("Plant.id API key is not configured.");
-        return { analysis: "**Error:** API key not configured on the server." };
+        throw new Error("API key not configured on the server.");
     }
 
     const defaultErrorResponse = {
-        analysis: `**Crop Detected:** Unable to Analyze\n**Disease/Issue:** Analysis Failed\n**Confidence:** 0%\n**Treatment (Organic):** The AI model could not process the image. This might be due to a temporary issue or an unsupported image format.\n**Treatment (Chemical):** Please try uploading the image again. If the problem persists, try a different, clearer image of the affected crop.\n**Prevention Tips:** Ensure the photo is well-lit and focuses on the affected area of the plant (leaves, stem, etc.).`
+        analysis: `**Crop Detected:** Unable to Analyze\n**Disease/Issue:** Analysis Failed\n**Confidence:** 0%\n**Treatment (Organic):** The API model could not process the image. This might be due to a temporary issue or an unsupported image format.\n**Treatment (Chemical):** Please try uploading the image again. If the problem persists, try a different, clearer image of the affected crop.\n**Prevention Tips:** Ensure the photo is well-lit and focuses on the affected area of the plant (leaves, stem, etc.).`
     };
 
     try {
         const body = {
-            images: [input.photoDataUri],
-            // Ask for disease details, which is crucial for our use case
+            images: input.images,
             details: ["cause", "common_names", "classification", "disease", "treatment"],
-            language: input.language.split('-')[0] // API uses 'en', 'hi', etc.
+            language: input.language.split('-')[0]
         };
 
         const response = await fetch(apiUrl, {
@@ -94,7 +97,7 @@ const diagnoseCropFlow = async (input: DiagnoseCropInput): Promise<DiagnoseCropO
         if (!response.ok) {
             const errorBody = await response.text();
             console.error("Plant.id API request failed:", response.status, errorBody);
-            throw new Error(`API request failed with status ${response.status}`);
+            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
         }
 
         const data = await response.json();
