@@ -4,14 +4,14 @@
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { doc, getDoc, collection, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, orderBy, limit, Timestamp, writeBatch, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote } from "lucide-react";
+import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote, Database } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -34,6 +34,7 @@ interface Diagnosis {
     status: 'Active' | 'Resolved';
     progress: number;
     createdAt: Timestamp;
+    userId: string;
 }
 interface Rental {
     equipment: string;
@@ -52,6 +53,12 @@ interface DashboardData {
     borrowingCount: 1,
     activeRentals: Rental[];
 }
+
+const demoDiagnosesData: Omit<Diagnosis, 'id' | 'createdAt' | 'userId'>[] = [
+    { crop: "Tomato", disease: "Late Blight", status: "Active", progress: 25 },
+    { crop: "Wheat", disease: "Rust", status: "Active", progress: 50 },
+    { crop: "Potato", disease: "Healthy", status: "Resolved", progress: 100 },
+];
 
 const StatCardSkeleton = () => (
     <Card>
@@ -93,6 +100,7 @@ export default function DashboardPage() {
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
   const { t, language } = useTranslation();
   const { toast } = useToast();
 
@@ -183,7 +191,7 @@ export default function DashboardPage() {
       fetchAllData();
       fetchCreditScore();
     }
-  }, [user, authLoading, router, diagnosesLoading, language]);
+  }, [user, authLoading, router, diagnosesLoading, language, toast]);
   
   const isLoading = authLoading || isDataLoading;
 
@@ -216,13 +224,48 @@ export default function DashboardPage() {
       const loanTip = creditScoreData.improvementTips.find(tip => tip.includes(creditScoreData.loanEligibility.amount.toString()));
       return loanTip;
   }
+  
+  const handleSeedData = async () => {
+      if (!user) {
+          toast({ variant: "destructive", title: "You must be logged in." });
+          return;
+      }
+      setIsSeeding(true);
+      try {
+          const batch = writeBatch(db);
+          demoDiagnosesData.forEach(item => {
+              const docRef = doc(collection(db, "diagnoses"));
+              batch.set(docRef, { 
+                  ...item, 
+                  userId: user.uid, 
+                  createdAt: serverTimestamp() 
+              });
+          });
+          await batch.commit();
+          toast({
+              title: "Demo Data Added",
+              description: `${demoDiagnosesData.length} sample diagnoses have been added to your database.`,
+          });
+      } catch (e) {
+          console.error("Error seeding diagnoses data:", e);
+          toast({ variant: 'destructive', title: "Error", description: "Could not add demo diagnoses data." });
+      } finally {
+          setIsSeeding(false);
+      }
+  };
+
 
   return (
     <>
       <PageHeader
         title={getGreeting()}
         description={pageDescription}
-      />
+      >
+        <Button onClick={handleSeedData} disabled={isSeeding || (recentDiagnoses && recentDiagnoses.length > 0)}>
+            <Database className="mr-2 h-4 w-4" />
+            {isSeeding ? "Seeding..." : "Seed Demo Data"}
+        </Button>
+      </PageHeader>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         {isLoading ? (
           <>
