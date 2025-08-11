@@ -11,7 +11,6 @@ This document outlines the current features implemented in the KisaanConnect app
     - **Financial Forecasting**: AI-driven estimates for conventional vs. organic farming costs (seeds, irrigation, fertilizer), expected profit, and crop failure probability.
     - **AI-Powered Recommendations**: Suggests the best crops to sow based on soil data and historical trends.
     - **Live Field Alerts**: Real-time notifications for potential issues like water stress, nutrient deficiencies, or pest infestations.
-- **AI-Powered Crop Disease Diagnosis**: Farmers can upload an image of a crop and receive an instant diagnosis, confidence level, and recommended actions. Results are saved to the user's profile.
 - **Live Mandi Prices**: Real-time market price data for various commodities, filterable by state and specific market.
 - **AI Sales Advisor**: Analyzes market trends to provide actionable advice on the best time to sell crops, complete with a confidence score and a 7-day price forecast.
 - **Inventory Management**: A simple interface to track on-farm inventory of seeds, fertilizers, equipment, and other items, with low-stock alerts.

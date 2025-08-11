@@ -3,15 +3,11 @@
 
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { useCollectionData } from "react-firebase-hooks/firestore";
-import { doc, getDoc, collection, query, where, orderBy, limit, Timestamp, writeBatch, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { DollarSign, Leaf, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote, Database } from "lucide-react";
+import { DollarSign, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -29,21 +25,6 @@ interface UserData {
   location?: string;
   email?: string;
 }
-interface Diagnosis {
-    id: string;
-    crop: string;
-    disease: string;
-    status: 'Active' | 'Resolved';
-    progress: number;
-    createdAt: Timestamp;
-    userId: string;
-}
-
-const demoDiagnosesData: Omit<Diagnosis, 'id' | 'createdAt' | 'userId'>[] = [
-    { crop: "Tomato", disease: "Late Blight", status: "Active", progress: 25 },
-    { crop: "Wheat", disease: "Rust", status: "Active", progress: 50 },
-    { crop: "Potato", disease: "Healthy", status: "Resolved", progress: 100 },
-];
 
 const demoUsers = [
     'pandeypriyanshu53@gmail.com',
@@ -89,14 +70,10 @@ export default function DashboardPage() {
   const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
-  const [isSeeding, setIsSeeding] = useState(false);
   const { t, language } = useTranslation();
   const { toast } = useToast();
 
   const isDemoUser = user?.email ? demoUsers.includes(user.email) : false;
-
-  const diagnosesQuery = user ? query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5)) : null;
-  const [recentDiagnoses, diagnosesLoading] = useCollectionData(diagnosesQuery, { idField: 'id' });
 
   useEffect(() => {
     if (authLoading) return;
@@ -178,50 +155,13 @@ export default function DashboardPage() {
       const loanTip = creditScoreData.improvementTips.find(tip => tip.includes(creditScoreData.loanEligibility.amount.toString()));
       return loanTip;
   }
-  
-  const handleSeedData = async () => {
-      if (!user) {
-          toast({ variant: "destructive", title: "You must be logged in." });
-          return;
-      }
-      setIsSeeding(true);
-      try {
-          const batch = writeBatch(db);
-          demoDiagnosesData.forEach(item => {
-              const docRef = doc(collection(db, "diagnoses"));
-              batch.set(docRef, { 
-                  ...item, 
-                  userId: user.uid, 
-                  createdAt: serverTimestamp() 
-              });
-          });
-          await batch.commit();
-          toast({
-              title: "Demo Data Added",
-              description: `${demoDiagnosesData.length} sample diagnoses have been added to your database.`,
-          });
-      } catch (e) {
-          console.error("Error seeding diagnoses data:", e);
-          toast({ variant: 'destructive', title: "Error", description: "Could not add demo diagnoses data." });
-      } finally {
-          setIsSeeding(false);
-      }
-  };
-
 
   return (
     <>
       <PageHeader
         title={getGreeting()}
         description={pageDescription}
-      >
-        {isDemoUser && (
-        <Button onClick={handleSeedData} disabled={isSeeding || (recentDiagnoses && recentDiagnoses.length > 0)}>
-            <Database className="mr-2 h-4 w-4" />
-            {isSeeding ? "Seeding..." : "Seed Demo Data"}
-        </Button>
-        )}
-      </PageHeader>
+      />
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
         {isLoading ? (
           <>
@@ -246,18 +186,6 @@ export default function DashboardPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
-                <Leaf className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">+{recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || '0'}</div>
-                <p className="text-xs text-muted-foreground">
-                  {isDemoUser ? `1 ${t('profile.resolvedThisWeek')}`: `0 ${t('profile.resolvedThisWeek')}`}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('profile.cropsPlanted')}</CardTitle>
                 <Wheat className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -277,6 +205,18 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold">{isDemoUser ? '+2' : '0'} {t('profile.active')}</div>
                  <p className="text-xs text-muted-foreground">
                   {isDemoUser ? `1 ${t('profile.lending')}, 1 ${t('profile.borrowing')}` : `0 ${t('profile.lending')}, 0 ${t('profile.borrowing')}`}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Agri-Credit Score</CardTitle>
+                <Star className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{creditScoreData?.score || '...'}</div>
+                 <p className="text-xs text-muted-foreground">
+                  {creditScoreData?.trendPoints || 0} point change this month
                 </p>
               </CardContent>
             </Card>
@@ -447,58 +387,6 @@ export default function DashboardPage() {
                         </div>
                     )}
                 </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
-                <CardDescription>
-                  {t('profile.diagnosesDescription')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('profile.diagnosesCrop')}</TableHead>
-                      <TableHead>{t('profile.diagnosesStatus')}</TableHead>
-                      <TableHead className="text-right">{t('profile.diagnosesTreatment')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {diagnosesLoading && (
-                        <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center">
-                                <div className="flex justify-center items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                    <span>{t('profile.loadingDiagnoses')}</span>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    {recentDiagnoses && recentDiagnoses.map((diag) => (
-                      <TableRow key={diag.id}>
-                        <TableCell className="font-medium">{(diag as Diagnosis).crop}</TableCell>
-                        <TableCell>
-                          <Badge variant={(diag as Diagnosis).status === 'Active' ? 'destructive' : 'default'}>{t(`profile.status${(diag as Diagnosis).status}` as any)}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                                <span>{(diag as Diagnosis).progress}%</span>
-                                <Progress value={(diag as Diagnosis).progress} className="w-20 h-2" />
-                            </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                     {!diagnosesLoading && (!recentDiagnoses || recentDiagnoses.length === 0) && (
-                        <TableRow>
-                            <TableCell colSpan={3} className="text-center h-24">
-                               {t('profile.noDiagnoses')}
-                            </TableCell>
-                        </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
             </Card>
         </div>
       </div>
