@@ -37,6 +37,7 @@ const prompt = ai.definePrompt({
   name: 'diagnoseCropPrompt',
   input: { schema: DiagnoseCropInputSchema },
   output: { schema: DiagnoseCropOutputSchema },
+  model: 'googleai/gemini-1.5-flash-latest', // Use a more advanced model for this task
   prompt: `You are an AI agriculture expert integrated into the KisaanConnect application.
 The user will provide a single input: an image of a crop.
 
