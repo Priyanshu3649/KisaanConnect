@@ -36,8 +36,9 @@ export async function diagnoseCrop(input: DiagnoseCropInput): Promise<DiagnoseCr
 const prompt = ai.definePrompt({
   name: 'diagnoseCropPrompt',
   input: { schema: DiagnoseCropInputSchema },
-  output: { schema: DiagnoseCropOutputSchema },
-  model: 'googleai/gemini-1.5-flash-latest', // Use a more advanced model for this task
+  // Use a flexible output schema initially to prevent crashes if the model deviates.
+  output: { schema: z.object({ analysis: z.string() }) }, 
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an AI agriculture expert integrated into the KisaanConnect application.
 The user will provide a single input: an image of a crop.
 
@@ -54,14 +55,11 @@ When receiving an image, you must:
 6. If diagnosis confidence is below 60% or the image is unclear, politely request a clearer image.
 7. Output all responses in the user’s preferred language (the user's language is {{language}}).
 8. Keep explanations simple, clear, and under 200 words.
-9. Always format the output as:
+9. Always format the output as a single string field in a JSON object:
 
-**Crop Detected:** <crop name>
-**Disease/Issue:** <name or "None detected">
-**Confidence:** <percentage>%
-**Treatment (Organic):** <steps>
-**Treatment (Chemical):** <steps>
-**Prevention Tips:** <steps>
+{
+  "analysis": "**Crop Detected:** <crop name>\\n**Disease/Issue:** <name or \"None detected\">\\n**Confidence:** <percentage>%\\n**Treatment (Organic):** <steps>\\n**Treatment (Chemical):** <steps>\\n**Prevention Tips:** <steps>"
+}
 
 Do not include unrelated information. Focus only on actionable, practical, and farmer-friendly advice.
 
@@ -77,20 +75,31 @@ const diagnoseCropFlow = ai.defineFlow(
     outputSchema: DiagnoseCropOutputSchema,
   },
   async (input) => {
-    try {
-        const { output } = await prompt(input);
-        return output!;
-    } catch (error) {
-        console.error("Error in diagnoseCropFlow:", error);
-        // Provide a structured error message in the expected format
-        return {
-            analysis: `**Crop Detected:** Unable to Analyze
+    // This default error response will be sent back if anything in the try block fails.
+    // This guarantees the UI never gets stuck loading.
+    const defaultErrorResponse = {
+        analysis: `**Crop Detected:** Unable to Analyze
 **Disease/Issue:** Analysis Failed
 **Confidence:** 0%
 **Treatment (Organic):** The AI model could not process the image. This might be due to a temporary issue or an unsupported image format.
 **Treatment (Chemical):** Please try uploading the image again. If the problem persists, try a different, clearer image of the affected crop.
 **Prevention Tips:** Ensure the photo is well-lit and focuses on the affected area of the plant (leaves, stem, etc.).`
-        };
+    };
+
+    try {
+        const { output } = await prompt(input);
+
+        if (!output || !output.analysis) {
+             console.error("AI returned invalid or empty output.");
+             return defaultErrorResponse;
+        }
+        
+        // Final validation before returning.
+        return DiagnoseCropOutputSchema.parse(output);
+
+    } catch (error) {
+        console.error("Error in diagnoseCropFlow:", error);
+        return defaultErrorResponse;
     }
   }
 );

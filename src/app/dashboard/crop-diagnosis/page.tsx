@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,16 +18,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 
 // Simple markdown parser for the AI response
 const ParseMarkdown = ({ text }: { text: string }) => {
-    const lines = text.split('\n');
+    const lines = text.split('\\n');
     return (
         <div className="space-y-2 text-sm">
             {lines.map((line, index) => {
                 if (line.startsWith('**')) {
                     const parts = line.split('**');
                     return (
-                        <div key={index}>
-                            <span className="font-semibold text-foreground">{parts[1]}</span>
-                            <span>{parts[2]}</span>
+                        <div key={index} className="grid grid-cols-3 gap-2">
+                            <span className="font-semibold text-foreground col-span-1">{parts[1]}</span>
+                            <span className="text-muted-foreground col-span-2">{parts.slice(2).join('**')}</span>
                         </div>
                     );
                 }
@@ -92,12 +92,12 @@ export default function CropDiagnosisPage() {
     };
 
     const handleSubmit = async () => {
-        if (!imageFile) {
-            toast({ variant: 'destructive', title: t('cropDiagnosis.missingInfoTitle'), description: t('cropDiagnosis.missingInfoDesc') });
-            return;
-        }
-        if (!user) {
-            toast({ variant: 'destructive', title: t('cropDiagnosis.notLoggedInTitle'), description: t('cropDiagnosis.notLoggedInDesc') });
+        if (!imageFile || !user) {
+            toast({
+                variant: 'destructive',
+                title: t('cropDiagnosis.missingInfoTitle'),
+                description: !imageFile ? t('cropDiagnosis.missingInfoDesc') : t('cropDiagnosis.notLoggedInDesc')
+            });
             return;
         }
 
@@ -108,40 +108,45 @@ export default function CropDiagnosisPage() {
             const reader = new FileReader();
             reader.readAsDataURL(imageFile);
             reader.onloadend = async () => {
-                const base64data = reader.result as string;
-                if (!base64data) {
-                    throw new Error("Failed to convert file to base64.");
+                try {
+                    const base64data = reader.result as string;
+                    if (!base64data) {
+                        throw new Error("Failed to convert file to base64.");
+                    }
+                    
+                    const diagnosisPromise = diagnoseCrop({ photoDataUri: base64data, language });
+                    const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
+                    const uploadPromise = uploadBytes(storageRef, imageFile);
+
+                    const [diagnosis, uploadResult] = await Promise.all([diagnosisPromise, uploadPromise]);
+                    const imageUrl = await getDownloadURL(uploadResult.ref);
+                    
+                    setDiagnosisResult(diagnosis.analysis);
+
+                    await addDoc(collection(db, 'diagnoses'), {
+                        userId: user.uid,
+                        imageUrl: imageUrl,
+                        result: diagnosis.analysis,
+                        createdAt: serverTimestamp(),
+                    });
+                    
+                    toast({ title: t('cropDiagnosis.savedTitle'), description: t('cropDiagnosis.savedDesc') });
+                } catch (error) {
+                    console.error("Diagnosis process failed:", error);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage || t('cropDiagnosis.failedDesc') });
+                    setDiagnosisResult(t('cropDiagnosis.errorResult'));
+                } finally {
+                    setIsDiagnosing(false);
                 }
-                
-                // Run AI diagnosis and image upload in parallel
-                const diagnosisPromise = diagnoseCrop({ photoDataUri: base64data, language });
-                const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
-                const uploadPromise = uploadBytes(storageRef, imageFile);
-
-                const [diagnosis, uploadResult] = await Promise.all([diagnosisPromise, uploadPromise]);
-                const imageUrl = await getDownloadURL(uploadResult.ref);
-                
-                setDiagnosisResult(diagnosis.analysis);
-
-                // Save result to Firestore
-                await addDoc(collection(db, 'diagnoses'), {
-                    userId: user.uid,
-                    imageUrl: imageUrl,
-                    result: diagnosis.analysis,
-                    createdAt: serverTimestamp(),
-                });
-                
-                toast({ title: t('cropDiagnosis.savedTitle'), description: t('cropDiagnosis.savedDesc') });
-                setIsDiagnosing(false);
             };
             reader.onerror = (error) => {
                  throw new Error("Error reading file: " + error);
             }
-            
         } catch (error) {
-            console.error("Diagnosis failed:", error);
-            toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: String(error) || t('cropDiagnosis.failedDesc') });
-            setDiagnosisResult(t('cropDiagnosis.errorResult'));
+            console.error("Outer handleSubmit error:", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage });
             setIsDiagnosing(false);
         }
     };
