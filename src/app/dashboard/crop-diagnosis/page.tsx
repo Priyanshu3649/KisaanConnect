@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -153,11 +153,6 @@ export default function CropDiagnosisPage() {
                 if (blob) {
                     const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
                     setFile(file);
-                    // Trigger submission immediately after setting the file
-                    // We need to use a short timeout to ensure the state has updated before handleSubmit is called.
-                    setTimeout(() => {
-                        handleSubmit();
-                    }, 100);
                 }
             }, 'image/jpeg');
             stopCamera();
