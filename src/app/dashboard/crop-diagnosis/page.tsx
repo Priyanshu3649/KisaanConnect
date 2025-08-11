@@ -20,6 +20,15 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useTranslation } from "@/context/translation-context";
 
+// Helper function to read file as Data URI
+const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
 
 export default function CropDiagnosisPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -66,54 +75,48 @@ export default function CropDiagnosisPage() {
     setResult(null);
 
     try {
-        // 1. Upload image to Firebase Storage
-        const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const imageUrl = await getDownloadURL(snapshot.ref);
+        // 1. Convert file to Data URI for the AI call
+        const photoDataUri = await fileToDataUri(file);
 
-        // 2. Call AI flow with a Data URI
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            const photoDataUri = reader.result as string;
-            const diagnosisResult = await diagnoseCropDisease({
+        // 2. Start AI diagnosis and Firebase upload in parallel
+        const diagnosisPromise = diagnoseCropDisease({
             photoDataUri,
             cropDescription: description,
             language: language,
-            });
-            setResult(diagnosisResult);
+        });
 
-            // 3. Save to Firestore
-            const diagnosisData = {
-                userId: user.uid,
-                crop: description.split(' ')[0] || 'Unknown Crop', // Simple crop name extraction
-                disease: diagnosisResult.diseaseIdentification.isDiseased ? diagnosisResult.diseaseIdentification.likelyDisease : 'Healthy',
-                status: diagnosisResult.diseaseIdentification.isDiseased ? 'Active' : 'Resolved',
-                progress: diagnosisResult.diseaseIdentification.isDiseased ? 0 : 100, // Initial progress
-                createdAt: serverTimestamp(),
-                imageUrl: imageUrl, // Use the public URL from Firebase Storage
-                isDiseased: diagnosisResult.diseaseIdentification.isDiseased,
-                confidence: diagnosisResult.diseaseIdentification.confidenceLevel,
-                recommendations: diagnosisResult.recommendedActions
-            };
+        const uploadPromise = (async () => {
+            const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            return getDownloadURL(snapshot.ref);
+        })();
 
-            await addDoc(collection(db, "diagnoses"), diagnosisData);
+        // 3. Wait for both to complete
+        const [diagnosisResult, imageUrl] = await Promise.all([diagnosisPromise, uploadPromise]);
+        
+        setResult(diagnosisResult);
 
-            toast({
-                title: t('cropDiagnosis.savedTitle'),
-                description: t('cropDiagnosis.savedDesc'),
-            });
-            setIsLoading(false);
+        // 4. Save the combined result to Firestore
+        const diagnosisData = {
+            userId: user.uid,
+            crop: description.split(' ')[0] || 'Unknown Crop',
+            disease: diagnosisResult.diseaseIdentification.isDiseased ? diagnosisResult.diseaseIdentification.likelyDisease : 'Healthy',
+            status: diagnosisResult.diseaseIdentification.isDiseased ? 'Active' : 'Resolved',
+            progress: diagnosisResult.diseaseIdentification.isDiseased ? 0 : 100,
+            createdAt: serverTimestamp(),
+            imageUrl: imageUrl, // Use the public URL from Firebase Storage
+            isDiseased: diagnosisResult.diseaseIdentification.isDiseased,
+            confidence: diagnosisResult.diseaseIdentification.confidenceLevel,
+            recommendations: diagnosisResult.recommendedActions
         };
-        reader.onerror = (error) => {
-            console.error("Error reading file:", error);
-            toast({
-            variant: "destructive",
-            title: t('cropDiagnosis.fileReadErrorTitle'),
-            description: t('cropDiagnosis.fileReadErrorDesc'),
-            });
-             setIsLoading(false);
-        };
+
+        await addDoc(collection(db, "diagnoses"), diagnosisData);
+
+        toast({
+            title: t('cropDiagnosis.savedTitle'),
+            description: t('cropDiagnosis.savedDesc'),
+        });
+
     } catch (error) {
       console.error("Diagnosis failed:", error);
       toast({
@@ -121,6 +124,7 @@ export default function CropDiagnosisPage() {
         title: t('cropDiagnosis.failedTitle'),
         description: t('cropDiagnosis.failedDesc'),
       });
+    } finally {
       setIsLoading(false);
     }
   };
