@@ -69,7 +69,9 @@ export default function OrganicsSupportPage() {
             return (
             <Card key={card.titleKey} className="flex flex-col">
                 <CardHeader className="flex-row gap-4 items-center">
-                    <Icon className="h-8 w-8 text-primary" />
+                    <div className="p-3 bg-primary/10 rounded-full">
+                        <Icon className="h-8 w-8 text-primary" />
+                    </div>
                     <div>
                         <CardTitle className="font-headline text-xl">{t(card.titleKey as any)}</CardTitle>
                     </div>

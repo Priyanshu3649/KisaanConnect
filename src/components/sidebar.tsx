@@ -9,7 +9,7 @@ import { useTranslation } from "@/context/translation-context";
 import { type NavItem } from "./app-layout";
 import { Leaf } from 'lucide-react';
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 interface SidebarProps {
   navItems: NavItem[];
@@ -51,14 +51,14 @@ export default function Sidebar({ navItems }: SidebarProps) {
         </div>
         <div className="mt-auto p-4 border-t">
             <Card>
-                <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                    <div className="mt-4 text-center">
-                    <h2 className="font-semibold">{t('customerSupport.sidebarTitle')}</h2>
-                    <p className="text-xs text-muted-foreground mt-1 mb-2">{t('customerSupport.sidebarDesc')}</p>
+                <CardHeader>
+                    <CardTitle>{t('customerSupport.sidebarTitle')}</CardTitle>
+                    <CardDescription className="text-xs mt-1">{t('customerSupport.sidebarDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
                     <Link href="/dashboard/customer-support">
                         <Button size="sm" className="w-full">{t('nav.customerSupport')}</Button>
                     </Link>
-                    </div>
                 </CardContent>
             </Card>
         </div>

@@ -420,7 +420,7 @@
     "salesAdvisor.selectCommodity": "Select Commodity",
     "salesAdvisor.selectState": "Select State",
     "salesAdvisor.loading": "Analyzing market data...",
-    "salesAdvisor.noData": "No advice available for the current selection. Please try another market.",
+    "salesAdvisor.noData": "No advice available for the current selection. Please try again later.",
     "salesAdvisor.reco.StrongSell": "Strong Sell",
     "salesAdvisor.reco.Sell": "Sell",
     "salesAdvisor.reco.Hold": "Hold",

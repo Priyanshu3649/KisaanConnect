@@ -52,10 +52,12 @@ const demoRentalsData: Omit<Equipment, 'id'|'distance'|'ownerId'|'ownerName'>[] 
     { name: "Sonalika Thresher", image: "https://placehold.co/600x400.png", price: 1800, location: "Ludhiana, Punjab", available: true, aiHint: "large thresher", coords: { lat: 30.9010, lng: 75.8573 } },
     { name: "Massey Ferguson 241", image: "https://placehold.co/600x400.png", price: 2200, location: "Hisar, Haryana", available: true, aiHint: "red tractor", coords: { lat: 29.1492, lng: 75.7217 } },
     { name: "Crop Sprayer", image: "https://placehold.co/600x400.png", price: 500, location: "Nashik, Maharashtra", available: true, aiHint: "sprayer machine", coords: { lat: 19.9975, lng: 73.7898 } },
+    { name: "Paddy Transplanter", image: "https://placehold.co/600x400.png", price: 3000, location: "Amritsar, Punjab", available: true, aiHint: "paddy transplanter", coords: { lat: 31.6340, lng: 74.8723 } },
+    { name: "Combine Harvester", image: "https://placehold.co/600x400.png", price: 5000, location: "Patiala, Punjab", available: false, aiHint: "combine harvester", coords: { lat: 30.3398, lng: 76.3869 } },
 ];
 
 
-const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment | null, onConfirm: (id: string, date: Date, hours: number) => void, t: (key: any) => string }) => {
+const RentEquipmentDialog = ({ equipment, onConfirm, t }: { equipment: Equipment | null, onConfirm: (id: string, date: Date, hours: number) => void, t: (key: any, options?: any) => string }) => {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [hours, setHours] = useState('8');
     const [totalBill, setTotalBill] = useState(0);
