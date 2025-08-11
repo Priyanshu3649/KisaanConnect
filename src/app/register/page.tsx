@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Leaf, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { auth, db, storage } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -76,6 +76,19 @@ export default function RegisterPage() {
     const { toast } = useToast();
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                router.push('/dashboard');
+            } else {
+                setIsCheckingAuth(false);
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -173,7 +186,7 @@ export default function RegisterPage() {
                 description: t('register.successDesc'),
             });
 
-            router.push('/dashboard');
+            // The onAuthStateChanged listener will handle the redirect.
 
         } catch (error: any) {
             console.error("Registration failed:", error);
@@ -189,6 +202,14 @@ export default function RegisterPage() {
             setIsLoading(false);
         }
     };
+    
+    if (isCheckingAuth) {
+        return (
+          <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+        );
+    }
 
     return (
          <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
