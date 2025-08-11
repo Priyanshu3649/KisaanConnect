@@ -273,6 +273,7 @@ export default function DigitalTwinPage() {
                                 <Alert key={index} className={severityColors[alert.severity]}>
                                         <AlertTriangle className="h-4 w-4" />
                                         <AlertTitle className="capitalize">{alert.type.replace(/_/g, ' ')}</AlertTitle>
+                                        <AlertDescription>{alert.message}</AlertDescription>
                                     </Alert>
                                 )) : <p className="text-sm text-muted-foreground">{t('digitalTwin.noAlerts')}</p>}
                             </div>
