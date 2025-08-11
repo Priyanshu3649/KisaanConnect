@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -42,7 +43,7 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert agricultural data analyst. Your task is to generate a realistic but simulated dashboard summary for a small-holder farmer in India. The data should look plausible and be internally consistent.
 
   Generate the following metrics:
-  - Total Revenue: A realistic annual revenue in Indian Rupees.
+  - Total Revenue: A realistic annual revenue in Indian Rupees, not exceeding 150,000.
   - Revenue Change: A plausible percentage change (+/-) from the previous month.
   - Crop Varieties: A small number of crop varieties the farmer is currently growing.
   - Crop Change: How many more or fewer varieties they are growing compared to last season.
@@ -81,6 +82,14 @@ const dashboardAnalyticsFlow = ai.defineFlow(
 
     // For demo users, generate simulated data.
     const { output } = await prompt({ months: lastSixMonths });
+
+    if (output) {
+      // Enforce the maximum revenue cap
+      if (output.totalRevenue > 150000) {
+        output.totalRevenue = 150000;
+      }
+    }
+    
     return output!;
   }
 );
