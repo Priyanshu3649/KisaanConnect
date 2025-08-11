@@ -175,10 +175,10 @@ export default function DigitalTwinPage() {
         </div>
         
         {isLoading ? (
-            <Card><CardContent className="p-6"><Skeleton className="h-40 w-full" /></CardContent></Card>
+            <Card><CardContent className="p-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
         ) : data && (
             <Card className="bg-primary/5 border-primary/20">
-                <CardHeader>
+                <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2"><Lightbulb /> {t('digitalTwin.bestSuggestion')}</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -197,7 +197,8 @@ export default function DigitalTwinPage() {
                            <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
                            <MetricDisplay icon={TestTube2} label={t('digitalTwin.soilType')} value={data.soilType} />
                             <div>
-                                <p className="text-sm text-center font-semibold">pH Level: <span className="font-bold text-lg">{data.phLevel.toFixed(1)}</span></p>
+                                <p className="text-sm text-muted-foreground">pH Level</p>
+                                <p className="font-bold text-lg">{data.phLevel.toFixed(1)}</p>
                             </div>
                             <div className="space-y-3 pt-2 md:col-span-2">
                                 <h4 className="font-semibold text-center md:text-left">Nutrient Levels (% of optimum)</h4>
