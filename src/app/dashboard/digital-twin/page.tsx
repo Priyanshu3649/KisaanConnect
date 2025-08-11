@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,21 +34,35 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
     </div>
 );
 
+const NutrientDisplay = ({ label, value, color }: { label: string, value: number, color: string }) => (
+    <div className="flex items-center gap-2">
+        <div className="w-10 text-sm font-semibold">{label}</div>
+        <div className="flex-1 bg-muted rounded-full h-2.5">
+            <div className={`${color} h-2.5 rounded-full`} style={{ width: `${value}%` }}></div>
+        </div>
+        <div className="w-10 text-right text-sm font-mono">{value}%</div>
+    </div>
+);
+
 const MetricSkeleton = () => (
     <div className="space-y-4">
-        <div className="flex items-center">
-            <Skeleton className="h-6 w-6 mr-4 rounded-full" />
-            <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-5 w-1/2" />
+        {[...Array(3)].map((_, i) => (
+             <div key={i} className="flex items-center">
+                <Skeleton className="h-6 w-6 mr-4 rounded-full" />
+                <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-5 w-1/2" />
+                </div>
             </div>
-        </div>
-        <div className="flex items-center">
-            <Skeleton className="h-6 w-6 mr-4 rounded-full" />
-            <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-5 w-1/2" />
-            </div>
+        ))}
+        <div className="pt-2 space-y-3">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-10" />
+                    <Skeleton className="h-2.5 flex-1" />
+                    <Skeleton className="h-4 w-10" />
+                </div>
+             ))}
         </div>
     </div>
 );
@@ -85,14 +99,22 @@ export default function DigitalTwinPage() {
     }
   }, 1000); // Debounce API calls by 1 second
 
+  const fetchData = useCallback((lat: number, lng: number) => {
+      setIsLoading(true);
+      setError(null);
+      debouncedFetchData.cancel(); // Cancel any pending debounced call
+      debouncedFetchData(lat, lng);
+  }, [debouncedFetchData]);
+
+
   useEffect(() => {
     // Initial fetch for the default location
-    debouncedFetchData(markerPosition[0], markerPosition[1]);
+    fetchData(markerPosition[0], markerPosition[1]);
   }, []); // Run only once on mount
 
   const handleMarkerChange = (newPosition: [number, number]) => {
       setMarkerPosition(newPosition);
-      debouncedFetchData(newPosition[0], newPosition[1]);
+      fetchData(newPosition[0], newPosition[1]);
   };
   
   // Get user's current location on mount
@@ -177,6 +199,15 @@ export default function DigitalTwinPage() {
                            <MetricDisplay icon={Leaf} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
                            <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
                            <MetricDisplay icon={TestTube2} label={t('digitalTwin.soilType')} value={data.soilType} />
+                            <div className="space-y-3 pt-2">
+                                <h4 className="font-semibold">Nutrient Levels (% of optimum)</h4>
+                                <NutrientDisplay label="Nitrogen (N)" value={data.nitrogenLevel} color="bg-green-500" />
+                                <NutrientDisplay label="Phosphorus (P)" value={data.phosphorusLevel} color="bg-blue-500" />
+                                <NutrientDisplay label="Potassium (K)" value={data.potassiumLevel} color="bg-orange-500" />
+                                <div>
+                                    <p className="text-sm text-center mt-3">pH Level: <span className="font-bold text-lg">{data.phLevel.toFixed(1)}</span></p>
+                                </div>
+                            </div>
                         </>
                      ) : <p className="text-sm text-muted-foreground">{error}</p>}
                 </CardContent>
@@ -188,7 +219,7 @@ export default function DigitalTwinPage() {
                     <CardDescription>{t('digitalTwin.alertsDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? <MetricSkeleton /> : data && (
+                    {isLoading ? <Skeleton className="h-24 w-full" /> : data && (
                         <div className="space-y-4">
                             {data.alerts.length > 0 ? data.alerts.map((alert, index) => (
                                <Alert key={index} className={severityColors[alert.severity]}>
@@ -209,5 +240,3 @@ export default function DigitalTwinPage() {
     </>
   );
 }
-
-    
