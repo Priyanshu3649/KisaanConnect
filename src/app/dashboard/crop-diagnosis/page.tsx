@@ -123,7 +123,6 @@ export default function CropDiagnosisPage() {
         setDiagnosisResult(null);
 
         try {
-            // **THE FIX:** Await the file reading promise
             const dataUri = await readFileAsDataURL(imageFile);
 
             const diagnosisPromise = diagnoseCrop({ photoDataUri: dataUri, language });
@@ -147,9 +146,9 @@ export default function CropDiagnosisPage() {
             console.error("Diagnosis process failed:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage || t('cropDiagnosis.failedDesc') });
+            // Set the result to the default error message from the translation file
             setDiagnosisResult(t('cropDiagnosis.errorResult'));
         } finally {
-            // **THE FIX:** This now reliably runs, ending the loading state.
             setIsDiagnosing(false);
         }
     };
@@ -260,4 +259,3 @@ export default function CropDiagnosisPage() {
         </>
     );
 }
-

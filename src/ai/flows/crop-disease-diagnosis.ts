@@ -87,11 +87,11 @@ const diagnoseCropFlow = ai.defineFlow(
     };
 
     try {
-        // FIX: The input object must be passed to the prompt function.
-        const { output } = await prompt(input);
+        const result = await prompt(input);
+        const output = result.output;
 
         if (!output || !output.analysis) {
-             console.error("AI returned invalid or empty output.");
+             console.error("AI returned invalid or empty output. Raw result:", JSON.stringify(result, null, 2));
              return defaultErrorResponse;
         }
         
