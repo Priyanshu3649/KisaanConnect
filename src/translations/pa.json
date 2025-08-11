@@ -131,6 +131,8 @@
     "profile.weatherSunny": "ਧੁੱਪ",
     "profile.weatherClouds": "ਬੱਦਲ",
 
+    "creditScore.badges.OnTimeSeller": "ਸਮੇਂ ਸਿਰ ਵੇਚਣ ਵਾਲਾ",
+
     "weather.pageDescription": "{{location}} ਲਈ ਵਿਸਤ੍ਰਿਤ ਮੌਸਮ ਦੀ ਭਵਿੱਖਬਾਣੀ।",
     "weather.pageDescriptionNoLocation": "ਤੁਹਾਡੇ ਸਥਾਨ ਲਈ ਵਿਸਤ੍ਰਿਤ ਮੌਸਮ ਦੀ ਭਵਿੱਖਬਾਣੀ।",
     "weather.currentTitle": "ਮੌਜੂਦਾ ਹਾਲਾਤ",

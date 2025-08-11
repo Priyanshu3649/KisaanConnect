@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -134,7 +135,7 @@ const agriCreditScoreFlow = ai.defineFlow(
         },
         badges: [
             { name: "Reliable Renter", icon: "Tractor" },
-            { name: "On-time Seller", icon: "ShieldCheck" },
+            { name: "On Time Seller", icon: "ShieldCheck" },
             { name: "High Yield Hero", icon: "Star" },
         ],
     };

@@ -131,6 +131,8 @@
     "profile.weatherSunny": "ఎండ",
     "profile.weatherClouds": "మేఘాలు",
 
+    "creditScore.badges.OnTimeSeller": "సమయానికి అమ్మకందారుడు",
+
     "weather.pageDescription": "{{location}} కోసం వివరణాత్మక వాతావరణ సూచన.",
     "weather.pageDescriptionNoLocation": "మీ స్థానం కోసం వివరణాత్మక వాతావరణ సూచన.",
     "weather.currentTitle": "ప్రస్తుత పరిస్థితులు",

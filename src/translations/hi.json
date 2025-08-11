@@ -131,6 +131,8 @@
     "profile.weatherSunny": "धूप",
     "profile.weatherClouds": "बादल",
 
+    "creditScore.badges.OnTimeSeller": "समय पर विक्रेता",
+
     "weather.pageDescription": "{{location}} के लिए विस्तृत मौसम पूर्वानुमान।",
     "weather.pageDescriptionNoLocation": "आपके स्थान के लिए विस्तृत मौसम पूर्वानुमान।",
     "weather.currentTitle": "वर्तमान स्थितियाँ",

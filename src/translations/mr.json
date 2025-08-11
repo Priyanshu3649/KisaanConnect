@@ -131,6 +131,8 @@
     "profile.weatherSunny": "निरभ्र",
     "profile.weatherClouds": "ढग",
 
+    "creditScore.badges.OnTimeSeller": "वेळेवर विक्रेता",
+
     "weather.pageDescription": "{{location}} साठी तपशीलवार हवामान अंदाज.",
     "weather.pageDescriptionNoLocation": "तुमच्या स्थानासाठी तपशीलवार हवामान अंदाज.",
     "weather.currentTitle": "सद्य परिस्थिती",

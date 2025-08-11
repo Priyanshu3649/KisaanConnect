@@ -131,6 +131,8 @@
     "profile.weatherSunny": "வெயில்",
     "profile.weatherClouds": "மேகங்கள்",
 
+    "creditScore.badges.OnTimeSeller": "நேரத்திற்கு விற்பவர்",
+
     "weather.pageDescription": "{{location}} க்கான விரிவான வானிலை முன்னறிவிப்பு.",
     "weather.pageDescriptionNoLocation": "உங்கள் இருப்பிடத்திற்கான விரிவான வானிலை முன்னறிவிப்பு.",
     "weather.currentTitle": "தற்போதைய நிலைமைகள்",
