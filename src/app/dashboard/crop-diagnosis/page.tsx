@@ -92,26 +92,7 @@ export default function CropDiagnosisPage() {
         }
     };
 
-    const handleTakePhoto = () => {
-        if (videoRef.current && canvasRef.current) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-                    setFile(file);
-                }
-            }, 'image/jpeg');
-            stopCamera();
-            setIsCameraOpen(false);
-        }
-    };
-
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         if (!imageFile) {
             toast({ variant: 'destructive', title: t('cropDiagnosis.missingInfoTitle'), description: t('cropDiagnosis.missingInfoDesc') });
             return;
@@ -158,7 +139,40 @@ export default function CropDiagnosisPage() {
         } finally {
             setIsDiagnosing(false);
         }
+    }, [imageFile, user, language, toast, t]);
+
+    const handleTakePhoto = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                    setFile(file);
+                    // Trigger submission immediately after setting the file
+                    // We need to use a short timeout to ensure the state has updated before handleSubmit is called.
+                    setTimeout(() => {
+                        handleSubmit();
+                    }, 100);
+                }
+            }, 'image/jpeg');
+            stopCamera();
+            setIsCameraOpen(false);
+        }
     };
+
+    useEffect(() => {
+        // Automatically submit when an imageFile is set and it's a new file.
+        // This is a more robust way to handle the flow from camera capture.
+        if (imageFile) {
+            handleSubmit();
+        }
+    }, [imageFile, handleSubmit]);
+
 
     return (
         <>
