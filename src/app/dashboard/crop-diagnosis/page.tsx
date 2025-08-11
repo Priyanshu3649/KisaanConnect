@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, FileUp, Leaf, Loader2, Bot, AlertTriangle } from 'lucide-react';
+import { Camera, FileUp, Leaf, Loader2, Bot } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -15,7 +15,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { diagnoseCrop } from '@/ai/flows/crop-disease-diagnosis';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // Simple markdown parser for the AI response
 const ParseMarkdown = ({ text }: { text: string }) => {
@@ -92,7 +91,7 @@ export default function CropDiagnosisPage() {
         }
     };
 
-    const handleSubmit = useCallback(async () => {
+    const handleSubmit = async () => {
         if (!imageFile) {
             toast({ variant: 'destructive', title: t('cropDiagnosis.missingInfoTitle'), description: t('cropDiagnosis.missingInfoDesc') });
             return;
@@ -139,7 +138,7 @@ export default function CropDiagnosisPage() {
         } finally {
             setIsDiagnosing(false);
         }
-    }, [imageFile, user, language, toast, t]);
+    };
 
     const handleTakePhoto = () => {
         if (videoRef.current && canvasRef.current) {
@@ -159,15 +158,6 @@ export default function CropDiagnosisPage() {
             setIsCameraOpen(false);
         }
     };
-
-    useEffect(() => {
-        // Automatically submit when an imageFile is set and it's a new file.
-        // This is a more robust way to handle the flow from camera capture.
-        if (imageFile) {
-            handleSubmit();
-        }
-    }, [imageFile, handleSubmit]);
-
 
     return (
         <>
