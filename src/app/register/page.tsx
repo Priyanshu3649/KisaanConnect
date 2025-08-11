@@ -18,6 +18,48 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from '@/context/translation-context';
 
+// Helper function to compress the image before uploading
+async function compressImage(file: File, options: { maxWidth: number; quality: number }): Promise<File> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = document.createElement('img');
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const scaleRatio = options.maxWidth / img.width;
+                canvas.width = options.maxWidth;
+                canvas.height = img.height * scaleRatio;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return reject(new Error('Failed to get canvas context'));
+                }
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) {
+                            return reject(new Error('Canvas to Blob conversion failed'));
+                        }
+                        const compressedFile = new File([blob], file.name, {
+                            type: file.type,
+                            lastModified: Date.now(),
+                        });
+                        resolve(compressedFile);
+                    },
+                    file.type,
+                    options.quality
+                );
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+}
+
+
 export default function RegisterPage() {
     const { t } = useTranslation();
     const [name, setName] = useState('');
@@ -96,21 +138,24 @@ export default function RegisterPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // 2. Upload profile picture to Firebase Storage
+            // 2. Compress profile picture
+            const compressedProfilePic = await compressImage(profilePic, { maxWidth: 400, quality: 0.8 });
+
+            // 3. Upload compressed profile picture to Firebase Storage
             let photoURL = '';
-            if (profilePic) {
-              const storageRef = ref(storage, `profilePictures/${user.uid}/${profilePic.name}`);
-              const snapshot = await uploadBytes(storageRef, profilePic);
+            if (compressedProfilePic) {
+              const storageRef = ref(storage, `profilePictures/${user.uid}/${compressedProfilePic.name}`);
+              const snapshot = await uploadBytes(storageRef, compressedProfilePic);
               photoURL = await getDownloadURL(snapshot.ref);
             }
 
-            // 3. Update user profile in Firebase Auth
+            // 4. Update user profile in Firebase Auth
             await updateProfile(user, {
                 displayName: name,
                 photoURL: photoURL,
             });
             
-            // 4. Create user document in Firestore
+            // 5. Create user document in Firestore
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 name: name,
@@ -241,5 +286,3 @@ export default function RegisterPage() {
         </div>
     );
 }
-
-    
