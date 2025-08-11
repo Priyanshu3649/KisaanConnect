@@ -109,6 +109,9 @@ export default function CropDiagnosisPage() {
             reader.readAsDataURL(imageFile);
             reader.onloadend = async () => {
                 const base64data = reader.result as string;
+                if (!base64data) {
+                    throw new Error("Failed to convert file to base64.");
+                }
                 
                 // Run AI diagnosis and image upload in parallel
                 const diagnosisPromise = diagnoseCrop({ photoDataUri: base64data, language });
@@ -129,13 +132,16 @@ export default function CropDiagnosisPage() {
                 });
                 
                 toast({ title: t('cropDiagnosis.savedTitle'), description: t('cropDiagnosis.savedDesc') });
+                setIsDiagnosing(false);
             };
+            reader.onerror = (error) => {
+                 throw new Error("Error reading file: " + error);
+            }
             
         } catch (error) {
             console.error("Diagnosis failed:", error);
-            toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: t('cropDiagnosis.failedDesc') });
+            toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: String(error) || t('cropDiagnosis.failedDesc') });
             setDiagnosisResult(t('cropDiagnosis.errorResult'));
-        } finally {
             setIsDiagnosing(false);
         }
     };
