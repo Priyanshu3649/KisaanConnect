@@ -7,7 +7,7 @@ import { doc, getDoc, collection, query, where, getDocs, limit } from "firebase/
 import { auth, db } from "@/lib/firebase";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote, Leaf, CheckCircle2 } from "lucide-react";
+import { DollarSign, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote, Leaf, CheckCircle2, ImageIcon } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -301,7 +301,13 @@ export default function DashboardPage() {
                                 <TableRow key={d.id}>
                                     <TableCell>
                                         <div className="font-medium flex items-center gap-2">
-                                            <Image src={d.imageUrl} alt={crop} width={32} height={32} className="rounded-sm object-cover" />
+                                            {d.imageUrl ? (
+                                                <Image src={d.imageUrl} alt={crop} width={32} height={32} className="rounded-sm object-cover" />
+                                            ) : (
+                                                <div className="w-8 h-8 flex items-center justify-center bg-muted rounded-sm">
+                                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                </div>
+                                            )}
                                             {crop}
                                         </div>
                                     </TableCell>
@@ -434,5 +440,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
