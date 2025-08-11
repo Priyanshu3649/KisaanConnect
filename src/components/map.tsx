@@ -152,27 +152,24 @@ const MapComponent = ({ markerPosition, setMarkerPosition, onSetLocation }: MapC
     return (
         <div className="relative h-full w-full">
             <div className="absolute top-2 left-2 z-[1000] w-[calc(100%-1rem)] sm:max-w-md flex flex-col gap-2">
-                 <div className="flex flex-col sm:flex-row gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg">
-                    <div className="flex-grow flex items-center gap-2">
-                        <Search className="h-4 w-4 text-muted-foreground shrink-0"/>
+                 <div className="flex gap-2 p-2 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg">
+                    <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground shrink-0"/>
                         <Input
                             type="text"
                             placeholder="Search for a location..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                            className="pl-9 pr-24"
                         />
-                    </div>
-                     <div className="flex gap-2 justify-end">
-                        <Button type="button" size="sm" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating}>
-                            <LocateFixed className="h-4 w-4 mr-2" />
-                            Locate
-                        </Button>
-                         <Button type="button" size="sm" onClick={handleSetLocationClick}>
+                         <Button type="button" size="sm" onClick={handleSetLocationClick} className="absolute right-1 top-1/2 -translate-y-1/2 h-8">
                             <Pin className="h-4 w-4 mr-2" />
-                            Set Location
+                            Set
                         </Button>
                     </div>
+                    <Button type="button" size="icon" variant="outline" onClick={handleGetCurrentLocation} disabled={isLocating}>
+                        <LocateFixed className="h-4 w-4" />
+                    </Button>
                 </div>
                 { (isSearching || suggestions.length > 0) && (
                      <div className="bg-background/80 backdrop-blur-sm rounded-lg shadow-lg max-h-60 overflow-y-auto">
