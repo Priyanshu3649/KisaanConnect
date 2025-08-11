@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "@/context/translation-context";
 import { getWeather, type GetWeatherOutput } from "@/ai/flows/get-weather";
 import { getAgriCreditScore, type AgriCreditScoreOutput } from "@/ai/flows/agri-credit-score";
+import { getDashboardAnalytics, type DashboardAnalyticsOutput } from "@/ai/flows/dashboard-analytics";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -35,23 +36,6 @@ interface Diagnosis {
     progress: number;
     createdAt: Timestamp;
     userId: string;
-}
-interface Rental {
-    equipment: string;
-    type: 'Lending' | 'Borrowing';
-    due: string;
-}
-interface DashboardData {
-    totalRevenue: number;
-    revenueChange: number;
-    activeDiagnosesCount: number;
-    resolvedThisWeek: number;
-    cropVarieties: number;
-    cropChange: number;
-    activeRentalsCount: number;
-    lendingCount: number;
-    borrowingCount: 1,
-    activeRentals: Rental[];
 }
 
 const demoDiagnosesData: Omit<Diagnosis, 'id' | 'createdAt' | 'userId'>[] = [
@@ -94,12 +78,11 @@ export default function DashboardPage() {
   const [user, authLoading] = useAuthState(auth);
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<DashboardAnalyticsOutput | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
   const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
-  const [isDataLoading, setIsDataLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
   const { t, language } = useTranslation();
   const { toast } = useToast();
@@ -115,85 +98,48 @@ export default function DashboardPage() {
     }
 
     const fetchAllData = async () => {
-        setIsDataLoading(true);
-
-        try {
-            // Fetch user doc and static data in parallel
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-
+        
+        // Fetch user doc and static data in parallel
+        getDoc(doc(db, "users", user.uid)).then(userDoc => {
             if (userDoc.exists()) {
                 setUserData(userDoc.data() as UserData);
             }
+        });
+        
+        getDashboardAnalytics({ userId: user.uid, language }).then(setAnalyticsData).catch(err => {
+            console.error("Error fetching analytics data:", err);
+            toast({ variant: "destructive", title: "Error", description: "Could not load dashboard analytics." });
+        });
 
-            // Fetch static dashboard data
-            const activeDiagnosesCount = recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || 0;
-            const data: DashboardData = {
-                totalRevenue: 45231.89,
-                revenueChange: 20.1,
-                activeDiagnosesCount: activeDiagnosesCount,
-                resolvedThisWeek: 1, 
-                cropVarieties: 12,
-                cropChange: 2,
-                activeRentalsCount: 2,
-                lendingCount: 1,
-                borrowingCount: 1,
-                activeRentals: [
-                    { equipment: "John Deere Tractor", type: "Lending", due: "3 days" },
-                    { equipment: "Power Tiller", type: "Borrowing", due: "5 days" },
-                ]
-            };
-            setDashboardData(data);
-            setIsDataLoading(false);
+        getAgriCreditScore({ userId: user.uid, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
 
-            // Fetch weather data
-            setLocationStatus("Fetching location...");
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    setLocationStatus("Fetching weather...");
-                    const weather = await getWeather({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                    });
-                    setWeatherData(weather);
-                    setLocationStatus(weather ? `Weather for your location` : "Could not fetch weather.");
-                },
-                async (error) => {
-                    console.warn(`Geolocation error: ${error.message}. Falling back to default.`);
-                    setLocationStatus("Using default location...");
-                    const weather = await getWeather({ location: "Delhi" });
-                    setWeatherData(weather);
-                    setLocationStatus(weather ? "Weather for Delhi" : "Could not fetch weather for Delhi.");
-                },
-                { timeout: 10000 }
-            );
-
-        } catch (error) {
-            console.error("Error fetching dashboard data: ", error);
-            setIsDataLoading(false);
-        }
+        // Fetch weather data
+        setLocationStatus("Fetching location...");
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                setLocationStatus("Fetching weather...");
+                const weather = await getWeather({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+                setWeatherData(weather);
+                setLocationStatus(weather ? `Weather for your location` : "Could not fetch weather.");
+            },
+            async (error) => {
+                console.warn(`Geolocation error: ${error.message}. Falling back to default.`);
+                setLocationStatus("Using default location...");
+                const weather = await getWeather({ location: "Delhi" });
+                setWeatherData(weather);
+                setLocationStatus(weather ? "Weather for Delhi" : "Could not fetch weather for Delhi.");
+            },
+            { timeout: 10000 }
+        );
     };
 
-    const fetchCreditScore = async () => {
-        if (!user) return;
-        setIsCreditScoreLoading(true);
-        try {
-            const creditScore = await getAgriCreditScore({ userId: user.uid, language: language });
-            setCreditScoreData(creditScore);
-        } catch (error) {
-            console.error("Error fetching credit score:", error);
-            toast({ variant: 'destructive', title: "Error", description: "Could not load Agri-Credit Score."});
-        } finally {
-            setIsCreditScoreLoading(false);
-        }
-    };
-
-    if (!diagnosesLoading && user) {
-      fetchAllData();
-      fetchCreditScore();
-    }
-  }, [user, authLoading, router, diagnosesLoading, language, toast]);
+    fetchAllData();
+  }, [user, authLoading, router, language, toast]);
   
-  const isLoading = authLoading || isDataLoading;
+  const isLoading = authLoading || !analyticsData;
 
   const getGreeting = () => {
     if (authLoading || !userData) {
@@ -282,9 +228,9 @@ export default function DashboardPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹{dashboardData?.totalRevenue.toLocaleString('en-IN') || '0'}</div>
+                <div className="text-2xl font-bold">₹{analyticsData?.totalRevenue.toLocaleString('en-IN') || '0'}</div>
                 <p className="text-xs text-muted-foreground">
-                  +{dashboardData?.revenueChange || '0'}% {t('profile.fromLastMonth')}
+                  +{analyticsData?.revenueChange || '0'}% {t('profile.fromLastMonth')}
                 </p>
               </CardContent>
             </Card>
@@ -296,7 +242,8 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="text-2xl font-bold">+{recentDiagnoses?.filter(d => (d as Diagnosis).status === 'Active').length || '0'}</div>
                 <p className="text-xs text-muted-foreground">
-                  {dashboardData?.resolvedThisWeek || '0'} {t('profile.resolvedThisWeek')}
+                  {/* This could be added to analytics later */}
+                  1 {t('profile.resolvedThisWeek')}
                 </p>
               </CardContent>
             </Card>
@@ -306,9 +253,9 @@ export default function DashboardPage() {
                 <Wheat className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dashboardData?.cropVarieties || '0'} {t('profile.varieties')}</div>
+                <div className="text-2xl font-bold">{analyticsData?.cropVarieties || '0'} {t('profile.varieties')}</div>
                 <p className="text-xs text-muted-foreground">
-                  +{dashboardData?.cropChange || '0'} {t('profile.sinceLastSeason')}
+                  +{analyticsData?.cropChange || '0'} {t('profile.sinceLastSeason')}
                 </p>
               </CardContent>
             </Card>
@@ -318,9 +265,9 @@ export default function DashboardPage() {
                 <Tractor className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+{dashboardData?.activeRentalsCount || '0'} {t('profile.active')}</div>
-                <p className="text-xs text-muted-foreground">
-                  {dashboardData?.lendingCount || '0'} {t('profile.lending')}, {dashboardData?.borrowingCount || '0'} {t('profile.borrowing')}
+                <div className="text-2xl font-bold">+2 {t('profile.active')}</div>
+                 <p className="text-xs text-muted-foreground">
+                  1 {t('profile.lending')}, 1 {t('profile.borrowing')}
                 </p>
               </CardContent>
             </Card>
@@ -336,7 +283,7 @@ export default function DashboardPage() {
                 <CardDescription>{t('profile.earningsDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <EarningsChart />
+                {isLoading ? <Skeleton className="h-[200px] w-full" /> : <EarningsChart data={analyticsData.monthlyEarnings} />}
               </CardContent>
             </Card>
              <Card>
@@ -356,26 +303,28 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {dashboardData?.activeRentals.map((rental, index) => (
-                      <TableRow key={index}>
+                    <TableRow>
                         <TableCell>
-                          <div className="font-medium">{rental.equipment}</div>
+                          <div className="font-medium">John Deere Tractor</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={rental.type === 'Lending' ? 'border-green-500 text-green-500' : 'border-blue-500 text-blue-500'}>
-                            {t(`profile.rentalType${rental.type}` as any)}
+                          <Badge variant="outline" className='border-green-500 text-green-500'>
+                            {t(`profile.rentalTypeLending` as any)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">{rental.due}</TableCell>
+                        <TableCell className="text-right">3 days</TableCell>
                       </TableRow>
-                    ))}
-                    {(!dashboardData || dashboardData.activeRentals.length === 0) && (
-                        <TableRow>
-                            <TableCell colSpan={3} className="text-center h-24">
-                                {t('profile.noActiveRentals')}
-                            </TableCell>
-                        </TableRow>
-                    )}
+                      <TableRow>
+                        <TableCell>
+                          <div className="font-medium">Power Tiller</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className='border-blue-500 text-blue-500'>
+                            {t(`profile.rentalTypeBorrowing` as any)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">5 days</TableCell>
+                      </TableRow>
                   </TableBody>
                 </Table>
               </CardContent>

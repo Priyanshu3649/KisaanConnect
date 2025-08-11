@@ -11,3 +11,4 @@ import '@/ai/flows/check-scheme-eligibility.ts';
 import '@/ai/flows/customer-support-ivr.ts';
 import '@/ai/flows/agri-credit-score.ts';
 import '@/ai/flows/sales-advisor.ts';
+import '@/ai/flows/dashboard-analytics.ts';

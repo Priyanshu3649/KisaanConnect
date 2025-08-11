@@ -7,14 +7,9 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-const data = [
-  { month: "Jan", earnings: 1860 },
-  { month: "Feb", earnings: 3050 },
-  { month: "Mar", earnings: 2370 },
-  { month: "Apr", earnings: 730 },
-  { month: "May", earnings: 2090 },
-  { month: "Jun", earnings: 2140 },
-]
+interface EarningsChartProps {
+    data: { month: string; earnings: number }[];
+}
 
 const chartConfig = {
   earnings: {
@@ -23,7 +18,7 @@ const chartConfig = {
   },
 }
 
-export default function EarningsChart() {
+export default function EarningsChart({ data }: EarningsChartProps) {
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
         <BarChart accessibilityLayer data={data}>
