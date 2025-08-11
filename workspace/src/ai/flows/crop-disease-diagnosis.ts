@@ -2,128 +2,103 @@
 'use server';
 
 /**
- * @fileOverview Diagnoses crop diseases from uploaded images using AI.
+ * @fileOverview An AI agriculture expert that diagnoses crop issues from an image.
  *
- * - diagnoseCropDisease - A function that handles the crop disease diagnosis process.
- * - DiagnoseCropDiseaseInput - The input type for the diagnoseCropDisease function.
- * - DiagnoseCropDiseaseOutput - The return type for the diagnoseCropDisease function.
+ * - diagnoseCrop - A function that handles the crop diagnosis process.
+ * - DiagnoseCropInput - The input type for the diagnoseCrop function.
+ * - DiagnoseCropOutput - The return type for the diagnoseCrop function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
-const DiagnoseCropDiseaseInputSchema = z.object({
+const DiagnoseCropInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
       "A photo of a crop, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  cropDescription: z.string().optional().describe('An optional description of the crop and its symptoms.'),
-  language: z.string().describe('The language for the response (e.g., "en" or "hi").'),
+  language: z.string().describe('The language for the response (e.g., "en", "hi", "pa", "mr", "ta", "te").'),
 });
-export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
+export type DiagnoseCropInput = z.infer<typeof DiagnoseCropInputSchema>;
 
-const DiagnoseCropDiseaseOutputSchema = z.object({
-  diseaseIdentification: z.object({
-    isDiseased: z.boolean().describe('Whether or not the crop is diseased.'),
-    likelyDisease: z.string().describe('The likely disease affecting the crop.'),
-    confidenceLevel: z
-      .number()
-      .min(0)
-      .max(1)
-      .describe('The confidence level of the disease identification (a decimal value between 0.0 and 1.0).'),
-  }),
-  recommendedActions: z.array(z.string()).describe('Recommended actions to take to address the disease.'),
+const DiagnoseCropOutputSchema = z.object({
+    analysis: z.string().describe("The formatted analysis of the crop, including detection, treatment, and prevention tips.")
 });
-export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
+export type DiagnoseCropOutput = z.infer<typeof DiagnoseCropOutputSchema>;
 
-export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Promise<DiagnoseCropDiseaseOutput> {
-  return diagnoseCropDiseaseFlow(input);
+
+export async function diagnoseCrop(input: DiagnoseCropInput): Promise<DiagnoseCropOutput> {
+  return diagnoseCropFlow(input);
 }
 
-// Step 1: Define a "lax" prompt that accepts any JSON object from the AI.
-// This prevents the flow from crashing if the AI returns a slightly incorrect format (e.g., "95%" instead of 0.95).
-const laxPrompt = ai.definePrompt({
-  name: 'diagnoseCropDiseaseLaxPrompt',
-  input: {schema: DiagnoseCropDiseaseInputSchema},
-  output: {schema: z.any()}, // Accept any format to prevent crashes.
-  prompt: `You are an expert in crop diseases. Your response must be in the specified language: {{language}}.
 
-You will use the provided photo and optional description to diagnose the crop and identify potential diseases.
+const prompt = ai.definePrompt({
+  name: 'diagnoseCropPrompt',
+  input: { schema: DiagnoseCropInputSchema },
+  // Use a flexible output schema initially to prevent crashes if the model deviates.
+  output: { schema: z.object({ analysis: z.string() }) }, 
+  model: 'googleai/gemini-1.5-flash-latest',
+  prompt: `You are an AI agriculture expert integrated into the KisaanConnect application.
+The user will provide a single input: an image of a crop.
 
-Photo: {{media url=photoDataUri}}
-{{#if cropDescription}}
-Description: {{{cropDescription}}}
-{{/if}}
+When receiving an image, you must:
+1. Identify the crop species.
+2. Detect and name any visible plant diseases, pest damage, or nutrient deficiencies.
+3. Provide:
+   - Disease or issue name (if any).
+   - Confidence score as a percentage.
+4. Offer immediate treatment recommendations, covering both:
+   - Organic remedies.
+   - Chemical treatment options (with safe usage guidance).
+5. Suggest preventive measures for the future.
+6. If diagnosis confidence is below 60% or the image is unclear, politely request a clearer image.
+7. Output all responses in the user’s preferred language (the user's language is {{language}}).
+8. Keep explanations simple, clear, and under 200 words.
+9. Always format the output as a single string field in a JSON object:
 
-Based on the image and any available description, determine if the crop is diseased. If so, identify the likely disease and your confidence level.
-CRITICAL: The confidenceLevel must be a decimal number between 0.0 and 1.0 (for example 0.95 for 95%). Do NOT return a percentage string.
-Also suggest some recommended actions to remediate the disease. All parts of your response must be in {{language}}.
-
-Your output MUST be a JSON object with the following structure:
 {
-  "diseaseIdentification": {
-    "isDiseased": boolean,
-    "likelyDisease": string,
-    "confidenceLevel": number // e.g., 0.95
-  },
-  "recommendedActions": [string]
+  "analysis": "**Crop Detected:** <crop name>\\n**Disease/Issue:** <name or \"None detected\">\\n**Confidence:** <percentage>%\\n**Treatment (Organic):** <steps>\\n**Treatment (Chemical):** <steps>\\n**Prevention Tips:** <steps>"
 }
+
+Do not include unrelated information. Focus only on actionable, practical, and farmer-friendly advice.
+
+Image to analyze:
+{{media url=photoDataUri}}
 `,
 });
 
-// Step 2: Create a flow that uses the lax prompt, then manually cleans and validates the data.
-const diagnoseCropDiseaseFlow = ai.defineFlow(
+const diagnoseCropFlow = ai.defineFlow(
   {
-    name: 'diagnoseCropDiseaseFlow',
-    inputSchema: DiagnoseCropDiseaseInputSchema,
-    outputSchema: DiagnoseCropDiseaseOutputSchema,
+    name: 'diagnoseCropFlow',
+    inputSchema: DiagnoseCropInputSchema,
+    outputSchema: DiagnoseCropOutputSchema,
   },
-  async input => {
+  async (input) => {
+    // This default error response will be sent back if anything in the try block fails.
+    // This guarantees the UI never gets stuck loading.
     const defaultErrorResponse = {
-        diseaseIdentification: {
-            isDiseased: true,
-            likelyDisease: "Analysis Failed",
-            confidenceLevel: 0,
-        },
-        recommendedActions: [
-            "The AI model failed to analyze the image correctly.",
-            "This can happen due to an unexpected format in the AI's response or a temporary issue.",
-            "Please try uploading the image again.",
-            "If the problem persists, try a different image or add a more detailed description."
-        ]
+        analysis: `**Crop Detected:** Unable to Analyze
+**Disease/Issue:** Analysis Failed
+**Confidence:** 0%
+**Treatment (Organic):** The AI model could not process the image. This might be due to a temporary issue or an unsupported image format.
+**Treatment (Chemical):** Please try uploading the image again. If the problem persists, try a different, clearer image of the affected crop.
+**Prevention Tips:** Ensure the photo is well-lit and focuses on the affected area of the plant (leaves, stem, etc.).`
     };
 
     try {
-        const {output: rawOutput} = await laxPrompt(input);
+        const { output } = await prompt(input);
+
+        if (!output || !output.analysis) {
+             console.error("AI returned invalid or empty output.");
+             return defaultErrorResponse;
+        }
         
-        if (!rawOutput) {
-            console.error("AI returned no output.");
-            return defaultErrorResponse;
-        }
+        // Final validation before returning.
+        return DiagnoseCropOutputSchema.parse(output);
 
-        // Manually clean the data
-        let confidence = rawOutput.diseaseIdentification?.confidenceLevel;
-        if (typeof confidence === 'string' && confidence.includes('%')) {
-            confidence = parseFloat(confidence.replace('%', '')) / 100;
-        }
-
-        const cleanedData = {
-            ...rawOutput,
-            diseaseIdentification: {
-                ...rawOutput.diseaseIdentification,
-                confidenceLevel: confidence,
-            }
-        };
-
-        // Step 3: Validate the cleaned data against the strict schema.
-        // If this fails, the catch block will handle it.
-        const validatedOutput = DiagnoseCropDiseaseOutputSchema.parse(cleanedData);
-        return validatedOutput;
-
-    } catch(error) {
-        console.error("Error in diagnoseCropDiseaseFlow:", error);
-        // If anything fails (AI call, cleaning, validation), return a default error object.
+    } catch (error) {
+        console.error("Error in diagnoseCropFlow:", error);
         return defaultErrorResponse;
     }
   }
