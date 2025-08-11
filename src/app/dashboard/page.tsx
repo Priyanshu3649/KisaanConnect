@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, limit } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,11 +123,13 @@ export default function DashboardPage() {
         const diagnosesQuery = query(
             collection(db, 'diagnoses'),
             where('userId', '==', user.uid),
-            orderBy('createdAt', 'desc'),
-            limit(3)
+            limit(10) // Fetch latest 10, then sort client-side
         );
         getDocs(diagnosesQuery).then(snapshot => {
-            setDiagnoses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Diagnosis[]);
+            const userDiagnoses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Diagnosis[];
+            // Sort client-side to avoid needing a composite index
+            userDiagnoses.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            setDiagnoses(userDiagnoses.slice(0, 3)); // Get the most recent 3
         }).finally(() => setIsDiagnosesLoading(false));
 
 
