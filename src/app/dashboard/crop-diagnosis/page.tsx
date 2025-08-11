@@ -37,12 +37,28 @@ const ParseMarkdown = ({ text }: { text: string }) => {
     );
 };
 
+// Function to read a file as a Data URL using a Promise
+const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result);
+            } else {
+                reject(new Error('Failed to read file as Data URL.'));
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
+
 export default function CropDiagnosisPage() {
     const { t, language } = useTranslation();
     const [user] = useAuthState(auth);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [dataUri, setDataUri] = useState<string | null>(null);
     const [isDiagnosing, setIsDiagnosing] = useState(false);
     const [diagnosisResult, setDiagnosisResult] = useState<string | null>(null);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -64,7 +80,6 @@ export default function CropDiagnosisPage() {
         const reader = new FileReader();
         reader.onloadend = () => {
             setPreviewUrl(reader.result as string);
-            setDataUri(reader.result as string);
         };
         reader.readAsDataURL(file);
     }
@@ -95,7 +110,7 @@ export default function CropDiagnosisPage() {
     };
 
     const handleSubmit = async () => {
-        if (!imageFile || !user || !dataUri) {
+        if (!imageFile || !user) {
             toast({
                 variant: 'destructive',
                 title: t('cropDiagnosis.missingInfoTitle'),
@@ -108,6 +123,9 @@ export default function CropDiagnosisPage() {
         setDiagnosisResult(null);
 
         try {
+            // **THE FIX:** Await the file reading promise
+            const dataUri = await readFileAsDataURL(imageFile);
+
             const diagnosisPromise = diagnoseCrop({ photoDataUri: dataUri, language });
             const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
             const uploadPromise = uploadBytes(storageRef, imageFile);
@@ -131,6 +149,7 @@ export default function CropDiagnosisPage() {
             toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage || t('cropDiagnosis.failedDesc') });
             setDiagnosisResult(t('cropDiagnosis.errorResult'));
         } finally {
+            // **THE FIX:** This now reliably runs, ending the loading state.
             setIsDiagnosing(false);
         }
     };
@@ -241,3 +260,4 @@ export default function CropDiagnosisPage() {
         </>
     );
 }
+
