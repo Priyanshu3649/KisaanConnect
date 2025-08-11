@@ -188,7 +188,7 @@ export default function InventoryPage() {
                                     </TableCell>
                                 </TableRow>
                             )}) : (
-                                <TableRow key="no-items-row">
+                                <TableRow>
                                     <TableCell colSpan={5} className="text-center h-48">{t('inventory.noItems')}</TableCell>
                                 </TableRow>
                             )}
@@ -294,5 +294,3 @@ const InventoryFormDialog = ({ isOpen, onOpenChange, onSave, item, t }: { isOpen
         </Dialog>
     );
 };
-
-    
