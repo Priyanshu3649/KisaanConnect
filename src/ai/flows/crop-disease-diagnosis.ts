@@ -87,6 +87,7 @@ const diagnoseCropFlow = ai.defineFlow(
     };
 
     try {
+        // FIX: The input object must be passed to the prompt function.
         const { output } = await prompt(input);
 
         if (!output || !output.analysis) {
