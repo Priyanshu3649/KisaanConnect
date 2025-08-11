@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -43,11 +44,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   return (
     <AudioPlayerProvider>
-     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-background">
+     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <Sidebar navItems={navItems} />
-      <div className="flex flex-col">
+      <div className="flex flex-col max-h-screen overflow-hidden">
         <AppHeader navItems={navItems} />
-        <main className="flex-grow p-4 md:p-6 pb-20 md:pb-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
             {children}
         </main>
         {isMobile && <BottomNav navItems={mobileNavItems} />}

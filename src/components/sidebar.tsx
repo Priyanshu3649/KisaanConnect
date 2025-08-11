@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -19,7 +20,7 @@ export default function Sidebar({ navItems }: SidebarProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="hidden border-r bg-muted/40 md:block">
+    <aside className="hidden h-screen flex-col border-r bg-muted/40 md:flex">
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-16 items-center border-b px-4 lg:px-6">
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
@@ -62,6 +63,6 @@ export default function Sidebar({ navItems }: SidebarProps) {
             </Card>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
