@@ -161,7 +161,7 @@ export default function DigitalTwinPage() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Satellite /> {t('digitalTwin.satelliteView')}</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Satellite /> Sentinel-2 Style View</CardTitle>
                     <CardDescription>{t('digitalTwin.satelliteViewDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">

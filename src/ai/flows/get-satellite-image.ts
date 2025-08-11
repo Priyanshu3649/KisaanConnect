@@ -38,13 +38,13 @@ const getSatelliteImageFlow = ai.defineFlow(
 
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
-      prompt: `Generate a realistic, high-resolution satellite image of agricultural fields. The style should be similar to Google Earth satellite view.
+      prompt: `Generate a realistic, high-resolution satellite image of agricultural fields in the style of a Sentinel-2 multispectral satellite image. The image should be suitable for agricultural analysis.
       
       Location context (do not show these in the image):
       - Latitude: ${input.latitude}
       - Longitude: ${input.longitude}
 
-      The image should show a mix of healthy green fields, some patches of brown or yellowing crops, and some fallow (empty) land. Include some irrigation channels or small farm roads if possible. Do not include any text, labels, or UI elements on the image.`,
+      The image should show a mix of healthy green fields, some patches of brown or yellowing crops (indicating stress or harvest), and some fallow (empty) land. Include some irrigation channels or small farm roads if possible. The colors should be slightly enhanced to show variations in crop health, similar to a false-color composite used for vegetation analysis. Do not include any text, labels, or UI elements on the image.`,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
       },
