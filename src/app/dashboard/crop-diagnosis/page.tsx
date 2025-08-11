@@ -31,20 +31,7 @@ const fileToDataUri = (file: File): Promise<string> => {
     });
 };
 
-const dataUriToBlob = (dataUri: string): Blob => {
-    const byteString = atob(dataUri.split(',')[1]);
-    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ab], { type: mimeString });
-};
-
-
 export default function CropDiagnosisPage() {
-  const [file, setFile] = useState<File | null>(null);
   const [dataUri, setDataUri] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
@@ -100,14 +87,13 @@ export default function CropDiagnosisPage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      setFile(selectedFile);
       setResult(null);
       const uri = await fileToDataUri(selectedFile);
       setDataUri(uri);
     }
   };
 
-  const handleCapture = async () => {
+  const handleCapture = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -119,18 +105,15 @@ export default function CropDiagnosisPage() {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const capturedDataUri = canvas.toDataURL('image/jpeg');
         setDataUri(capturedDataUri);
-        setFile(null); // It's not a file from disk
         setIsCameraOpen(false);
-        await handleSubmit(null, capturedDataUri); // Directly submit after capture
     }
   };
 
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement> | null, capturedUri?: string) => {
-    e?.preventDefault();
-    const photoDataUri = capturedUri || dataUri;
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-    if (!photoDataUri) {
+    if (!dataUri) {
       toast({
         variant: "destructive",
         title: t('cropDiagnosis.missingInfoTitle'),
@@ -151,14 +134,14 @@ export default function CropDiagnosisPage() {
 
     try {
         const diagnosisPromise = diagnoseCropDisease({
-            photoDataUri,
+            photoDataUri: dataUri,
             cropDescription: description,
             language: language,
         });
 
         const uploadPromise = (async () => {
             const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}.jpg`);
-            await uploadString(storageRef, photoDataUri, 'data_url');
+            await uploadString(storageRef, dataUri, 'data_url');
             return getDownloadURL(storageRef);
         })();
         
@@ -265,12 +248,12 @@ export default function CropDiagnosisPage() {
                         <DialogFooter>
                             <Button onClick={handleCapture} disabled={!hasCameraPermission}>
                                 <Camera className="mr-2 h-4 w-4"/>
-                                Capture & Analyze
+                                Capture
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-              <Button type="submit" disabled={isLoading || !dataUri} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button type="submit" disabled={isLoading || !dataUri} className="w-full sm:flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
