@@ -18,6 +18,8 @@ import { getDashboardAnalytics, type DashboardAnalyticsOutput } from "@/ai/flows
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 
 interface UserData {
