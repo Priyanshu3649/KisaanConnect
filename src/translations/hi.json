@@ -296,7 +296,7 @@
     "digitalTwin.noAlerts": "इस समय कोई अलर्ट नहीं। आपका खेत स्वस्थ दिखता है।",
     "digitalTwin.errorTitle": "त्रुटि",
     "digitalTwin.errorDesc": "फ़ील्ड डेटा लोड नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।",
-    "digitalTwin.satelliteView": "एआई सेंटिनल-2 स्टाइल व्यू",
+    "digitalTwin.satelliteView": "सैटेलाइट व्यू",
     "digitalTwin.satelliteViewDesc": "एक उत्पन्न दृश्य प्रतिनिधित्व।",
     "digitalTwin.soilAnalysis": "मृदा विश्लेषण",
     "digitalTwin.soilAnalysisDesc": "मुख्य पोषक तत्व और संरचना मेट्रिक्स।",

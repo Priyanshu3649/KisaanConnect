@@ -296,7 +296,7 @@
     "digitalTwin.noAlerts": "இந்த நேரத்தில் எச்சரிக்கைகள் இல்லை. உங்கள் புலம் ஆரோக்கியமாகத் தெரிகிறது.",
     "digitalTwin.errorTitle": "பிழை",
     "digitalTwin.errorDesc": "புலத் தரவை ஏற்ற முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.",
-    "digitalTwin.satelliteView": "AI சென்டினல்-2 ஸ்டைல் பார்வை",
+    "digitalTwin.satelliteView": "செயற்கைக்கோள் பார்வை",
     "digitalTwin.satelliteViewDesc": "ஒரு உருவாக்கப்பட்ட காட்சி பிரதிநிதித்துவம்.",
     "digitalTwin.soilAnalysis": "மண் பகுப்பாய்வு",
     "digitalTwin.soilAnalysisDesc": "முக்கிய ஊட்டச்சத்து மற்றும் கலவை அளவீடுகள்.",

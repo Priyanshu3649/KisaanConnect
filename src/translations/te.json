@@ -296,7 +296,7 @@
     "digitalTwin.noAlerts": "ప్రస్తుతానికి హెచ్చరికలు లేవు. మీ ఫీల్డ్ ఆరోగ్యంగా కనిపిస్తుంది.",
     "digitalTwin.errorTitle": "లోపం",
     "digitalTwin.errorDesc": "ఫీల్డ్ డేటాను లోడ్ చేయలేకపోయాము. దయచేసి తరువాత మళ్లీ ప్రయత్నించండి.",
-    "digitalTwin.satelliteView": "AI ఉపగ్రహ వీక్షణ",
+    "digitalTwin.satelliteView": "శాటిలైట్ వీక్షణ",
     "digitalTwin.satelliteViewDesc": "ఒక సృష్టించబడిన దృశ్య ప్రాతినిధ్యం.",
     "digitalTwin.soilAnalysis": "నేల విశ్లేషణ",
     "digitalTwin.soilAnalysisDesc": "కీలక పోషక మరియు కూర్పు కొలమానాలు.",
