@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
@@ -22,6 +23,8 @@ export default function RegisterPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [phone, setPhone] = useState('');
+    const [pan, setPan] = useState('');
     const [aadhar, setAadhar] = useState('');
     const [location, setLocation] = useState('');
     const [profilePic, setProfilePic] = useState<File | null>(null);
@@ -49,6 +52,17 @@ export default function RegisterPage() {
         const formattedValue = value.slice(0, 12).replace(/(\d{4})(?=\d)/g, '$1 ');
         setAadhar(formattedValue);
     };
+    
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        setPhone(value.slice(0, 10));
+    };
+
+    const handlePanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.toUpperCase();
+        setPan(value.slice(0, 10));
+    };
+
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -56,6 +70,14 @@ export default function RegisterPage() {
 
         if (password.length < 6) {
             setError(t('register.passwordLengthError'));
+            return;
+        }
+        if (phone.length !== 10) {
+            setError("Please enter a valid 10-digit phone number.");
+            return;
+        }
+        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+            setError("Please enter a valid PAN number format (e.g., ABCDE1234F).");
             return;
         }
         if (aadhar.replace(/\s/g, '').length !== 12) {
@@ -93,6 +115,8 @@ export default function RegisterPage() {
                 uid: user.uid,
                 name: name,
                 email: email,
+                phone: phone,
+                pan: pan,
                 aadhar: aadhar.replace(/\s/g, ''), // Store unformatted
                 location: location,
                 photoURL: photoURL,
@@ -178,6 +202,16 @@ export default function RegisterPage() {
                                 <Label htmlFor="password">{t('register.password')}</Label>
                                 <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
                             </div>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2 text-left">
+                                    <Label htmlFor="phone">Phone Number</Label>
+                                    <Input id="phone" placeholder="9876543210" value={phone} onChange={handlePhoneChange} required />
+                                </div>
+                                <div className="space-y-2 text-left">
+                                    <Label htmlFor="pan">PAN Number</Label>
+                                    <Input id="pan" placeholder="ABCDE1234F" value={pan} onChange={handlePanChange} required />
+                                </div>
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2 text-left">
                                     <Label htmlFor="aadhar">{t('register.aadhar')}</Label>
@@ -207,3 +241,5 @@ export default function RegisterPage() {
         </div>
     );
 }
+
+    
