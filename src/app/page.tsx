@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Leaf } from 'lucide-react';
+import { AlertCircle, Leaf } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { auth } from '@/lib/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { useTranslation } from '@/context/translation-context';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Extend window type to include recaptchaVerifier
 declare global {
@@ -61,6 +62,7 @@ export default function LoginPage() {
   }, [router]);
   
   const setupRecaptcha = () => {
+    if (typeof window === 'undefined') return;
     if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
     }
@@ -89,18 +91,19 @@ export default function LoginPage() {
 
   const handleSendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (!/^\d{10}$/.test(phone)) {
-      toast({
-        variant: "destructive",
-        title: t('login.invalidPhoneTitle'),
-        description: t('login.invalidPhoneDesc'),
-      });
-      return;
+    if (!/^\+?([0-9\s-]{10,15})$/.test(phone)) {
+        toast({
+            variant: "destructive",
+            title: t('login.invalidPhoneTitle'),
+            description: t('login.invalidPhoneDesc'),
+        });
+        return;
     }
     setIsLoading(true);
     
     try {
-      const phoneNumber = "+91" + phone;
+      // Use the full phone number as entered for test numbers, otherwise prepend +91
+      const phoneNumber = phone.startsWith('+') ? phone : "+91" + phone;
       const appVerifier = window.recaptchaVerifier!;
       if (!appVerifier) {
           throw new Error("reCAPTCHA not initialized. Please wait a moment and try again.");
@@ -236,14 +239,21 @@ export default function LoginPage() {
                 <TabsTrigger value="email">{t('login.email')}</TabsTrigger>
               </TabsList>
               <TabsContent value="phone" className="space-y-4 pt-4">
+                <Alert variant="default" className="border-blue-500/50 bg-blue-500/10 text-foreground text-left">
+                    <AlertCircle className="h-4 w-4 text-blue-500" />
+                    <AlertTitle className="text-blue-400">Developer Note</AlertTitle>
+                    <AlertDescription className="text-blue-400/80 text-xs">
+                       Phone sign-in requires a paid Firebase plan. For testing, use a test number like `+1 650-555-3434` with OTP `123456`. You must add these to the Firebase Console under Auth -&gt; Sign-in method -&gt; Phone.
+                    </AlertDescription>
+                </Alert>
                 <div className="grid gap-2">
                   <Label htmlFor="phone">{t('login.phoneNumber')}</Label>
-                  <Input id="phone" type="tel" placeholder="9876543210" required value={phone} onChange={(e) => setPhone(e.target.value)} disabled={otpSent} />
+                  <Input id="phone" type="tel" placeholder="+1 650-555-3434" required value={phone} onChange={(e) => setPhone(e.target.value)} disabled={otpSent} />
                 </div>
                 {otpSent && (
                   <div className="grid gap-2">
                     <Label htmlFor="otp">{t('login.otp')}</Label>
-                    <Input id="otp" type="password" required value={otp} onChange={(e) => setOtp(e.target.value)} />
+                    <Input id="otp" type="password" required value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="123456" />
                     <div className="text-xs text-muted-foreground text-right">
                         {t('login.noOtp')}{" "}
                         <button onClick={handleResendOtp} className="underline underline-offset-4 hover:text-primary">
