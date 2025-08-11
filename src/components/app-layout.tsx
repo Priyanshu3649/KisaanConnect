@@ -19,6 +19,7 @@ export interface NavItem {
 const navItems: NavItem[] = [
   { href: "/dashboard", icon: "LayoutDashboard", labelKey: "nav.dashboard" },
   { href: "/dashboard/digital-twin", icon: "Map", labelKey: "nav.digitalTwin" },
+  { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
   { href: "/dashboard/weather", icon: "CloudSun", labelKey: "nav.weather" },
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
   { href: "/dashboard/sales-advisor", icon: "TrendingUp", labelKey: "nav.salesAdvisor" },
@@ -33,10 +34,10 @@ const navItems: NavItem[] = [
 // For mobile, we have a different set for the bottom nav
 const mobileNavItems: NavItem[] = [
     { href: "/dashboard", icon: "UserRound", labelKey: "nav.profile" },
+    { href: "/dashboard/crop-diagnosis", icon: "Leaf", labelKey: "nav.cropDiagnosis" },
     { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
     { href: "/dashboard/sales-advisor", icon: "TrendingUp", labelKey: "nav.salesAdvisor" },
     { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
-    { href: "/dashboard/weather", icon: "CloudSun", labelKey: "nav.weather" },
 ];
 
 

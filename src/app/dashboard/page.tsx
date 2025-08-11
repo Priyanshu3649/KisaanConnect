@@ -3,11 +3,11 @@
 
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote } from "lucide-react";
+import { DollarSign, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote, Leaf, CheckCircle2 } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -20,12 +20,22 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
+import Link from "next/link";
+import Image from "next/image";
 
 interface UserData {
   name?: string;
   location?: string;
   email?: string;
+}
+
+interface Diagnosis {
+    id: string;
+    imageUrl: string;
+    result: string;
+    createdAt: {
+        seconds: number;
+    }
 }
 
 const demoUsers = [
@@ -62,6 +72,14 @@ const BadgeIcon = ({ iconName, ...props }: { iconName: "Tractor" | "ShieldCheck"
     return <Icon {...props} />;
 };
 
+const parseDiagnosis = (result: string) => {
+    const cropMatch = result.match(/\*\*Crop Detected:\*\*\s*(.*)/);
+    const issueMatch = result.match(/\*\*Disease\/Issue:\*\*\s*(.*)/);
+    return {
+        crop: cropMatch ? cropMatch[1].trim() : "Unknown",
+        issue: issueMatch ? issueMatch[1].trim() : "N/A"
+    };
+};
 
 export default function DashboardPage() {
   const [user, authLoading] = useAuthState(auth);
@@ -70,7 +88,9 @@ export default function DashboardPage() {
   const [analyticsData, setAnalyticsData] = useState<DashboardAnalyticsOutput | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
   const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
+  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
+  const [isDiagnosesLoading, setIsDiagnosesLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const { t, language } = useTranslation();
   const { toast } = useToast();
@@ -99,6 +119,17 @@ export default function DashboardPage() {
         });
 
         getAgriCreditScore({ userId: user.uid, email: user.email || undefined, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
+
+        const diagnosesQuery = query(
+            collection(db, 'diagnoses'),
+            where('userId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(3)
+        );
+        getDocs(diagnosesQuery).then(snapshot => {
+            setDiagnoses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Diagnosis[]);
+        }).finally(() => setIsDiagnosesLoading(false));
+
 
         // Fetch weather data
         setLocationStatus("Fetching location...");
@@ -198,17 +229,17 @@ export default function DashboardPage() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('profile.equipmentRentals')}</CardTitle>
-                <Tractor className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{isDemoUser ? '+2' : '0'} {t('profile.active')}</div>
-                 <p className="text-xs text-muted-foreground">
-                  {isDemoUser ? `1 ${t('profile.lending')}, 1 ${t('profile.borrowing')}` : `0 ${t('profile.lending')}, 0 ${t('profile.borrowing')}`}
-                </p>
-              </CardContent>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
+                    <Leaf className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{diagnoses.length} {t('profile.active')}</div>
+                    <p className="text-xs text-muted-foreground">
+                        {t('profile.diagnosesThisWeek')}
+                    </p>
+                </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -239,49 +270,50 @@ export default function DashboardPage() {
             </Card>
              <Card>
               <CardHeader>
-                <CardTitle>{t('profile.activeRentals')}</CardTitle>
+                <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
                 <CardDescription>
-                  {t('profile.rentalsDescription')}
+                  {t('profile.diagnosesDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                  <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('profile.rentalsEquipment')}</TableHead>
-                      <TableHead>{t('profile.rentalsType')}</TableHead>
-                      <TableHead className="text-right">{t('profile.rentalsDue')}</TableHead>
+                      <TableHead>{t('profile.diagnosesCrop')}</TableHead>
+                      <TableHead>{t('profile.diagnosesIssue')}</TableHead>
+                      <TableHead className="text-right">{t('profile.diagnosesDate')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isDemoUser ? (
-                    <>
-                        <TableRow>
-                            <TableCell>
-                            <div className="font-medium">John Deere Tractor</div>
-                            </TableCell>
-                            <TableCell>
-                            <Badge variant="outline" className='border-green-500 text-green-500'>
-                                {t(`profile.rentalTypeLending` as any)}
-                            </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">3 days</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell>
-                            <div className="font-medium">Power Tiller</div>
-                            </TableCell>
-                            <TableCell>
-                            <Badge variant="outline" className='border-blue-500 text-blue-500'>
-                                {t(`profile.rentalTypeBorrowing` as any)}
-                            </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">5 days</TableCell>
-                        </TableRow>
-                    </>
+                    {isDiagnosesLoading ? (
+                        <TableRow><TableCell colSpan={3} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                    ) : diagnoses.length > 0 ? (
+                        diagnoses.map(d => {
+                            const { crop, issue } = parseDiagnosis(d.result);
+                            return (
+                                <TableRow key={d.id}>
+                                    <TableCell>
+                                        <div className="font-medium flex items-center gap-2">
+                                            <Image src={d.imageUrl} alt={crop} width={32} height={32} className="rounded-sm object-cover" />
+                                            {crop}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={issue === "None detected" ? "default" : "destructive"}>
+                                            {issue}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs text-muted-foreground">
+                                        {new Date(d.createdAt.seconds * 1000).toLocaleDateString()}
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={3} className="text-center h-24">{t('profile.noActiveRentals')}</TableCell>
+                            <TableCell colSpan={3} className="text-center h-24">
+                                {t('profile.noDiagnoses')} <Link href="/dashboard/crop-diagnosis" className="text-primary underline">Get started</Link>
+                            </TableCell>
                         </TableRow>
                     )}
                   </TableBody>
