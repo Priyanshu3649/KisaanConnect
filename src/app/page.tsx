@@ -60,29 +60,31 @@ export default function LoginPage() {
     return () => unsubscribe();
   }, [router]);
   
-  useEffect(() => {
-      if (isCheckingAuth) return; // Don't run if we are still checking auth state
-      if (window.recaptchaVerifier) return; // Don't re-initialize
-      
-      try {
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-              'size': 'invisible',
-              'callback': (response: any) => {
+  const setupRecaptcha = () => {
+    if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+    }
+    try {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response: any) => {
                 // reCAPTCHA solved, allow signInWithPhoneNumber.
-              },
-              'expired-callback': () => {
-                // Response expired. Ask user to solve reCAPTCHA again.
+            },
+            'expired-callback': () => {
                 toast({ variant: "destructive", title: "reCAPTCHA Expired", description: "Please try sending the OTP again."});
-              }
-          });
-          // Render the verifier
-          window.recaptchaVerifier.render();
-      } catch (error) {
-          console.error("Error initializing RecaptchaVerifier", error);
-          toast({ variant: "destructive", title: "Could not initialize reCAPTCHA", description: "Please refresh the page."});
-      }
+            }
+        });
+    } catch (error) {
+        console.error("Error initializing RecaptchaVerifier", error);
+        toast({ variant: "destructive", title: "Could not initialize reCAPTCHA", description: "Please refresh the page."});
+    }
+  };
 
-  }, [isCheckingAuth, toast]);
+  useEffect(() => {
+      if (!isCheckingAuth) {
+        setupRecaptcha();
+      }
+  }, [isCheckingAuth]);
 
 
   const handleSendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -119,14 +121,7 @@ export default function LoginPage() {
         description: error.message || t('login.otpFailedDesc'),
       });
        // Reset reCAPTCHA on error
-       if (window.recaptchaVerifier) {
-         window.recaptchaVerifier.render().then(function(widgetId) {
-           // @ts-ignore
-           if (typeof grecaptcha !== 'undefined') {
-                grecaptcha.reset(widgetId);
-           }
-         });
-       }
+       setupRecaptcha();
     } finally {
       setIsLoading(false);
     }
