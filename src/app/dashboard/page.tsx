@@ -73,6 +73,12 @@ const BadgeIcon = ({ iconName, ...props }: { iconName: "Tractor" | "ShieldCheck"
 };
 
 const parseDiagnosis = (result: string) => {
+    if (!result) {
+        return {
+            crop: "Unknown",
+            issue: "N/A"
+        };
+    }
     const cropMatch = result.match(/\*\*Crop Detected:\*\*\s*(.*)/);
     const issueMatch = result.match(/\*\*Disease\/Issue:\*\*\s*(.*)/);
     return {
@@ -122,13 +128,12 @@ export default function DashboardPage() {
 
         const diagnosesQuery = query(
             collection(db, 'diagnoses'),
-            where('userId', '==', user.uid),
-            limit(10) // Fetch latest 10, then sort client-side
+            where('userId', '==', user.uid)
         );
         getDocs(diagnosesQuery).then(snapshot => {
             const userDiagnoses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Diagnosis[];
             // Sort client-side to avoid needing a composite index
-            userDiagnoses.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            userDiagnoses.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             setDiagnoses(userDiagnoses.slice(0, 3)); // Get the most recent 3
         }).finally(() => setIsDiagnosesLoading(false));
 
@@ -306,7 +311,7 @@ export default function DashboardPage() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right text-xs text-muted-foreground">
-                                        {new Date(d.createdAt.seconds * 1000).toLocaleDateString()}
+                                        {d.createdAt?.seconds ? new Date(d.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
                                     </TableCell>
                                 </TableRow>
                             )
@@ -429,3 +434,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
