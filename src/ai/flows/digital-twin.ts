@@ -18,6 +18,12 @@ const DigitalTwinInputSchema = z.object({
 });
 export type DigitalTwinInput = z.infer<typeof DigitalTwinInputSchema>;
 
+const CostEstimationSchema = z.object({
+    seeds: z.number().describe('Estimated cost for seeds in INR per acre.'),
+    irrigation: z.number().describe('Estimated cost for irrigation in INR per acre.'),
+    fertilizers: z.number().describe('Estimated cost for fertilizers in INR per acre.'),
+});
+
 const DigitalTwinOutputSchema = z.object({
   soilHealthScore: z.number().min(0).max(100).describe('The overall soil health score (0-100).'),
   moistureLevel: z.number().min(0).max(100).describe('The current soil moisture percentage.'),
@@ -32,12 +38,16 @@ const DigitalTwinOutputSchema = z.object({
     value: z.number().describe('The numerical value of the yield.'),
     unit: z.string().describe('The unit of the yield (e.g., "quintal/acre").'),
   })).describe('Expected yield for various suitable crops.'),
-  bestSuggestion: z.string().describe('The single most important suggestion or takeaway for the farmer.'),
+  bestSuggestion: z.string().describe('The single most important suggestion or takeaway for the farmer, including the best crop to sow based on past trends.'),
   alerts: z.array(z.object({
       type: z.enum(['weed', 'infestation', 'nutrient_deficiency', 'water_stress', 'heat_stress']),
       severity: z.enum(['low', 'medium', 'high']),
       message: z.string().describe('A descriptive message about the alert.'),
   })).describe('A list of alerts for the field (live farm updates).'),
+  costEstimation: CostEstimationSchema.describe('Cost estimation for conventional farming.'),
+  organicCostEstimation: CostEstimationSchema.describe('Cost estimation for organic farming.'),
+  cropFailureProbability: z.number().min(0).max(100).describe('The probability of crop failure as a percentage.'),
+  expectedProfit: z.number().describe('The expected profit in INR per acre.'),
 });
 export type DigitalTwinOutput = z.infer<typeof DigitalTwinOutputSchema>;
 
@@ -78,11 +88,15 @@ const digitalTwinFlow = ai.defineFlow(
                     { crop: "Wheat", value: 48, unit: "quintal/acre" },
                     { crop: "Rice", value: 42, unit: "quintal/acre" },
                 ],
-                bestSuggestion: "Soil nitrogen levels are optimal for wheat. Consider a top-dressing of urea after the first irrigation cycle to maximize tillering.",
+                bestSuggestion: "Past trends show high yield for Wheat (HD-3086 variety) in this region. Soil nitrogen levels are optimal; consider a top-dressing of urea after the first irrigation cycle to maximize tillering.",
                 alerts: [
                     { type: 'water_stress', severity: 'low', message: 'Slightly low moisture detected. Irrigation recommended for wheat crop within 3 days.'},
                     { type: 'weed', severity: 'low', message: 'Low density of Phalaris minor detected. Monitor and control before it spreads.'},
-                ]
+                ],
+                costEstimation: { seeds: 2200, irrigation: 4500, fertilizers: 5500 },
+                organicCostEstimation: { seeds: 3500, irrigation: 4000, fertilizers: 7500 },
+                cropFailureProbability: 15,
+                expectedProfit: 45000,
             };
         }
 
@@ -101,11 +115,15 @@ const digitalTwinFlow = ai.defineFlow(
                     { crop: "Millet", value: 8, unit: "quintal/acre" },
                     { crop: "Mustard", value: 7, unit: "quintal/acre" },
                 ],
-                bestSuggestion: "High soil pH may reduce nutrient availability. Incorporating organic matter like compost can help buffer pH and improve water retention.",
+                bestSuggestion: "Millet (Bajra) is highly recommended due to its drought resistance, fitting past climate trends. High soil pH may reduce nutrient availability; incorporating organic matter can improve water retention.",
                 alerts: [
                     { type: 'water_stress', severity: 'high', message: 'Critical water stress detected. Immediate irrigation is required to prevent crop loss.' },
                     { type: 'heat_stress', severity: 'medium', message: 'High temperatures expected. Ensure crops are not water-stressed to mitigate heat damage.' },
-                ]
+                ],
+                costEstimation: { seeds: 800, irrigation: 2500, fertilizers: 2000 },
+                organicCostEstimation: { seeds: 1200, irrigation: 2200, fertilizers: 3500 },
+                cropFailureProbability: 35,
+                expectedProfit: 12000,
             };
         }
 
@@ -124,11 +142,15 @@ const digitalTwinFlow = ai.defineFlow(
                     { crop: "Onion", value: 100, unit: "quintal/acre"},
                     { crop: "Sugarcane", value: 400, unit: "ton/acre"}, // Note different unit
                 ],
-                bestSuggestion: "High humidity poses a risk of fungal diseases for grapes. Ensure proper ventilation and consider a prophylactic organic spray.",
+                bestSuggestion: "Onion cultivation shows strong profitability in recent years. High humidity poses a risk of fungal diseases; ensure proper ventilation and consider prophylactic organic spray.",
                 alerts: [
                     { type: 'nutrient_deficiency', severity: 'medium', message: 'Signs of potassium deficiency observed. Consider appropriate fertilization for sugarcane.'},
                     { type: 'infestation', severity: 'low', message: 'Minor thrips infestation detected in onion crop. Monitor population.'}
-                ]
+                ],
+                costEstimation: { seeds: 5000, irrigation: 8000, fertilizers: 7000 },
+                organicCostEstimation: { seeds: 7500, irrigation: 7000, fertilizers: 9000 },
+                cropFailureProbability: 18,
+                expectedProfit: 95000,
             };
         }
         
@@ -146,10 +168,14 @@ const digitalTwinFlow = ai.defineFlow(
                 { crop: "Soybean", value: 10, unit: "quintal/acre" },
                 { crop: "Cotton", value: 8, unit: "quintal/acre" },
             ],
-            bestSuggestion: "High temperatures expected next week. Ensure cotton crop has adequate moisture to mitigate heat stress.",
+            bestSuggestion: "Soybean is the suggested crop based on market trends and soil suitability. High temperatures are expected next week, ensure adequate moisture to mitigate heat stress.",
             alerts: [
                 { type: 'heat_stress', severity: 'medium', message: 'High temperatures expected. Ensure adequate shading for sensitive crops.'},
-            ]
+            ],
+            costEstimation: { seeds: 1800, irrigation: 3500, fertilizers: 4000 },
+            organicCostEstimation: { seeds: 2800, irrigation: 3000, fertilizers: 6000 },
+            cropFailureProbability: 22,
+            expectedProfit: 28000,
         };
     }
     

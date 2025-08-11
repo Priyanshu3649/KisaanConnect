@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sprout, AlertTriangle, Loader2, TestTube2, Droplets, Wheat, Leaf, MapPinned, Lightbulb, Satellite } from "lucide-react";
+import { Sprout, AlertTriangle, Loader2, TestTube2, Droplets, Wheat, Leaf, MapPinned, Lightbulb, Satellite, DollarSign, TrendingUp, ShieldAlert, Recycle } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { getSatelliteImage, type GetSatelliteImageOutput } from "@/ai/flows/get-satellite-image";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -60,6 +61,15 @@ const MetricSkeleton = () => (
     </div>
 );
 
+const CostRow = ({ label, conventional, organic }: { label: string, conventional: number, organic: number }) => (
+    <div className="flex justify-between items-center py-2 border-b last:border-none">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <div className="flex gap-4 font-mono text-sm w-1/2 justify-between">
+            <span>₹{conventional.toLocaleString('en-IN')}</span>
+            <span>₹{organic.toLocaleString('en-IN')}</span>
+        </div>
+    </div>
+);
 
 export default function DigitalTwinPage() {
   const { t } = useTranslation();
@@ -127,6 +137,7 @@ export default function DigitalTwinPage() {
         fetchData(markerPosition[0], markerPosition[1]); // Fetch for default location
       }
     );
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
   
 
@@ -181,53 +192,95 @@ export default function DigitalTwinPage() {
             </Card>
         )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="lg:col-span-2">
-                <CardHeader><CardTitle className="flex items-center gap-2"><TestTube2 /> {t('digitalTwin.soilAnalysis')}</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                     {isLoading ? <MetricSkeleton /> : data ? (
-                        <div className="grid md:grid-cols-2 gap-x-6 gap-y-4">
-                           <MetricDisplay icon={Leaf} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
-                           <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
-                           <MetricDisplay icon={TestTube2} label={t('digitalTwin.soilType')} value={data.soilType} />
-                            <div>
-                                <p className="text-sm text-muted-foreground">pH Level</p>
-                                <p className="font-bold text-lg">{data.phLevel.toFixed(1)}</p>
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-3 space-y-6">
+                 <Card>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><TestTube2 /> {t('digitalTwin.soilAnalysis')}</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        {isLoading ? <MetricSkeleton /> : data ? (
+                            <div className="grid md:grid-cols-2 gap-x-6 gap-y-4">
+                            <MetricDisplay icon={Leaf} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
+                            <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
+                            <MetricDisplay icon={TestTube2} label={t('digitalTwin.soilType')} value={data.soilType} />
+                                <div>
+                                    <p className="text-sm text-muted-foreground">pH Level</p>
+                                    <p className="font-bold text-lg">{data.phLevel.toFixed(1)}</p>
+                                </div>
+                                <div className="space-y-3 pt-2 md:col-span-2">
+                                    <h4 className="font-semibold text-center md:text-left">Nutrient Levels (% of optimum)</h4>
+                                    <NutrientDisplay label="Nitrogen (N)" value={data.nitrogenLevel} color="bg-green-500" />
+                                    <NutrientDisplay label="Phosphorus (P)" value={data.phosphorusLevel} color="bg-blue-500" />
+                                    <NutrientDisplay label="Potassium (K)" value={data.potassiumLevel} color="bg-orange-500" />
+                                </div>
                             </div>
-                            <div className="space-y-3 pt-2 md:col-span-2">
-                                <h4 className="font-semibold text-center md:text-left">Nutrient Levels (% of optimum)</h4>
-                                <NutrientDisplay label="Nitrogen (N)" value={data.nitrogenLevel} color="bg-green-500" />
-                                <NutrientDisplay label="Phosphorus (P)" value={data.phosphorusLevel} color="bg-blue-500" />
-                                <NutrientDisplay label="Potassium (K)" value={data.potassiumLevel} color="bg-orange-500" />
+                        ) : <p className="text-sm text-muted-foreground">{error}</p>}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><DollarSign /> Financial Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="w-full h-48" /> : data ? (
+                            <Tabs defaultValue="costs">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="costs">Cost Analysis</TabsTrigger>
+                                    <TabsTrigger value="profit">Profit & Risk</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="costs" className="pt-4">
+                                     <div className="flex justify-between items-center mb-2 px-1">
+                                        <span className="text-sm font-semibold invisible">Item</span>
+                                        <div className="flex gap-4 font-semibold text-sm w-1/2 justify-between">
+                                            <span>Conventional</span>
+                                            <span>Organic</span>
+                                        </div>
+                                    </div>
+                                    <CostRow label="Seeds Cost" conventional={data.costEstimation.seeds} organic={data.organicCostEstimation.seeds} />
+                                    <CostRow label="Irrigation Cost" conventional={data.costEstimation.irrigation} organic={data.organicCostEstimation.irrigation} />
+                                    <CostRow label="Fertilizer Cost" conventional={data.costEstimation.fertilizers} organic={data.organicCostEstimation.fertilizers} />
+                                    <div className="flex justify-between items-center pt-3 mt-2 border-t">
+                                        <span className="text-sm font-bold">Total Cost (per acre)</span>
+                                        <div className="flex gap-4 font-bold text-sm w-1/2 justify-between">
+                                            <span>₹{(data.costEstimation.seeds + data.costEstimation.irrigation + data.costEstimation.fertilizers).toLocaleString('en-IN')}</span>
+                                            <span>₹{(data.organicCostEstimation.seeds + data.organicCostEstimation.irrigation + data.organicCostEstimation.fertilizers).toLocaleString('en-IN')}</span>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="profit" className="pt-4 space-y-4">
+                                    <MetricDisplay icon={TrendingUp} label="Expected Profit (per acre)" value={`₹${data.expectedProfit.toLocaleString('en-IN')}`} />
+                                    <MetricDisplay icon={ShieldAlert} label="Crop Failure Probability" value={`${data.cropFailureProbability}%`} />
+                                </TabsContent>
+                            </Tabs>
+                        ) : <p className="text-sm text-destructive">{error}</p>}
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="lg:col-span-2 space-y-6">
+                <Card>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><Sprout /> {t('digitalTwin.recommendedCrops')}</CardTitle></CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                        {isLoading ? <Skeleton className="w-full h-16" /> : data ? (
+                            data.recommendedCrops.map(crop => <div key={crop} className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">{crop}</div>)
+                        ) : <p className="text-sm text-destructive">{error}</p>}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle /> {t('digitalTwin.alertsTitle')}</CardTitle></CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="h-24 w-full" /> : data && (
+                            <div className="space-y-4">
+                                {data.alerts.length > 0 ? data.alerts.map((alert, index) => (
+                                <Alert key={index} className={severityColors[alert.severity]}>
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <AlertTitle className="capitalize">{alert.type.replace(/_/g, ' ')}</AlertTitle>
+                                    </Alert>
+                                )) : <p className="text-sm text-muted-foreground">{t('digitalTwin.noAlerts')}</p>}
                             </div>
-                        </div>
-                     ) : <p className="text-sm text-muted-foreground">{error}</p>}
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Sprout /> {t('digitalTwin.recommendedCrops')}</CardTitle></CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                    {isLoading ? <Skeleton className="w-full h-16" /> : data ? (
-                        data.recommendedCrops.map(crop => <div key={crop} className="bg-secondary text-secondary-foreground rounded-full px-3 py-1 text-sm">{crop}</div>)
-                    ) : <p className="text-sm text-destructive">{error}</p>}
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle /> {t('digitalTwin.alertsTitle')}</CardTitle></CardHeader>
-                <CardContent>
-                    {isLoading ? <Skeleton className="h-24 w-full" /> : data && (
-                        <div className="space-y-4">
-                            {data.alerts.length > 0 ? data.alerts.map((alert, index) => (
-                               <Alert key={index} className={severityColors[alert.severity]}>
-                                    <AlertTriangle className="h-4 w-4" />
-                                    <AlertTitle className="capitalize">{alert.type.replace(/_/g, ' ')}</AlertTitle>
-                                </Alert>
-                            )) : <p className="text-sm text-muted-foreground">{t('digitalTwin.noAlerts')}</p>}
-                        </div>
-                    )}
-                    {error && !isLoading && <p className="text-sm text-destructive">{error}</p>}
-                </CardContent>
-            </Card>
+                        )}
+                        {error && !isLoading && <p className="text-sm text-destructive">{error}</p>}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       </div>
     </>
