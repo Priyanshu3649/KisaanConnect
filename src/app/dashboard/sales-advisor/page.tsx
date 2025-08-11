@@ -161,7 +161,7 @@ export default function SalesAdvisorPage() {
                                         borderColor: 'hsl(var(--border))' 
                                     }}
                                     labelFormatter={(label) => format(parseISO(label), 'PPP')}
-                                    formatter={(value) => [`₹${value}`, 'Price']}
+                                    formatter={(value) => [`₹${value}`, t('mandi.price')]}
                                 />
                                 <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} />
                             </LineChart>
@@ -217,3 +217,5 @@ export default function SalesAdvisorPage() {
     </>
   );
 }
+
+    

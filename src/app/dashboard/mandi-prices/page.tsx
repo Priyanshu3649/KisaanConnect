@@ -79,8 +79,8 @@ export default function MandiPricesPage() {
         console.error("Failed to fetch mandi prices:", error);
         toast({
           variant: "destructive",
-          title: "Failed to load prices",
-          description: "Could not fetch market data. Please try again later.",
+          title: t('mandi.errorTitle'),
+          description: t('mandi.errorDesc'),
         });
         setMandiData([]); // Clear data on error
       } finally {
@@ -89,7 +89,7 @@ export default function MandiPricesPage() {
     };
 
     fetchPrices();
-  }, [selectedCommodity, selectedState, selectedMarket, toast]);
+  }, [selectedCommodity, selectedState, selectedMarket, toast, t]);
   
   const processedData = useMemo(() => {
     if (!mandiData || mandiData.length === 0) return [];
@@ -139,7 +139,7 @@ export default function MandiPricesPage() {
         <div className="flex gap-2 flex-wrap">
             <Select value={selectedCommodity} onValueChange={setSelectedCommodity} disabled={isLoading}>
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Select Commodity" />
+                <SelectValue placeholder={t('mandi.selectCommodity')} />
               </SelectTrigger>
               <SelectContent>
                 {commodities.map(item => (
@@ -149,7 +149,7 @@ export default function MandiPricesPage() {
             </Select>
             <Select value={selectedState} onValueChange={setSelectedState} disabled={isLoading}>
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Select State" />
+                <SelectValue placeholder={t('mandi.selectState')} />
               </SelectTrigger>
               <SelectContent>
                 {allStates.map(item => (
@@ -174,11 +174,11 @@ export default function MandiPricesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Commodity</TableHead>
-                <TableHead className="text-right">Min Price (₹)</TableHead>
-                <TableHead className="text-right">Max Price (₹)</TableHead>
-                <TableHead className="text-right font-semibold text-foreground">Model Price (₹)</TableHead>
+                <TableHead>{t('mandi.date')}</TableHead>
+                <TableHead>{t('mandi.commodity')}</TableHead>
+                <TableHead className="text-right">{t('mandi.minPrice')}</TableHead>
+                <TableHead className="text-right">{t('mandi.maxPrice')}</TableHead>
+                <TableHead className="text-right font-semibold text-foreground">{t('mandi.modelPrice')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -187,7 +187,7 @@ export default function MandiPricesPage() {
                   <TableCell colSpan={5} className="h-48 text-center">
                     <div className="flex justify-center items-center gap-2">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        <span className="text-muted-foreground">Fetching latest prices...</span>
+                        <span className="text-muted-foreground">{t('mandi.loading')}</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -213,8 +213,8 @@ export default function MandiPricesPage() {
                     <TableCell colSpan={5} className="h-48 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                             <TrendingUp className="h-10 w-10" />
-                            <p>No data available for this selection.</p>
-                            <p className="text-xs">Please select a valid commodity, state, and market.</p>
+                            <p>{t('mandi.noData')}</p>
+                            <p className="text-xs">{t('mandi.noDataDesc')}</p>
                         </div>
                     </TableCell>
                 </TableRow>
@@ -226,3 +226,5 @@ export default function MandiPricesPage() {
     </>
   );
 }
+
+    

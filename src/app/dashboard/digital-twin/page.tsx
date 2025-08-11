@@ -91,8 +91,8 @@ export default function DigitalTwinPage() {
     setData(null);
 
     toast({
-        title: "Analyzing Location",
-        description: `Fetching data for coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+        title: t('digitalTwin.analyzingToastTitle'),
+        description: `${t('digitalTwin.analyzingToastDesc')} ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
     });
 
     try {
@@ -194,28 +194,28 @@ export default function DigitalTwinPage() {
             )}
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><DollarSign /> Financial Analysis</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><DollarSign /> {t('digitalTwin.financialAnalysisTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? <Skeleton className="w-full h-48" /> : data ? (
                         <Tabs defaultValue="costs">
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="costs">Cost Analysis</TabsTrigger>
-                                <TabsTrigger value="profit">Profit & Risk</TabsTrigger>
+                                <TabsTrigger value="costs">{t('digitalTwin.costAnalysisTab')}</TabsTrigger>
+                                <TabsTrigger value="profit">{t('digitalTwin.profitAndRiskTab')}</TabsTrigger>
                             </TabsList>
                             <TabsContent value="costs" className="pt-4">
                                     <div className="flex justify-between items-center mb-2 px-1">
                                     <span className="text-sm font-semibold invisible">Item</span>
                                     <div className="flex gap-4 font-semibold text-sm w-1/2 justify-between">
-                                        <span>Conventional</span>
-                                        <span>Organic</span>
+                                        <span>{t('digitalTwin.conventional')}</span>
+                                        <span>{t('digitalTwin.organic')}</span>
                                     </div>
                                 </div>
-                                <CostRow label="Seeds Cost" conventional={data.costEstimation.seeds} organic={data.organicCostEstimation.seeds} />
-                                <CostRow label="Irrigation Cost" conventional={data.costEstimation.irrigation} organic={data.organicCostEstimation.irrigation} />
-                                <CostRow label="Fertilizer Cost" conventional={data.costEstimation.fertilizers} organic={data.organicCostEstimation.fertilizers} />
+                                <CostRow label={t('digitalTwin.seedsCost')} conventional={data.costEstimation.seeds} organic={data.organicCostEstimation.seeds} />
+                                <CostRow label={t('digitalTwin.irrigationCost')} conventional={data.costEstimation.irrigation} organic={data.organicCostEstimation.irrigation} />
+                                <CostRow label={t('digitalTwin.fertilizerCost')} conventional={data.costEstimation.fertilizers} organic={data.organicCostEstimation.fertilizers} />
                                 <div className="flex justify-between items-center pt-3 mt-2 border-t">
-                                    <span className="text-sm font-bold">Total Cost (per acre)</span>
+                                    <span className="text-sm font-bold">{t('digitalTwin.totalCost')}</span>
                                     <div className="flex gap-4 font-bold text-sm w-1/2 justify-between">
                                         <span>₹{(data.costEstimation.seeds + data.costEstimation.irrigation + data.costEstimation.fertilizers).toLocaleString('en-IN')}</span>
                                         <span>₹{(data.organicCostEstimation.seeds + data.organicCostEstimation.irrigation + data.organicCostEstimation.fertilizers).toLocaleString('en-IN')}</span>
@@ -223,8 +223,8 @@ export default function DigitalTwinPage() {
                                 </div>
                             </TabsContent>
                             <TabsContent value="profit" className="pt-4 space-y-4">
-                                <MetricDisplay icon={TrendingUp} label="Expected Profit (per acre)" value={`₹${data.expectedProfit.toLocaleString('en-IN')}`} />
-                                <MetricDisplay icon={ShieldAlert} label="Crop Failure Probability" value={`${data.cropFailureProbability}%`} />
+                                <MetricDisplay icon={TrendingUp} label={t('digitalTwin.expectedProfit')} value={`₹${data.expectedProfit.toLocaleString('en-IN')}`} />
+                                <MetricDisplay icon={ShieldAlert} label={t('digitalTwin.cropFailureRisk')} value={`${data.cropFailureProbability}%`} />
                             </TabsContent>
                         </Tabs>
                     ) : <p className="text-sm text-destructive">{error}</p>}
@@ -243,11 +243,11 @@ export default function DigitalTwinPage() {
                         <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
                         <MetricDisplay icon={TestTube2} label={t('digitalTwin.soilType')} value={data.soilType} />
                             <div>
-                                <p className="text-sm text-muted-foreground">pH Level</p>
+                                <p className="text-sm text-muted-foreground">{t('digitalTwin.phLevel')}</p>
                                 <p className="font-bold text-lg">{data.phLevel.toFixed(1)}</p>
                             </div>
                             <div className="space-y-3 pt-2">
-                                <h4 className="font-semibold text-center md:text-left">Nutrient Levels (% of optimum)</h4>
+                                <h4 className="font-semibold text-center md:text-left">{t('digitalTwin.nutrientLevels')}</h4>
                                 <NutrientDisplay label="Nitrogen (N)" value={data.nitrogenLevel} color="bg-green-500" />
                                 <NutrientDisplay label="Phosphorus (P)" value={data.phosphorusLevel} color="bg-blue-500" />
                                 <NutrientDisplay label="Potassium (K)" value={data.potassiumLevel} color="bg-orange-500" />
@@ -286,3 +286,5 @@ export default function DigitalTwinPage() {
     </>
   );
 }
+
+    

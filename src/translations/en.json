@@ -193,8 +193,20 @@
     "cropDiagnosis.failedDesc": "An error occurred while analyzing the image.",
     
     "mandi.pageDescription": "Real-time market prices for various crops.",
+    "mandi.selectCommodity": "Select Commodity",
+    "mandi.selectState": "Select State",
     "mandi.selectMarket": "Select a market",
     "mandi.allMarkets": "All Markets",
+    "mandi.date": "Date",
+    "mandi.commodity": "Commodity",
+    "mandi.minPrice": "Min Price (₹)",
+    "mandi.maxPrice": "Max Price (₹)",
+    "mandi.modelPrice": "Model Price (₹)",
+    "mandi.loading": "Fetching latest prices...",
+    "mandi.noData": "No data available for this selection.",
+    "mandi.noDataDesc": "Please select a valid commodity, state, and market.",
+    "mandi.errorTitle": "Failed to load prices",
+    "mandi.errorDesc": "Could not fetch market data. Please try again later.",
     "mandi.cropVariety": "Crop (Variety)",
     "mandi.market": "Market",
     "mandi.price": "Price (₹)",
@@ -327,6 +339,21 @@
     "digitalTwin.yieldForecast": "Yield Forecast",
     "digitalTwin.quintalTotal": "quintal (Total)",
     "digitalTwin.soilType": "Soil Type",
+    "digitalTwin.analyzingToastTitle": "Analyzing Location",
+    "digitalTwin.analyzingToastDesc": "Fetching data for coordinates:",
+    "digitalTwin.phLevel": "pH Level",
+    "digitalTwin.nutrientLevels": "Nutrient Levels (% of optimum)",
+    "digitalTwin.financialAnalysisTitle": "Financial Analysis",
+    "digitalTwin.costAnalysisTab": "Cost Analysis",
+    "digitalTwin.profitAndRiskTab": "Profit & Risk",
+    "digitalTwin.conventional": "Conventional",
+    "digitalTwin.organic": "Organic",
+    "digitalTwin.seedsCost": "Seeds Cost",
+    "digitalTwin.irrigationCost": "Irrigation Cost",
+    "digitalTwin.fertilizerCost": "Fertilizer Cost",
+    "digitalTwin.totalCost": "Total Cost (per acre)",
+    "digitalTwin.expectedProfit": "Expected Profit (per acre)",
+    "digitalTwin.cropFailureRisk": "Crop Failure Probability",
 
     "help.pageDescription": "Need help? Want to report a bug or suggest a feature? Let us know!",
     "help.formTitle": "Submit your Feedback",
@@ -434,3 +461,5 @@
     "manageAccount.pan": "PAN Number",
     "manageAccount.aadhar": "Aadhaar Number"
 }
+
+    
