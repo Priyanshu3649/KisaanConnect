@@ -596,3 +596,5 @@ const SatelliteView = ({ healthScore }: { healthScore: number }) => {
         </div>
     );
 };
+
+    
