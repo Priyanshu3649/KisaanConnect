@@ -1,4 +1,3 @@
-
 {
     "nav.dashboard": "Dashboard",
     "nav.profile": "Profile",
@@ -149,8 +148,7 @@
     "creditScore.loanTitle": "Loan Application",
     "creditScore.loanDesc": "Your application has been submitted to partner institutions.",
 
-    "weather.pageDescription": "Detailed weather forecast for {{location}}.",
-    "weather.pageDescriptionNoLocation": "Detailed weather forecast for your location.",
+    "weather.pageDescription": "Detailed weather forecast for your location.",
     "weather.currentTitle": "Current Conditions",
     "weather.currentDesc": "What it feels like right now.",
     "weather.forecastTitle": "5-Day Forecast",
