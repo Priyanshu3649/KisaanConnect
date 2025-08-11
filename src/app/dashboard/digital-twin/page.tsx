@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, Pin, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft, View, LocateFixed, Beaker, Database } from "lucide-react";
+import { Tractor, Droplets, Wheat, AlertTriangle, Loader2, Save, MapPinned, Sprout, TestTube2, Lightbulb, PlusCircle, Edit, Trash2, Square, RectangleHorizontal,LayoutPanelLeft, View, LocateFixed, Beaker, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -22,7 +22,8 @@ import { useDebouncedCallback } from 'use-debounce';
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, writeBatch, setDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, deleteDoc, setDoc, getDoc } from "firebase/firestore";
+import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -51,30 +52,7 @@ interface Field {
     userId: string;
 }
 
-// This represents the data for a single farm/field that we will store in Firestore
-interface FarmData {
-  soilHealthScore: number;
-  moistureLevel: number;
-  soilType: string;
-  nitrogenLevel: number;
-  phosphorusLevel: number;
-  potassiumLevel: number;
-  phLevel: number;
-  recommendedCrops: string[];
-  yieldForecast: {
-    crop: string;
-    value: number;
-    unit: string;
-  }[];
-  bestSuggestion: string;
-  alerts: {
-      type: 'weed' | 'infestation' | 'nutrient_deficiency' | 'water_stress' | 'heat_stress';
-      severity: 'low' | 'medium' | 'high';
-      message: string;
-  }[];
-}
-
-const demoFarmData: FarmData = {
+const demoFarmData: DigitalTwinOutput = {
     soilHealthScore: 85,
     moistureLevel: 55,
     soilType: "Alluvial Clay",
@@ -104,8 +82,8 @@ export default function DigitalTwinPage() {
 
   const [selectedField, setSelectedField] = useState<Field | null>(null);
 
-  const farmDataQuery = user && selectedField ? doc(db, "farm_data", selectedField.id) : null;
-  const [data, isLoading, dataError] = useDocumentData(farmDataQuery);
+  const [data, setData] = useState<DigitalTwinOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { toast } = useToast();
   
@@ -119,8 +97,54 @@ export default function DigitalTwinPage() {
   useEffect(() => {
     if (!fieldsLoading && fields && fields.length > 0 && !selectedField) {
         setSelectedField(fields[0] as Field);
+    } else if (!fieldsLoading && (!fields || fields.length === 0)) {
+        // Handle case where there are no fields
+        setSelectedField(null);
+        setData(null);
     }
   }, [fields, fieldsLoading, selectedField]);
+
+  // Effect to fetch digital twin data when selectedField changes
+  useEffect(() => {
+    if (!selectedField) {
+      setIsLoading(false);
+      setData(null);
+      return;
+    }
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      // First, check if seeded data exists in Firestore
+      const farmDataDocRef = doc(db, "farm_data", selectedField.id);
+      const farmDataSnap = await getDoc(farmDataDocRef);
+
+      if (farmDataSnap.exists()) {
+          setData(farmDataSnap.data() as DigitalTwinOutput);
+          setIsLoading(false);
+      } else {
+        // If no seeded data, call the AI flow
+        try {
+            const result = await getDigitalTwinData({
+                latitude: selectedField.location.lat,
+                longitude: selectedField.location.lng,
+            });
+            setData(result);
+        } catch (error) {
+            console.error("Error fetching digital twin data:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch digital twin analysis.',
+            });
+            setData(null);
+        } finally {
+            setIsLoading(false);
+        }
+      }
+    };
+    
+    fetchData();
+  }, [selectedField, toast]);
   
   const handleSelectField = (fieldId: string) => {
     const field = fields?.find(f => f.id === fieldId) as Field | undefined;
@@ -134,7 +158,7 @@ export default function DigitalTwinPage() {
     setEditingField({
         userId: user.uid,
         name: '',
-        location: { lat: 28.9959, lng: 77.0178 },
+        location: { lat: 28.9959, lng: 77.0178 }, // Default to a location in India
         shape: 'rectangle',
         measurements: {},
         area: 0,
@@ -150,11 +174,11 @@ export default function DigitalTwinPage() {
   const handleDeleteField = async (fieldId: string) => {
     try {
         await deleteDoc(doc(db, "fields", fieldId));
-        // Also delete associated farm_data
         await deleteDoc(doc(db, "farm_data", fieldId));
 
         if(selectedField?.id === fieldId) {
-            setSelectedField(fields && fields.length > 1 ? fields.filter(f => f.id !== fieldId)[0] as Field : null);
+            const remainingFields = fields?.filter(f => f.id !== fieldId);
+            setSelectedField(remainingFields && remainingFields.length > 0 ? remainingFields[0] as Field : null);
         }
         toast({ title: t('digitalTwin.fieldDeleted') });
     } catch(e) {
@@ -166,16 +190,19 @@ export default function DigitalTwinPage() {
   const handleSaveField = async (fieldData: Omit<Field, 'id'> & { id?: string }) => {
     if (!user) return;
     try {
-        if (fieldData.id) {
-            const { id, ...dataToUpdate } = fieldData;
-            await updateDoc(doc(db, "fields", id), dataToUpdate);
-            setSelectedField(fieldData as Field);
-        } else {
-            const newFieldRef = doc(collection(db, "fields"));
-            const newField = { ...fieldData, id: newFieldRef.id };
-            await setDoc(newFieldRef, newField);
-            setSelectedField(newField as Field);
+        const docRef = fieldData.id ? doc(db, "fields", fieldData.id) : doc(collection(db, "fields"));
+        const finalData = { ...fieldData, id: docRef.id };
+        
+        await setDoc(docRef, finalData);
+        
+        // If it's a new field, set it as selected
+        if (!fieldData.id) {
+            setSelectedField(finalData as Field);
+        } else if (selectedField?.id === finalData.id) {
+            // If editing the selected field, update the state
+            setSelectedField(finalData as Field);
         }
+
         setIsFormOpen(false);
         setEditingField(null);
         toast({ title: t('digitalTwin.fieldSaved') });
@@ -232,15 +259,9 @@ export default function DigitalTwinPage() {
       }
       setIsSeeding(true);
       try {
-          // Check if data already exists to prevent overwriting
           const docRef = doc(db, "farm_data", selectedField.id);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-              toast({ variant: "default", title: "Data already exists", description: "Demo data for this field has already been seeded." });
-              return;
-          }
-
-          await setDoc(doc(db, "farm_data", selectedField.id), demoFarmData);
+          await setDoc(docRef, demoFarmData);
+          setData(demoFarmData); // Update state immediately
           toast({
               title: "Demo Farm Data Added",
               description: `Sample digital twin data has been added for ${selectedField.name}.`,
@@ -259,7 +280,7 @@ export default function DigitalTwinPage() {
           return <div className="flex justify-center items-center h-64"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
       }
 
-      if (!selectedField && (!fields || fields.length === 0)) {
+      if (!fields || fields.length === 0) {
           return (
               <Card className="text-center py-12">
                 <CardHeader>
@@ -322,14 +343,14 @@ export default function DigitalTwinPage() {
                             <CardDescription>{t('digitalTwin.soilAnalysisDesc')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {isLoading ? <MetricSkeleton count={4} /> : data && (
+                            {isLoading ? <MetricSkeleton count={4} /> : data ? (
                                 <>
                                     <NutrientProgress label="Nitrogen (N)" value={data.nitrogenLevel} />
                                     <NutrientProgress label="Phosphorus (P)" value={data.phosphorusLevel} />
                                     <NutrientProgress label="Potassium (K)" value={data.potassiumLevel} />
                                     <MetricDisplay icon={Beaker} label="Soil pH" value={data.phLevel.toFixed(1)} />
                                 </>
-                            )}
+                            ) : <p className="text-sm text-muted-foreground">No data available.</p>}
                         </CardContent>
                     </Card>
                 </div>
@@ -404,13 +425,13 @@ export default function DigitalTwinPage() {
                         <CardTitle>{t('digitalTwin.keyMetricsTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                         {isLoading ? <MetricSkeleton count={3} /> : data && (
+                         {isLoading ? <MetricSkeleton count={3} /> : data ? (
                             <>
                                <MetricDisplay icon={Tractor} label={t('digitalTwin.soilHealth')} value={`${data.soilHealthScore}/100`} />
                                <MetricDisplay icon={Droplets} label={t('digitalTwin.moistureLevel')} value={`${data.moistureLevel}%`} />
                                <MetricDisplay icon={TestTube2} label={t('digitalTwin.soilType')} value={data.soilType} />
                             </>
-                         )}
+                         ) : <p className="text-sm text-muted-foreground">Select a field to see metrics.</p>}
                     </CardContent>
                 </Card>
 
@@ -420,7 +441,7 @@ export default function DigitalTwinPage() {
                         <CardDescription>{t('digitalTwin.alertsDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {isLoading ? <MetricSkeleton count={2} /> : data && (
+                        {isLoading ? <MetricSkeleton count={2} /> : data ? (
                             <div className="space-y-4">
                                 {data.alerts.length > 0 ? data.alerts.map((alert, index) => (
                                    <Alert key={index} className={severityBorderColors[alert.severity]}>
@@ -434,7 +455,7 @@ export default function DigitalTwinPage() {
                                     </Alert>
                                 )) : <p className="text-sm text-muted-foreground">{t('digitalTwin.noAlerts')}</p>}
                             </div>
-                        )}
+                        ) : <p className="text-sm text-muted-foreground">Select a field to see alerts.</p>}
                     </CardContent>
                 </Card>
             </div>

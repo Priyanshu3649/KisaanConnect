@@ -156,5 +156,3 @@ const digitalTwinFlow = ai.defineFlow(
     return generateMockData(input.latitude, input.longitude);
   }
 );
-
-    
