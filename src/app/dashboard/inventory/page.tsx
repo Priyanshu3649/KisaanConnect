@@ -188,7 +188,7 @@ export default function InventoryPage() {
                                     </TableCell>
                                 </TableRow>
                             )}) : (
-                                <TableRow>
+                                <TableRow key="no-items-row">
                                     <TableCell colSpan={5} className="text-center h-48">{t('inventory.noItems')}</TableCell>
                                 </TableRow>
                             )}
