@@ -42,6 +42,7 @@ export default function CropDiagnosisPage() {
     const [user] = useAuthState(auth);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [dataUri, setDataUri] = useState<string | null>(null);
     const [isDiagnosing, setIsDiagnosing] = useState(false);
     const [diagnosisResult, setDiagnosisResult] = useState<string | null>(null);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -58,12 +59,14 @@ export default function CropDiagnosisPage() {
 
     const setFile = (file: File) => {
         setImageFile(file);
+        setDiagnosisResult(null); // Clear previous result
+        
         const reader = new FileReader();
         reader.onloadend = () => {
             setPreviewUrl(reader.result as string);
+            setDataUri(reader.result as string);
         };
         reader.readAsDataURL(file);
-        setDiagnosisResult(null); // Clear previous result
     }
 
     const startCamera = async () => {
@@ -92,7 +95,7 @@ export default function CropDiagnosisPage() {
     };
 
     const handleSubmit = async () => {
-        if (!imageFile || !user) {
+        if (!imageFile || !user || !dataUri) {
             toast({
                 variant: 'destructive',
                 title: t('cropDiagnosis.missingInfoTitle'),
@@ -105,48 +108,29 @@ export default function CropDiagnosisPage() {
         setDiagnosisResult(null);
 
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            reader.onloadend = async () => {
-                try {
-                    const base64data = reader.result as string;
-                    if (!base64data) {
-                        throw new Error("Failed to convert file to base64.");
-                    }
-                    
-                    const diagnosisPromise = diagnoseCrop({ photoDataUri: base64data, language });
-                    const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
-                    const uploadPromise = uploadBytes(storageRef, imageFile);
+            const diagnosisPromise = diagnoseCrop({ photoDataUri: dataUri, language });
+            const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
+            const uploadPromise = uploadBytes(storageRef, imageFile);
 
-                    const [diagnosis, uploadResult] = await Promise.all([diagnosisPromise, uploadPromise]);
-                    const imageUrl = await getDownloadURL(uploadResult.ref);
-                    
-                    setDiagnosisResult(diagnosis.analysis);
+            const [diagnosis, uploadResult] = await Promise.all([diagnosisPromise, uploadPromise]);
+            const imageUrl = await getDownloadURL(uploadResult.ref);
+            
+            setDiagnosisResult(diagnosis.analysis);
 
-                    await addDoc(collection(db, 'diagnoses'), {
-                        userId: user.uid,
-                        imageUrl: imageUrl,
-                        result: diagnosis.analysis,
-                        createdAt: serverTimestamp(),
-                    });
-                    
-                    toast({ title: t('cropDiagnosis.savedTitle'), description: t('cropDiagnosis.savedDesc') });
-                } catch (error) {
-                    console.error("Diagnosis process failed:", error);
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage || t('cropDiagnosis.failedDesc') });
-                    setDiagnosisResult(t('cropDiagnosis.errorResult'));
-                } finally {
-                    setIsDiagnosing(false);
-                }
-            };
-            reader.onerror = (error) => {
-                 throw new Error("Error reading file: " + error);
-            }
+            await addDoc(collection(db, 'diagnoses'), {
+                userId: user.uid,
+                imageUrl: imageUrl,
+                result: diagnosis.analysis,
+                createdAt: serverTimestamp(),
+            });
+            
+            toast({ title: t('cropDiagnosis.savedTitle'), description: t('cropDiagnosis.savedDesc') });
         } catch (error) {
-            console.error("Outer handleSubmit error:", error);
+            console.error("Diagnosis process failed:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
-            toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage });
+            toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage || t('cropDiagnosis.failedDesc') });
+            setDiagnosisResult(t('cropDiagnosis.errorResult'));
+        } finally {
             setIsDiagnosing(false);
         }
     };
