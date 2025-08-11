@@ -31,7 +31,7 @@ const DiagnoseCropDiseaseOutputSchema = z.object({
       .number()
       .min(0)
       .max(1)
-      .describe('The confidence level of the disease identification (0-1).'),
+      .describe('The confidence level of the disease identification (a decimal value between 0.0 and 1.0).'),
   }),
   recommendedActions: z.array(z.string()).describe('Recommended actions to take to address the disease.'),
 });
@@ -54,7 +54,8 @@ Photo: {{media url=photoDataUri}}
 Description: {{{cropDescription}}}
 {{/if}}
 
-Based on the image and any available description, determine if the crop is diseased. If so, identify the likely disease and your confidence level (as a decimal number between 0 and 1, for example 0.95 for 95%).
+Based on the image and any available description, determine if the crop is diseased. If so, identify the likely disease and your confidence level.
+CRITICAL: The confidenceLevel must be a decimal number between 0.0 and 1.0 (for example 0.95 for 95%). Do NOT return a percentage string.
 Also suggest some recommended actions to remediate the disease. All parts of your response must be in {{language}}.
 `,
 });

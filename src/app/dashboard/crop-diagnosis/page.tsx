@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Lightbulb, Loader2, UploadCloud, CheckCircle2, AlertCircle, Leaf } from "lucide-react";
+import { Lightbulb, Loader2, UploadCloud, CheckCircle2, AlertCircle, Leaf, Camera, VideoOff } from "lucide-react";
 import { diagnoseCropDisease, type DiagnoseCropDiseaseOutput } from "@/ai/flows/crop-disease-diagnosis";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { useTranslation } from "@/context/translation-context";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 
 // Helper function to read file as Data URI
 const fileToDataUri = (file: File): Promise<string> => {
@@ -30,9 +31,21 @@ const fileToDataUri = (file: File): Promise<string> => {
     });
 };
 
+const dataUriToBlob = (dataUri: string): Blob => {
+    const byteString = atob(dataUri.split(',')[1]);
+    const mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+};
+
+
 export default function CropDiagnosisPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [dataUri, setDataUri] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,22 +53,84 @@ export default function CropDiagnosisPage() {
   const [user] = useAuthState(auth);
   const { t, language } = useTranslation();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (isCameraOpen) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          streamRef.current = stream;
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings.',
+          });
+        }
+      } else {
+        // Stop the camera stream when the dialog is closed
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+      }
+    };
+    getCameraPermission();
+
+    return () => {
+       if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+    }
+  }, [isCameraOpen, toast]);
+
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
       setResult(null);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+      const uri = await fileToDataUri(selectedFile);
+      setDataUri(uri);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!file) {
+  const handleCapture = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const capturedDataUri = canvas.toDataURL('image/jpeg');
+        setDataUri(capturedDataUri);
+        setFile(null); // It's not a file from disk
+        setIsCameraOpen(false);
+        await handleSubmit(null, capturedDataUri); // Directly submit after capture
+    }
+  };
+
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement> | null, capturedUri?: string) => {
+    e?.preventDefault();
+    const photoDataUri = capturedUri || dataUri;
+
+    if (!photoDataUri) {
       toast({
         variant: "destructive",
         title: t('cropDiagnosis.missingInfoTitle'),
@@ -75,10 +150,6 @@ export default function CropDiagnosisPage() {
     setResult(null);
 
     try {
-        // 1. Convert file to Data URI for the AI call
-        const photoDataUri = await fileToDataUri(file);
-
-        // 2. Start AI diagnosis and Firebase upload in parallel
         const diagnosisPromise = diagnoseCropDisease({
             photoDataUri,
             cropDescription: description,
@@ -86,17 +157,15 @@ export default function CropDiagnosisPage() {
         });
 
         const uploadPromise = (async () => {
-            const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${file.name}`);
-            const snapshot = await uploadBytes(storageRef, file);
-            return getDownloadURL(snapshot.ref);
+            const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}.jpg`);
+            await uploadString(storageRef, photoDataUri, 'data_url');
+            return getDownloadURL(storageRef);
         })();
-
-        // 3. Wait for both to complete
+        
         const [diagnosisResult, imageUrl] = await Promise.all([diagnosisPromise, uploadPromise]);
         
         setResult(diagnosisResult);
 
-        // 4. Save the combined result to Firestore
         const diagnosisData = {
             userId: user.uid,
             crop: description.split(' ')[0] || 'Unknown Crop',
@@ -104,7 +173,7 @@ export default function CropDiagnosisPage() {
             status: diagnosisResult.diseaseIdentification.isDiseased ? 'Active' : 'Resolved',
             progress: diagnosisResult.diseaseIdentification.isDiseased ? 0 : 100,
             createdAt: serverTimestamp(),
-            imageUrl: imageUrl, // Use the public URL from Firebase Storage
+            imageUrl: imageUrl,
             isDiseased: diagnosisResult.diseaseIdentification.isDiseased,
             confidence: diagnosisResult.diseaseIdentification.confidenceLevel,
             recommendations: diagnosisResult.recommendedActions
@@ -142,24 +211,24 @@ export default function CropDiagnosisPage() {
               <CardTitle>{t('cropDiagnosis.submitTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="crop-image">{t('cropDiagnosis.imageLabel')}</Label>
-                <div className="flex items-center justify-center w-full">
-                  <label htmlFor="crop-image-input" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary">
-                      {previewUrl ? (
-                        <Image src={previewUrl} alt={t('cropDiagnosis.previewAlt')} width={192} height={192} className="h-full w-auto object-contain p-2" />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">{t('cropDiagnosis.clickToUpload')}</span> {t('cropDiagnosis.dragAndDrop')}</p>
-                            <p className="text-xs text-muted-foreground">{t('cropDiagnosis.fileTypes')}</p>
-                        </div>
-                      )}
-                      <Input id="crop-image-input" type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
-                  </label>
-                </div>
-              </div>
-              <div className="space-y-2">
+               <div className="space-y-2">
+                 <Label htmlFor="crop-image">{t('cropDiagnosis.imageLabel')}</Label>
+                 <div className="flex items-center justify-center w-full">
+                   <label htmlFor="crop-image-input" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary">
+                       {dataUri ? (
+                         <Image src={dataUri} alt={t('cropDiagnosis.previewAlt')} width={192} height={192} className="h-full w-auto object-contain p-2" />
+                       ) : (
+                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                             <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
+                             <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">{t('cropDiagnosis.clickToUpload')}</span> {t('cropDiagnosis.dragAndDrop')}</p>
+                             <p className="text-xs text-muted-foreground">{t('cropDiagnosis.fileTypes')}</p>
+                         </div>
+                       )}
+                       <Input id="crop-image-input" type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
+                   </label>
+                 </div>
+               </div>
+               <div className="space-y-2">
                 <Label htmlFor="description">{t('cropDiagnosis.descriptionLabel')} <span className="text-xs text-muted-foreground">({t('optional')})</span></Label>
                 <Textarea
                   id="description"
@@ -170,8 +239,38 @@ export default function CropDiagnosisPage() {
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isLoading || !file} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+            <CardFooter className="flex-col sm:flex-row gap-2">
+                <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                    <DialogTrigger asChild>
+                        <Button type="button" variant="outline" className="w-full sm:w-auto">
+                            <Camera className="mr-2 h-4 w-4"/>
+                            Take Photo
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>Camera</DialogTitle>
+                        </DialogHeader>
+                        <div className="relative aspect-video w-full bg-black rounded-md overflow-hidden flex items-center justify-center">
+                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                            <canvas ref={canvasRef} className="hidden" />
+                            {hasCameraPermission === false && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white bg-black/50 p-4">
+                                    <VideoOff className="h-12 w-12 mb-4" />
+                                    <p className="font-semibold">Camera Access Denied</p>
+                                    <p className="text-sm">Please enable camera permissions in your browser settings to use this feature.</p>
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={handleCapture} disabled={!hasCameraPermission}>
+                                <Camera className="mr-2 h-4 w-4"/>
+                                Capture & Analyze
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+              <Button type="submit" disabled={isLoading || !dataUri} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
