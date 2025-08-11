@@ -12,6 +12,7 @@
     "nav.digitalTwin": "டிஜிட்டல் இரட்டை",
     "nav.governmentSchemes": "அரசு திட்டங்கள்",
     "nav.customerSupport": "வாடிக்கையாளர் ஆதரவு",
+    "nav.manageAccount": "கணக்கை நிர்வகி",
 
     "optional": "விருப்பத்தேர்வு",
 
@@ -268,7 +269,7 @@
     "digitalTwin.noAlerts": "இந்த நேரத்தில் எச்சரிக்கைகள் இல்லை. உங்கள் புலம் ஆரோக்கியமாகத் தெரிகிறது.",
     "digitalTwin.errorTitle": "பிழை",
     "digitalTwin.errorDesc": "புலத் தரவை ஏற்ற முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.",
-    "digitalTwin.satelliteView": "AI செயற்கைக்கோள் பார்வை",
+    "digitalTwin.satelliteView": "AI சென்டினல்-2 ஸ்டைல் பார்வை",
     "digitalTwin.satelliteViewDesc": "ஒரு உருவாக்கப்பட்ட காட்சி பிரதிநிதித்துவம்.",
     "digitalTwin.soilAnalysis": "மண் பகுப்பாய்வு",
     "digitalTwin.soilAnalysisDesc": "முக்கிய ஊட்டச்சத்து மற்றும் கலவை அளவீடுகள்.",
@@ -327,5 +328,13 @@
     "customerSupport.whatToExpect.li1": "ஒரு AI உதவியாளர் உங்கள் அழைப்பிற்கு பதிலளிப்பார்.",
     "customerSupport.whatToExpect.li2": "நீங்கள் மண்டி விலைகள், வானிலை அறிவிப்புகள் மற்றும் திட்டத் தகவல்களைக் கேட்கலாம்.",
     "customerSupport.whatToExpect.li3": "மெனுக்களை வழிநடத்த விசைப்பலகையைப் பயன்படுத்தவும் அல்லது உங்கள் வினவலைப் பேசவும்.",
-    "customerSupport.callNowButton": "இப்போது ஆதரவை அழைக்கவும்"
+    "customerSupport.callNowButton": "இப்போது ஆதரவை அழைக்கவும்",
+
+    "manageAccount.pageDescription": "உங்கள் தனிப்பட்ட விவரங்களைக் கண்டு நிர்வகிக்கவும்.",
+    "manageAccount.personalDetails": "தனிப்பட்ட விவரங்கள்",
+    "manageAccount.verificationDetails": "சரிபார்ப்பு விவரங்கள்",
+    "manageAccount.phone": "தொலைபேசி எண்",
+    "manageAccount.location": "இருப்பிடம்",
+    "manageAccount.pan": "பான் எண்",
+    "manageAccount.aadhar": "ஆதார் எண்"
 }

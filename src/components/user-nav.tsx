@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -15,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, HelpCircle, Moon, Sun } from "lucide-react";
+import { LogOut, HelpCircle, Moon, Sun, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -87,9 +88,9 @@ export default function UserNav() {
     <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
         <Avatar className="h-9 w-9">
-            <AvatarImage src={userData?.photoURL} alt={userData?.name || 'User'} />
+            <AvatarImage src={userData?.photoURL || user?.photoURL || undefined} alt={userData?.name || 'User'} />
             <AvatarFallback>
-                {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+                {userData?.name ? userData.name.charAt(0).toUpperCase() : user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
             </AvatarFallback>
         </Avatar>
         </Button>
@@ -97,14 +98,20 @@ export default function UserNav() {
     <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
         <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{userData?.name || t('userNav.user')}</p>
+            <p className="text-sm font-medium leading-none">{userData?.name || user?.displayName || t('userNav.user')}</p>
             <p className="text-xs leading-none text-muted-foreground">
-            {userData?.email || t('userNav.noEmail')}
+            {userData?.email || user?.email || t('userNav.noEmail')}
             </p>
         </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+             <Link href="/dashboard/manage-account">
+                <DropdownMenuItem>
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>{t('nav.manageAccount')}</span>
+                </DropdownMenuItem>
+            </Link>
             <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
                 {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
                 <span>{t('userNav.toggleTheme')}</span>

@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
   { href: "/dashboard/government-schemes", icon: "Landmark", labelKey: "nav.governmentSchemes" },
   { href: "/dashboard/organics-support", icon: "Sprout", labelKey: "nav.organicsSupport" },
+  { href: "/dashboard/manage-account", icon: "User", labelKey: "nav.manageAccount" },
 ];
 
 // For mobile, we have a different set for the bottom nav

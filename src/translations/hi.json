@@ -12,6 +12,7 @@
     "nav.digitalTwin": "डिजिटल ट्विन",
     "nav.governmentSchemes": "सरकारी योजनाएं",
     "nav.customerSupport": "ग्राहक सहायता",
+    "nav.manageAccount": "खाता प्रबंधित करें",
 
     "optional": "वैकल्पिक",
 
@@ -268,7 +269,7 @@
     "digitalTwin.noAlerts": "इस समय कोई अलर्ट नहीं। आपका खेत स्वस्थ दिखता है।",
     "digitalTwin.errorTitle": "त्रुटि",
     "digitalTwin.errorDesc": "फ़ील्ड डेटा लोड नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।",
-    "digitalTwin.satelliteView": "एआई सैटेलाइट व्यू",
+    "digitalTwin.satelliteView": "एआई सेंटिनल-2 स्टाइल व्यू",
     "digitalTwin.satelliteViewDesc": "एक उत्पन्न दृश्य प्रतिनिधित्व।",
     "digitalTwin.soilAnalysis": "मृदा विश्लेषण",
     "digitalTwin.soilAnalysisDesc": "मुख्य पोषक तत्व और संरचना मेट्रिक्स।",
@@ -327,5 +328,13 @@
     "customerSupport.whatToExpect.li1": "एक एआई सहायक आपकी कॉल का जवाब देगा।",
     "customerSupport.whatToExpect.li2": "आप मंडी की कीमतें, मौसम अपडेट और योजना की जानकारी मांग सकते हैं।",
     "customerSupport.whatToExpect.li3": "मेनू नेविगेट करने के लिए कीपैड का उपयोग करें या बस अपनी क्वेरी बोलें।",
-    "customerSupport.callNowButton": "अभी सहायता को कॉल करें"
+    "customerSupport.callNowButton": "अभी सहायता को कॉल करें",
+
+    "manageAccount.pageDescription": "अपने व्यक्तिगत विवरण देखें और प्रबंधित करें।",
+    "manageAccount.personalDetails": "व्यक्तिगत विवरण",
+    "manageAccount.verificationDetails": "सत्यापन विवरण",
+    "manageAccount.phone": "फ़ोन नंबर",
+    "manageAccount.location": "स्थान",
+    "manageAccount.pan": "पैन नंबर",
+    "manageAccount.aadhar": "आधार नंबर"
 }

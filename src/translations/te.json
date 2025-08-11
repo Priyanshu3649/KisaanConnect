@@ -12,6 +12,7 @@
     "nav.digitalTwin": "డిజిటల్ ట్విన్",
     "nav.governmentSchemes": "ప్రభుత్వ పథకాలు",
     "nav.customerSupport": "కస్టమర్ మద్దతు",
+    "nav.manageAccount": "ఖాతాను నిర్వహించండి",
 
     "optional": "ఐచ్ఛికం",
 
@@ -327,5 +328,13 @@
     "customerSupport.whatToExpect.li1": "ఒక AI సహాయకుడు మీ కాల్‌కు సమాధానం ఇస్తాడు.",
     "customerSupport.whatToExpect.li2": "మీరు మండి ధరలు, వాతావరణ నవీకరణలు మరియు పథకం సమాచారం అడగవచ్చు.",
     "customerSupport.whatToExpect.li3": "మెనూలను నావిగేట్ చేయడానికి కీప్యాడ్‌ను ఉపయోగించండి లేదా మీ ప్రశ్నను మాట్లాడండి.",
-    "customerSupport.callNowButton": "ఇప్పుడే మద్దతుకు కాల్ చేయండి"
+    "customerSupport.callNowButton": "ఇప్పుడే మద్దతుకు కాల్ చేయండి",
+
+    "manageAccount.pageDescription": "మీ వ్యక్తిగత వివరాలను వీక్షించండి మరియు నిర్వహించండి.",
+    "manageAccount.personalDetails": "వ్యక్తిగత వివరాలు",
+    "manageAccount.verificationDetails": "ధృవీకరణ వివరాలు",
+    "manageAccount.phone": "ఫోన్ నంబర్",
+    "manageAccount.location": "స్థానం",
+    "manageAccount.pan": "పాన్ నంబర్",
+    "manageAccount.aadhar": "ఆధార్ నంబర్"
 }

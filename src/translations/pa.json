@@ -12,6 +12,7 @@
     "nav.digitalTwin": "ਡਿਜੀਟਲ ਟਵਿਨ",
     "nav.governmentSchemes": "ਸਰਕਾਰੀ ਯੋਜਨਾਵਾਂ",
     "nav.customerSupport": "ਗਾਹਕ ਸਹਾਇਤਾ",
+    "nav.manageAccount": "ਖਾਤਾ ਪ੍ਰਬੰਧਿਤ ਕਰੋ",
 
     "optional": "ਵਿਕਲਪਿਕ",
 
@@ -268,7 +269,7 @@
     "digitalTwin.noAlerts": "ਇਸ ਸਮੇਂ ਕੋਈ ਚੇਤਾਵਨੀ ਨਹੀਂ ਹੈ। ਤੁਹਾਡਾ ਖੇਤ ਸਿਹਤਮੰਦ ਦਿਸਦਾ ਹੈ।",
     "digitalTwin.errorTitle": "ਤਰੁੱਟੀ",
     "digitalTwin.errorDesc": "ਫੀਲਡ ਡੇਟਾ ਲੋਡ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਬਾਅਦ ਵਿੱਚ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
-    "digitalTwin.satelliteView": "ਏਆਈ ਸੈਟੇਲਾਈਟ ਦ੍ਰਿਸ਼",
+    "digitalTwin.satelliteView": "ਏਆਈ ਸੈਂਟੀਨਲ-2 ਸਟਾਈਲ ਦ੍ਰਿਸ਼",
     "digitalTwin.satelliteViewDesc": "ਇੱਕ ਤਿਆਰ ਕੀਤਾ ਦ੍ਰਿਸ਼ ਪ੍ਰਤੀਨਿਧਤਾ।",
     "digitalTwin.soilAnalysis": "ਮਿੱਟੀ ਦਾ ਵਿਸ਼ਲੇਸ਼ਣ",
     "digitalTwin.soilAnalysisDesc": "ਮੁੱਖ ਪੌਸ਼ਟਿਕ ਤੱਤ ਅਤੇ ਰਚਨਾ ਮੈਟ੍ਰਿਕਸ।",
@@ -327,5 +328,13 @@
     "customerSupport.whatToExpect.li1": "ਇੱਕ ਏਆਈ ਸਹਾਇਕ ਤੁਹਾਡੀ ਕਾਲ ਦਾ ਜਵਾਬ ਦੇਵੇਗਾ।",
     "customerSupport.whatToExpect.li2": "ਤੁਸੀਂ ਮੰਡੀ ਕੀਮਤਾਂ, ਮੌਸਮ ਅਪਡੇਟਾਂ, ਅਤੇ ਯੋਜਨਾ ਦੀ ਜਾਣਕਾਰੀ ਮੰਗ ਸਕਦੇ ਹੋ।",
     "customerSupport.whatToExpect.li3": "ਮੀਨੂ ਨੂੰ ਨੈਵੀਗੇਟ ਕਰਨ ਲਈ ਕੀਪੈਡ ਦੀ ਵਰਤੋਂ ਕਰੋ ਜਾਂ ਬਸ ਆਪਣੀ ਪੁੱਛਗਿੱਛ ਬੋਲੋ।",
-    "customerSupport.callNowButton": "ਹੁਣੇ ਸਹਾਇਤਾ ਨੂੰ ਕਾਲ ਕਰੋ"
+    "customerSupport.callNowButton": "ਹੁਣੇ ਸਹਾਇਤਾ ਨੂੰ ਕਾਲ ਕਰੋ",
+
+    "manageAccount.pageDescription": "ਆਪਣੇ ਨਿੱਜੀ ਵੇਰਵੇ ਵੇਖੋ ਅਤੇ ਪ੍ਰਬੰਧਿਤ ਕਰੋ।",
+    "manageAccount.personalDetails": "ਨਿੱਜੀ ਵੇਰਵੇ",
+    "manageAccount.verificationDetails": "ਪੁਸ਼ਟੀਕਰਨ ਵੇਰਵੇ",
+    "manageAccount.phone": "ਫੋਨ ਨੰਬਰ",
+    "manageAccount.location": "ਸਥਾਨ",
+    "manageAccount.pan": "ਪੈਨ ਨੰਬਰ",
+    "manageAccount.aadhar": "ਆਧਾਰ ਨੰਬਰ"
 }

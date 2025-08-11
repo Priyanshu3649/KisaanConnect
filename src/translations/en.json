@@ -14,6 +14,7 @@
     "nav.customerSupport": "Customer Support",
     "nav.salesAdvisor": "Sales Advisor",
     "nav.inventory": "Inventory",
+    "nav.manageAccount": "Manage Account",
 
     "optional": "optional",
 
@@ -316,7 +317,7 @@
     "digitalTwin.noAlerts": "No alerts at this time. Your field looks healthy.",
     "digitalTwin.errorTitle": "Error",
     "digitalTwin.errorDesc": "Could not load field data. Please try again later.",
-    "digitalTwin.satelliteView": "AI Satellite View",
+    "digitalTwin.satelliteView": "AI Sentinel-2 Style View",
     "digitalTwin.satelliteViewDesc": "A generated visual representation.",
     "digitalTwin.soilAnalysis": "Soil Analysis",
     "digitalTwin.soilAnalysisDesc": "Key nutrient and composition metrics.",
@@ -423,5 +424,13 @@
     "inventory.unitPlaceholder": "e.g., bags, kg, liters",
     "inventory.lowStockThreshold": "Low Stock Threshold",
     "inventory.lowStockDesc": "Get a warning when the quantity falls below this value.",
-    "inventory.saveItem": "Save Item"
+    "inventory.saveItem": "Save Item",
+
+    "manageAccount.pageDescription": "View and manage your personal details.",
+    "manageAccount.personalDetails": "Personal Details",
+    "manageAccount.verificationDetails": "Verification Details",
+    "manageAccount.phone": "Phone Number",
+    "manageAccount.location": "Location",
+    "manageAccount.pan": "PAN Number",
+    "manageAccount.aadhar": "Aadhaar Number"
 }
