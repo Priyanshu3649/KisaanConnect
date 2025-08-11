@@ -2,14 +2,13 @@
 'use server';
 
 /**
- * @fileOverview An AI agriculture expert that diagnoses crop issues from an image.
+ * @fileOverview An AI agriculture expert that diagnoses crop issues from an image using the Plant.id API.
  *
  * - diagnoseCrop - A function that handles the crop diagnosis process.
  * - DiagnoseCropInput - The input type for the diagnoseCrop function.
  * - DiagnoseCropOutput - The return type for the diagnoseCrop function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const DiagnoseCropInputSchema = z.object({
@@ -32,70 +31,76 @@ export async function diagnoseCrop(input: DiagnoseCropInput): Promise<DiagnoseCr
   return diagnoseCropFlow(input);
 }
 
+// Helper function to format the API response
+const formatPlantIdResponse = (response: any): string => {
+    if (!response.result || !response.result.classification || response.result.classification.suggestions.length === 0) {
+        return `**Crop Detected:** Unknown\n**Disease/Issue:** Could not analyze image.\n**Confidence:** 0%\n**Treatment (Organic):** N/A\n**Treatment (Chemical):** N/A\n**Prevention Tips:** Please try again with a clearer image.`;
+    }
 
-const prompt = ai.definePrompt({
-  name: 'diagnoseCropPrompt',
-  input: { schema: DiagnoseCropInputSchema },
-  // Use a flexible output schema initially to prevent crashes if the model deviates.
-  output: { schema: z.object({ analysis: z.string() }) }, 
-  model: 'googleai/gemini-1.5-flash-latest',
-  prompt: `You are an AI agriculture expert integrated into the KisaanConnect application.
-The user will provide a single input: an image of a crop.
+    const mainSuggestion = response.result.classification.suggestions[0];
+    const cropName = mainSuggestion.name;
+    const confidence = (mainSuggestion.probability * 100).toFixed(0);
 
-When receiving an image, you must:
-1. Identify the crop species.
-2. Detect and name any visible plant diseases, pest damage, or nutrient deficiencies.
-3. Provide:
-   - Disease or issue name (if any).
-   - Confidence score as a percentage.
-4. Offer immediate treatment recommendations, covering both:
-   - Organic remedies.
-   - Chemical treatment options (with safe usage guidance).
-5. Suggest preventive measures for the future.
-6. If diagnosis confidence is below 60% or the image is unclear, politely request a clearer image.
-7. Output all responses in the user’s preferred language (the user's language is {{language}}).
-8. Keep explanations simple, clear, and under 200 words.
-9. Always format the output as a single string field in a JSON object:
+    const diseaseInfo = response.result.disease.suggestions[0];
+    let diseaseName = "None detected";
+    let treatmentOrganic = "Keep monitoring for signs of stress.";
+    let treatmentChemical = "No chemical treatment necessary.";
+    let preventionTips = "Ensure proper watering, sunlight, and nutrient levels.";
 
-{
-  "analysis": "**Crop Detected:** <crop name>\\n**Disease/Issue:** <name or \"None detected\">\\n**Confidence:** <percentage>%\\n**Treatment (Organic):** <steps>\\n**Treatment (Chemical):** <steps>\\n**Prevention Tips:** <steps>"
+    if (diseaseInfo && diseaseInfo.name !== "healthy") {
+        diseaseName = diseaseInfo.name;
+        // The API provides 'treatment' which can be split for our UI.
+        // This is a simplistic split; a real app might need more sophisticated logic.
+        const treatmentDescription = diseaseInfo.details.treatment?.biological?.join(' ') || 'Consult an expert.';
+        treatmentOrganic = treatmentDescription;
+        treatmentChemical = diseaseInfo.details.treatment?.chemical?.join(' ') || 'Consult an expert.';
+        preventionTips = diseaseInfo.details.cause || "Follow best practices for crop health.";
+    }
+
+    return `**Crop Detected:** ${cropName}\n**Disease/Issue:** ${diseaseName}\n**Confidence:** ${confidence}%\n**Treatment (Organic):** ${treatmentOrganic}\n**Treatment (Chemical):** ${treatmentChemical}\n**Prevention Tips:** ${preventionTips}`;
 }
 
-Do not include unrelated information. Focus only on actionable, practical, and farmer-friendly advice.
 
-Image to analyze:
-{{media url=photoDataUri}}
-`,
-});
+const diagnoseCropFlow = async (input: DiagnoseCropInput): Promise<DiagnoseCropOutput> => {
+    const apiKey = process.env.PLANT_ID_API_KEY;
+    const apiUrl = 'https://plant.id/api/v3/identification';
 
-const diagnoseCropFlow = ai.defineFlow(
-  {
-    name: 'diagnoseCropFlow',
-    inputSchema: DiagnoseCropInputSchema,
-    outputSchema: DiagnoseCropOutputSchema,
-  },
-  async (input) => {
-    // This default error response will be sent back if anything in the try block fails.
-    // This guarantees the UI never gets stuck loading.
+    if (!apiKey) {
+        console.error("Plant.id API key is not configured.");
+        return { analysis: "**Error:** API key not configured on the server." };
+    }
+
     const defaultErrorResponse = {
-        analysis: `**Crop Detected:** Unable to Analyze
-**Disease/Issue:** Analysis Failed
-**Confidence:** 0%
-**Treatment (Organic):** The AI model could not process the image. This might be due to a temporary issue or an unsupported image format.
-**Treatment (Chemical):** Please try uploading the image again. If the problem persists, try a different, clearer image of the affected crop.
-**Prevention Tips:** Ensure the photo is well-lit and focuses on the affected area of the plant (leaves, stem, etc.).`
+        analysis: `**Crop Detected:** Unable to Analyze\n**Disease/Issue:** Analysis Failed\n**Confidence:** 0%\n**Treatment (Organic):** The AI model could not process the image. This might be due to a temporary issue or an unsupported image format.\n**Treatment (Chemical):** Please try uploading the image again. If the problem persists, try a different, clearer image of the affected crop.\n**Prevention Tips:** Ensure the photo is well-lit and focuses on the affected area of the plant (leaves, stem, etc.).`
     };
 
     try {
-        const { output } = await prompt(input);
+        const body = {
+            images: [input.photoDataUri],
+            // Ask for disease details, which is crucial for our use case
+            details: ["cause", "common_names", "classification", "disease", "treatment"],
+            language: input.language.split('-')[0] // API uses 'en', 'hi', etc.
+        };
 
-        if (!output || !output.analysis) {
-             console.error("AI returned invalid or empty output.");
-             return defaultErrorResponse;
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Api-Key': apiKey,
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error("Plant.id API request failed:", response.status, errorBody);
+            throw new Error(`API request failed with status ${response.status}`);
         }
+
+        const data = await response.json();
+        const formattedAnalysis = formatPlantIdResponse(data);
         
-        // Final validation before returning.
-        return DiagnoseCropOutputSchema.parse(output);
+        return { analysis: formattedAnalysis };
 
     } catch (error) {
         console.error("Error in diagnoseCropFlow:", error);
