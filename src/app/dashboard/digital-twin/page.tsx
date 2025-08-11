@@ -38,11 +38,11 @@ const MetricDisplay = ({ icon: Icon, label, value }: { icon: React.ElementType, 
 
 const NutrientDisplay = ({ label, value, color }: { label: string, value: number, color: string }) => (
     <div className="flex items-center gap-2">
-        <div className="w-10 text-sm font-semibold">{label}</div>
+        <div className="w-24 shrink-0 text-sm font-semibold">{label}</div>
         <div className="flex-1 bg-muted rounded-full h-2.5">
             <div className={`${color} h-2.5 rounded-full`} style={{ width: `${value}%` }}></div>
         </div>
-        <div className="w-10 text-right text-sm font-mono">{value}%</div>
+        <div className="w-12 text-right text-sm font-mono">{value}%</div>
     </div>
 );
 
