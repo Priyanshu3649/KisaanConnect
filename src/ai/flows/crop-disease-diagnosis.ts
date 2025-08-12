@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -27,16 +26,9 @@ const DiagnoseCropOutputSchema = z.object({
 });
 export type DiagnoseCropOutput = z.infer<typeof DiagnoseCropOutputSchema>;
 
-
-export async function diagnoseCrop(input: DiagnoseCropInput): Promise<DiagnoseCropOutput> {
-  return diagnoseCropFlow(input);
-}
-
-
 const prompt = ai.definePrompt({
   name: 'diagnoseCropPrompt',
   input: { schema: DiagnoseCropInputSchema },
-  // Use a flexible output schema initially to prevent crashes if the model deviates.
   output: { schema: z.object({ analysis: z.string() }) }, 
   model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an AI agriculture expert integrated into the KisaanConnect application.
@@ -68,15 +60,13 @@ Image to analyze:
 `,
 });
 
-const diagnoseCropFlow = ai.defineFlow(
+export const diagnoseCrop = ai.defineFlow(
   {
     name: 'diagnoseCropFlow',
     inputSchema: DiagnoseCropInputSchema,
     outputSchema: DiagnoseCropOutputSchema,
   },
   async (input) => {
-    // This default error response will be sent back if anything in the try block fails.
-    // This guarantees the UI never gets stuck loading.
     const defaultErrorResponse = {
         analysis: `**Crop Detected:** Unable to Analyze
 **Disease/Issue:** Analysis Failed
@@ -95,10 +85,10 @@ const diagnoseCropFlow = ai.defineFlow(
              return defaultErrorResponse;
         }
         
-        // Final validation before returning.
         return DiagnoseCropOutputSchema.parse(output);
 
-    } catch (error) {
+    } catch (error)
+ {
         console.error("Error in diagnoseCropFlow:", error);
         return defaultErrorResponse;
     }
