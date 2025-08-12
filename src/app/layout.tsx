@@ -31,10 +31,10 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased", "min-h-screen bg-background font-sans")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <TranslationProvider>
-                {children}
-                <Toaster />
-            </TranslationProvider>
+          <TranslationProvider>
+              {children}
+              <Toaster />
+          </TranslationProvider>
         </ThemeProvider>
       </body>
     </html>
