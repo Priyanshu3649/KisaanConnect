@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sprout, AlertTriangle, Loader2, TestTube2, Droplets, Wheat, Leaf, MapPinned, Lightbulb, Satellite, DollarSign, TrendingUp, ShieldAlert, Recycle } from "lucide-react";
+import { Sprout, AlertTriangle, Loader2, TestTube2, Droplets, Leaf, MapPinned, Lightbulb, Satellite, DollarSign, TrendingUp, ShieldAlert } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { getSatelliteImage, type GetSatelliteImageOutput } from "@/ai/flows/get-satellite-image";
 import { useToast } from "@/hooks/use-toast";

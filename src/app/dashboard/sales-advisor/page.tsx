@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
 const commodities = ["Potato", "Onion", "Tomato", "Wheat", "Soybean", "Cotton"];
@@ -140,9 +140,10 @@ export default function SalesAdvisorPage() {
                         <CardTitle>{t('salesAdvisor.forecastTitle')}</CardTitle>
                         <CardDescription>{t('salesAdvisor.forecastDesc')}</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-80">
+                    <CardContent className="h-80 pr-6">
                          <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={advice.priceForecast} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                 <XAxis 
                                     dataKey="date" 
                                     tickFormatter={(str) => format(parseISO(str), 'MMM d')}
@@ -163,7 +164,7 @@ export default function SalesAdvisorPage() {
                                     labelFormatter={(label) => format(parseISO(label), 'PPP')}
                                     formatter={(value) => [`₹${value}`, t('mandi.price')]}
                                 />
-                                <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} />
+                                <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} />
                             </LineChart>
                         </ResponsiveContainer>
                     </CardContent>

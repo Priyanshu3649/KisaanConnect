@@ -7,7 +7,7 @@ import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/context/translation-context";
 import { type NavItem } from "./app-layout";
-import { Leaf } from 'lucide-react';
+import { Leaf, HelpCircle } from 'lucide-react';
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
@@ -51,13 +51,13 @@ export default function Sidebar({ navItems }: SidebarProps) {
         </div>
         <div className="mt-auto p-4 border-t">
             <Card>
-                <CardHeader>
-                    <CardTitle>{t('customerSupport.sidebarTitle')}</CardTitle>
-                    <CardDescription className="text-xs mt-1">{t('customerSupport.sidebarDesc')}</CardDescription>
+                <CardHeader className="p-4">
+                    <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5" /> {t('customerSupport.sidebarTitle')}</CardTitle>
+                    <CardDescription className="text-xs pt-1">{t('customerSupport.sidebarDesc')}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Link href="/dashboard/customer-support">
-                        <Button size="sm" className="w-full">{t('nav.customerSupport')}</Button>
+                <CardContent className="p-4 pt-0">
+                    <Link href="/dashboard/help-feedback">
+                        <Button size="sm" className="w-full">{t('nav.helpAndFeedback')}</Button>
                     </Link>
                 </CardContent>
             </Card>
@@ -66,3 +66,5 @@ export default function Sidebar({ navItems }: SidebarProps) {
     </aside>
   );
 }
+
+    

@@ -6,7 +6,6 @@
     "nav.diseaseDetector": "Disease Detector",
     "nav.mandiPrices": "Mandi Prices",
     "nav.equipmentRentals": "Equipment Rentals",
-    "nav.aiAssistant": "AI Assistant",
     "nav.organicsSupport": "Organics Support",
     "nav.helpAndFeedback": "Help & Feedback",
     "nav.digitalTwin": "Digital Twin",
@@ -110,7 +109,7 @@
     "profile.borrowing": "borrowing",
     "profile.monthlyEarnings": "Monthly Earnings",
     "profile.earningsDescription": "A summary of your earnings over the last 6 months.",
-    "profile.recentDiagnoses": "Recent Crop Diagnoses",
+    "profile.recentDiagnoses": "Recent Diagnoses",
     "profile.diagnosesDescription": "Monitor the health of your crops.",
     "profile.diagnosesCrop": "Crop",
     "profile.diagnosesIssue": "Issue Detected",
@@ -118,6 +117,8 @@
     "profile.noDiagnoses": "No recent diagnoses.",
     "profile.weatherTitle": "Today's Weather",
     "profile.weatherClouds": "Clouds",
+    "profile.activeDiagnoses": "Active Diagnoses",
+    "profile.totalDiagnoses": "Total diagnoses recorded",
 
     "creditScore.title": "Agri-Credit Score",
     "creditScore.description": "Your financial health at a glance.",
@@ -133,6 +134,7 @@
     "creditScore.applyLoan": "Apply for Loan",
     "creditScore.loanTitle": "Loan Application",
     "creditScore.loanDesc": "Your application has been submitted to partner institutions.",
+    "creditScore.loanEligibleText": "You are eligible for a pre-approved loan of up to ₹{{amount}}.",
 
     "weather.pageDescription": "Detailed weather forecast for your location.",
     "weather.currentTitle": "Current Conditions",
@@ -414,3 +416,5 @@
     "manageAccount.pan": "PAN Number",
     "manageAccount.aadhar": "Aadhaar Number"
 }
+
+    

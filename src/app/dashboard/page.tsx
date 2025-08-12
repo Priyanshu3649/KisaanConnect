@@ -19,6 +19,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Link from "next/link";
+import { DetectDiseaseOutput } from "@/ai/flows/disease-detector";
 
 interface UserData {
   name?: string;
@@ -26,10 +29,16 @@ interface UserData {
   email?: string;
 }
 
-const demoUsers = [
-    'pandeypriyanshu53@gmail.com',
-    'admin@kissanconnect.com'
-];
+interface DiagnosisDoc {
+    id: string;
+    userId: string;
+    imageUrl: string;
+    result: DetectDiseaseOutput;
+    createdAt: {
+        seconds: number;
+        nanoseconds: number;
+    };
+}
 
 const StatCardSkeleton = () => (
     <Card>
@@ -67,7 +76,9 @@ export default function DashboardPage() {
   const [analyticsData, setAnalyticsData] = useState<DashboardAnalyticsOutput | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
   const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
+  const [recentDiagnoses, setRecentDiagnoses] = useState<DiagnosisDoc[]>([]);
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
+  const [isDiagnosesLoading, setIsDiagnosesLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const { t, language } = useTranslation();
   const { toast } = useToast();
@@ -93,6 +104,14 @@ export default function DashboardPage() {
         });
 
         getAgriCreditScore({ userId: user.uid, email: user.email || undefined, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
+        
+        const diagnosesQuery = query(collection(db, "diagnoses"), where("userId", "==", user.uid), limit(3));
+        getDocs(diagnosesQuery).then(snapshot => {
+            const diagnoses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as DiagnosisDoc[];
+            setRecentDiagnoses(diagnoses);
+            setIsDiagnosesLoading(false);
+        });
+
 
         setLocationStatus("Fetching location...");
         navigator.geolocation.getCurrentPosition(
@@ -145,12 +164,6 @@ export default function DashboardPage() {
       });
   }
 
-  const getLoanTip = () => {
-      if (!creditScoreData?.loanEligibility.isEligible) return null;
-      const loanTip = creditScoreData.improvementTips.find(tip => tip.includes(creditScoreData.loanEligibility.amount.toString()));
-      return loanTip;
-  }
-
   return (
     <>
       <PageHeader
@@ -193,25 +206,25 @@ export default function DashboardPage() {
             </Card>
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{t('nav.equipmentRentals')}</CardTitle>
-                    <Tractor className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
+                    <Leaf className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">5 {t('profile.active')}</div>
+                    <div className="text-2xl font-bold">{recentDiagnoses.length}</div>
                     <p className="text-xs text-muted-foreground">
-                        2 {t('profile.lending')}, 3 {t('profile.borrowing')}
+                        {t('profile.totalDiagnoses')}
                     </p>
                 </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Agri-Credit Score</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('creditScore.title')}</CardTitle>
                 <Star className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{creditScoreData?.score || '...'}</div>
                  <p className="text-xs text-muted-foreground">
-                  {creditScoreData?.trendPoints || 0} point change this month
+                  {creditScoreData?.trendPoints || 0} {t('creditScore.pointsThisMonth')}
                 </p>
               </CardContent>
             </Card>
@@ -221,14 +234,90 @@ export default function DashboardPage() {
       <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-3 xl:gap-8">
         {/* Left column */}
         <div className="grid auto-rows-max items-start gap-8 xl:col-span-2">
-            <Card className="xl:col-span-2">
-              <CardHeader>
-                <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
-                <CardDescription>{t('profile.earningsDescription')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? <Skeleton className="h-[200px] w-full" /> : <EarningsChart data={analyticsData.monthlyEarnings} />}
-              </CardContent>
+            <div className="grid gap-8 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
+                        <CardDescription>{t('profile.earningsDescription')}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="h-[200px] w-full" /> : <EarningsChart data={analyticsData.monthlyEarnings} />}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('profile.weatherTitle')}</CardTitle>
+                        <CardDescription>{locationStatus}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {!weatherData ? (
+                            <div className="flex items-center justify-center h-full">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-primary" />
+                                        <div>
+                                            <div className="text-3xl font-bold">{weatherData.current.temperature}°C</div>
+                                            <div className="text-muted-foreground">{weatherData.current.condition}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end text-sm">
+                                        <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
+                                        <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between pt-4 border-t">
+                                    {weatherData.forecast.slice(0, 4).map(day => (
+                                        <div key={day.date} className="flex flex-col items-center gap-1 text-xs text-center">
+                                            <p className="font-semibold">{day.date.substring(0,3)}</p>
+                                            <WeatherIcon iconName={day.icon} className="h-6 w-6" />
+                                            <p className="font-semibold">{day.high}°</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
+                    <CardDescription>{t('profile.diagnosesDescription')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t('profile.diagnosesCrop')}</TableHead>
+                                <TableHead>{t('profile.diagnosesIssue')}</TableHead>
+                                <TableHead className="text-right">{t('profile.diagnosesDate')}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isDiagnosesLoading ? (
+                                <TableRow><TableCell colSpan={3} className="text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                            ) : recentDiagnoses.length > 0 ? (
+                                recentDiagnoses.map(d => (
+                                    <TableRow key={d.id}>
+                                        <TableCell className="font-medium">{d.result.plantName}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={d.result.isHealthy ? 'default' : 'destructive'} className={cn(d.result.isHealthy && 'bg-green-100 text-green-800 border-green-200')}>
+                                                {d.result.diseaseName}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">{new Date(d.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow><TableCell colSpan={3} className="text-center">{t('profile.noDiagnoses')}</TableCell></TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
             </Card>
         </div>
         
@@ -236,7 +325,7 @@ export default function DashboardPage() {
         <div className="grid auto-rows-max items-start gap-8">
             <Card className="bg-primary/5 border-primary/20">
               <CardHeader>
-                  <CardTitle>{t('creditScore.title')}</CardTitle>
+                  <CardTitle>{t('creditScore.title')}</CardHeader>
                   <CardDescription>{t('creditScore.description')}</CardDescription>
               </CardHeader>
               <CardContent>
@@ -272,11 +361,11 @@ export default function DashboardPage() {
                             <div>
                                 <h4 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> {t('creditScore.tipsTitle')}</h4>
                                 <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                                    {creditScoreData.improvementTips.filter(tip => !tip.includes(creditScoreData.loanEligibility.amount.toString())).map((tip, i) => <li key={i}>{tip}</li>)}
+                                    {creditScoreData.improvementTips.map((tip, i) => <li key={i}>{tip}</li>)}
                                 </ul>
-                                {getLoanTip() && (
+                                {creditScoreData.loanEligibility.isEligible && (
                                      <div className="mt-3 p-3 rounded-md bg-secondary border border-primary/20">
-                                        <p className="text-sm font-semibold">{getLoanTip()}</p>
+                                        <p className="text-sm font-semibold">{t('creditScore.loanEligibleText', { amount: creditScoreData.loanEligibility.amount.toLocaleString('en-IN') })}</p>
                                         <Button size="sm" className="w-full mt-2" onClick={handleApplyLoan}>
                                             <Banknote className="mr-2 h-4 w-4" /> {t('creditScore.applyLoan')}
                                         </Button>
@@ -305,35 +394,10 @@ export default function DashboardPage() {
                   )}
               </CardContent>
             </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('profile.weatherTitle')}</CardTitle>
-                    <CardDescription>{locationStatus}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {!weatherData ? (
-                        <div className="flex items-center justify-center h-24">
-                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : (
-                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-yellow-500" />
-                                <div>
-                                    <div className="text-3xl font-bold">{weatherData.current.temperature}°C</div>
-                                    <div className="text-muted-foreground">{weatherData.current.condition}</div>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end text-sm">
-                                <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
-                                <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
         </div>
       </div>
     </>
   );
 }
+
+    
