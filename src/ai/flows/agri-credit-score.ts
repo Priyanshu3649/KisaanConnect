@@ -73,60 +73,73 @@ const agriCreditScoreFlow = ai.defineFlow(
         };
     }
 
-    // DEVELOPER: This is a mock implementation using static demo data for specific users.
-    // In a real application, you would use the userId to fetch real data from various sources.
-
-    // Simulate a delay for fetching and processing data.
+    // DEVELOPER: This is a mock implementation using the new 50/30/20 weighted logic.
+    // In a real application, you would fetch real data for each component.
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // For this simulation, we'll generate a consistent score based on the userId hash.
     const hash = input.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const score = 600 + (hash % 250); // Generates a score between 600 and 850
-    const loanAmount = score * 200; // Simple logic for loan amount
+    
+    // 1. Simulate CIBIL score (300-900 range)
+    const simulatedCibilScore = 650 + (hash % 100); // 650-750
+    
+    // 2. Simulate Farm Data Analysis score (0-1000 range)
+    const simulatedFarmDataScore = 700 + (hash % 150); // 700-850
+    
+    // 3. Simulate Platform Transactions score (0-1000 range)
+    const simulatedPlatformScore = 600 + (hash % 200); // 600-800
+
+    // Calculate weighted score
+    const finalScore = Math.round(
+        (simulatedCibilScore * 0.5) +   // 50% from CIBIL (normalized from 900 max)
+        (simulatedFarmDataScore * 0.3) + // 30% from Farm Data
+        (simulatedPlatformScore * 0.2)   // 20% from Platform Transactions
+    );
+    
+    const loanAmount = finalScore * 150;
 
     const tips: Record<string, string[]> = {
         en: [
-            "Rent out your equipment more regularly to boost your score.",
-            "Sell your crops through verified buyers on the platform for better transaction records.",
-            "Consider linking your loan repayment history for a potential score increase.",
-            `Based on your score, you are eligible for a loan up to ₹${loanAmount.toLocaleString('en-IN')}.`,
+            `Your score is based on CIBIL (50%), farm data (30%), and platform transactions (20%).`,
+            "Improving your traditional CIBIL score will have the largest impact.",
+            "Complete more rentals and sales on the platform to boost your transaction score.",
+            `Any approved loan will be automatically registered under the PM-Fasal Bima Yojana for crop insurance.`,
         ],
         hi: [
-            "अपना स्कोर बढ़ाने के लिए अपने उपकरण नियमित रूप से किराए पर दें।",
-            "बेहतर लेनदेन रिकॉर्ड के लिए अपनी फसलें प्लेटफॉर्म पर सत्यापित खरीदारों के माध्यम से बेचें।",
-            "संभावित स्कोर वृद्धि के लिए अपने ऋण चुकौती इतिहास को जोड़ने पर विचार करें।",
-            `आपके स्कोर के आधार पर, आप ₹${loanAmount.toLocaleString('hi-IN')} तक के ऋण के लिए पात्र हैं।`,
+            `आपका स्कोर सिबिल (50%), खेत डेटा (30%), और प्लेटफॉर्म लेनदेन (20%) पर आधारित है।`,
+            "अपने पारंपरिक सिबिल स्कोर में सुधार करने से सबसे बड़ा प्रभाव पड़ेगा।",
+            "अपने लेनदेन स्कोर को बढ़ाने के लिए प्लेटफॉर्म पर अधिक किराये और बिक्री पूरी करें।",
+            `किसी भी स्वीकृत ऋण को फसल बीमा के लिए पीएम-फसल बीमा योजना के तहत स्वचालित रूप से पंजीकृत किया जाएगा।`,
         ],
         pa: [
-            "ਆਪਣਾ ਸਕੋਰ ਵਧਾਉਣ ਲਈ ਆਪਣੇ ਉਪਕਰਣਾਂ ਨੂੰ ਨਿਯਮਤ ਤੌਰ 'ਤੇ ਕਿਰਾਏ 'ਤੇ ਦਿਓ।",
-            "ਬਿਹਤਰ ਲੈਣ-ਦੇਣ ਦੇ ਰਿਕਾਰਡ ਲਈ ਆਪਣੀਆਂ ਫਸਲਾਂ ਨੂੰ ਪਲੇਟਫਾਰਮ 'ਤੇ ਪ੍ਰਮਾਣਿਤ ਖਰੀਦਦਾਰਾਂ ਰਾਹੀਂ ਵੇਚੋ।",
-            "ਸੰਭਾਵੀ ਸਕੋਰ ਵਾਧੇ ਲਈ ਆਪਣੇ ਕਰਜ਼ੇ ਦੀ ਮੁੜ ਅਦਾਇਗੀ ਦੇ ਇਤਿਹਾਸ ਨੂੰ ਲਿੰਕ ਕਰਨ 'ਤੇ ਵਿਚਾਰ ਕਰੋ।",
-            `ਤੁਹਾਡੇ ਸਕੋਰ ਦੇ ਆਧਾਰ 'ਤੇ, ਤੁਸੀਂ ₹${loanAmount.toLocaleString('pa-IN')} ਤੱਕ ਦੇ ਕਰਜ਼ੇ ਲਈ ਯੋਗ ਹੋ।`,
+            `ਤੁਹਾਡਾ ਸਕੋਰ CIBIL (50%), ਖੇਤ ਡੇਟਾ (30%), ਅਤੇ ਪਲੇਟਫਾਰਮ ਲੈਣ-ਦੇਣ (20%) 'ਤੇ ਅਧਾਰਤ ਹੈ।`,
+            "ਆਪਣੇ ਰਵਾਇਤੀ CIBIL ਸਕੋਰ ਨੂੰ ਸੁਧਾਰਨ ਦਾ ਸਭ ਤੋਂ ਵੱਡਾ ਪ੍ਰਭਾਵ ਹੋਵੇਗਾ।",
+            "ਆਪਣੇ ਲੈਣ-ਦੇਣ ਦੇ ਸਕੋਰ ਨੂੰ ਵਧਾਉਣ ਲਈ ਪਲੇਟਫਾਰਮ 'ਤੇ ਹੋਰ ਕਿਰਾਏ ਅਤੇ ਵਿਕਰੀ ਨੂੰ ਪੂਰਾ ਕਰੋ।",
+            `ਕੋਈ ਵੀ ਪ੍ਰਵਾਨਿਤ ਕਰਜ਼ਾ ਫਸਲ ਬੀਮਾ ਲਈ ਪ੍ਰਧਾਨ ਮੰਤਰੀ-ਫਸਲ ਬੀਮਾ ਯੋਜਨਾ ਦੇ ਤਹਿਤ ਆਪਣੇ ਆਪ ਰਜਿਸਟਰ ਹੋ ਜਾਵੇਗਾ।`,
         ],
         mr: [
-            "तुमचा स्कोअर वाढवण्यासाठी तुमची उपकरणे अधिक नियमितपणे भाड्याने द्या.",
-            "चांगल्या व्यवहाराच्या नोंदीसाठी तुमची पिके प्लॅटफॉर्मवर सत्यापित खरेदीदारांमार्फत विका.",
-            "संभाव्य स्कोअर वाढीसाठी तुमचा कर्ज परतफेडीचा इतिहास लिंक करण्याचा विचार करा.",
-            `तुमच्या स्कोअरवर आधारित, तुम्ही ₹${loanAmount.toLocaleString('mr-IN')} पर्यंतच्या कर्जासाठी पात्र आहात.`,
+            `तुमचा स्कोअर सिबिल (50%), शेती डेटा (30%), आणि प्लॅटफॉर्म व्यवहार (20%) वर आधारित आहे.`,
+            "तुमचा पारंपरिक सिबिल स्कोअर सुधारण्याने सर्वात मोठा परिणाम होईल.",
+            "तुमचा व्यवहार स्कोअर वाढवण्यासाठी प्लॅटफॉर्मवर अधिक भाडे आणि विक्री पूर्ण करा.",
+            `कोणतेही मंजूर कर्ज पीक विम्यासाठी पंतप्रधान-फसल विमा योजनेअंतर्गत आपोआप नोंदणीकृत होईल.`,
         ],
         ta: [
-            "உங்கள் ஸ்கோரை அதிகரிக்க உங்கள் உபகரணங்களை அடிக்கடி வாடகைக்கு விடுங்கள்.",
-            "சிறந்த பரிவர்த்தனை பதிவுகளுக்கு உங்கள் பயிர்களை மேடையில் சரிபார்க்கப்பட்ட வாங்குபவர்கள் மூலம் விற்கவும்.",
-            "சாத்தியமான மதிப்பெண் அதிகரிப்புக்கு உங்கள் கடன் திருப்பிச் செலுத்தும் வரலாற்றை இணைப்பதைக் கவனியுங்கள்.",
-            `உங்கள் ஸ்கோரின் அடிப்படையில், நீங்கள் ₹${loanAmount.toLocaleString('ta-IN')} வரை கடனுக்குத் தகுதியுடையவர்.`,
+            `உங்கள் ஸ்கோர் சிபில் (50%), பண்ணை தரவு (30%), மற்றும் மேடை பரிவர்த்தனைகள் (20%) அடிப்படையில் அமைந்துள்ளது.`,
+            "உங்கள் பாரம்பரிய சிபில் ஸ்கோரை மேம்படுத்துவது மிகப்பெரிய தாக்கத்தை ஏற்படுத்தும்.",
+            "உங்கள் பரிவர்த்தனை ஸ்கோரை அதிகரிக்க மேடையில் அதிக வாடகைகள் மற்றும் விற்பனைகளை முடிக்கவும்.",
+            `ഏതെങ്കിലും അംഗീകൃത വായ്പ വിള ഇൻഷുറൻസിനായി പിഎം-ഫസൽ ഭീമ യോജന പ്രകാരം സ്വയമേവ രജിസ്റ്റർ ചെയ്യപ്പെടും.`,
         ],
         te: [
-            "మీ స్కోరును పెంచుకోవడానికి మీ పరికరాలను మరింత క్రమం తప్పకుండా అద్దెకు ఇవ్వండి.",
-            "మెరుగైన లావాదేవీల రికార్డుల కోసం మీ పంటలను ప్లాట్‌ఫారమ్‌లో ధృవీకరించబడిన కొనుగోలుదారుల ద్వారా అమ్మండి.",
-            "సంభావ్య స్కోరు పెరుగుదల కోసం మీ రుణ తిరిగి చెల్లింపు చరిత్రను లింక్ చేయడాన్ని పరిగణించండి.",
-            `మీ స్కోరు ఆధారంగా, మీరు ₹${loanAmount.toLocaleString('te-IN')} వరకు రుణానికి అర్హులు.`,
+            `మీ స్కోరు సిబిల్ (50%), వ్యవసాయ డేటా (30%), మరియు ప్లాట్‌ఫారమ్ లావాదేవీలు (20%) పై ఆధారపడి ఉంటుంది.`,
+            "మీ సాంప్రదాయ సిబిల్ స్కోరును మెరుగుపరచడం వల్ల అతిపెద్ద ప్రభావం ఉంటుంది.",
+            "మీ లావాదేవీల స్కోరును పెంచడానికి ప్లాట్‌ఫారమ్‌లో మరిన్ని అద్దెలు మరియు అమ్మకాలను పూర్తి చేయండి.",
+            `ఏదైనా ఆమోదించబడిన రుణం పంట బీమా కోసం పిఎం-ఫసల్ బీమా యోజన కింద స్వయంచాలకంగా నమోదు చేయబడుతుంది.`,
         ],
     };
 
     return {
-        score: score,
+        score: finalScore,
         trend: 'up',
-        trendPoints: 25,
+        trendPoints: 15,
         improvementTips: tips[input.language || 'en'],
         loanEligibility: {
             isEligible: true,
