@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -29,6 +30,7 @@ import { useCollectionData } from "react-firebase-hooks/firestore";
 import { auth, db, storage } from "@/lib/firebase";
 import { collection, query, addDoc, doc, updateDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import Link from "next/link";
 
 interface Equipment {
   id: string;
@@ -240,13 +242,6 @@ export default function EquipmentRentalsPage() {
             toast({ variant: "destructive", title: t('equipmentRentals.bookingFailTitle'), description: t('equipmentRentals.bookingFailDesc')});
         }
     };
-    
-    const handleContactSeller = (ownerName: string) => {
-        toast({
-            title: t('equipmentRentals.contactingTitle', { name: ownerName }),
-            description: t('equipmentRentals.contactingDesc'),
-        });
-    }
 
     const handleSeedData = async () => {
         if (!user) return;
@@ -323,7 +318,7 @@ export default function EquipmentRentalsPage() {
                                       ) : (
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground"><span className="font-semibold">{t('cropDiagnosis.clickToUpload')}</span></p>
+                                            <p className="text-sm text-muted-foreground"><span className="font-semibold">{t('register.clickToUpload')}</span></p>
                                         </div>
                                       )}
                                       <Input id="image-upload-input" type="file" className="hidden" onChange={handleImageChange} accept="image/png, image/jpeg" />
@@ -391,10 +386,12 @@ export default function EquipmentRentalsPage() {
                         <p className="text-lg font-bold">₹{item.price}<span className="text-sm font-normal text-muted-foreground">/{t('equipmentRentals.day')}</span></p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                        <Button onClick={() => handleContactSeller(item.ownerName)} variant="secondary" className="flex-1">
-                            <Phone className="h-4 w-4" />
-                        </Button>
-                        <Button onClick={() => handleRentClick(item)} disabled={!item.available} variant="outline" className="flex-1">{t('equipmentRentals.rentNow')}</Button>
+                        <Link href="tel:+919876543210" className="flex-1">
+                            <Button variant="secondary" className="w-full">
+                                <Phone className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                        <Button onClick={() => handleRentClick(item)} disabled={!item.available} className="flex-1">{t('equipmentRentals.rentNow')}</Button>
                     </div>
                 </CardFooter>
             </Card>
