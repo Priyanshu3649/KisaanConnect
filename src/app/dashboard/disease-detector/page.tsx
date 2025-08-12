@@ -1,17 +1,20 @@
 
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, FileUp, Leaf, Loader2, Bot, UploadCloud, TestTube, ShieldCheck, Spray, Info } from 'lucide-react';
+import { Camera, FileUp, Leaf, Loader2, Bot, UploadCloud, TestTube, ShieldCheck, SprayCan, Info } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { detectDisease, type DetectDiseaseOutput } from '@/ai/flows/disease-detector';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
 
 const ResultSection = ({ title, content, icon: Icon }: { title: string, content: string, icon: React.ElementType }) => (
     <div>
@@ -152,7 +155,7 @@ export default function DiseaseDetectorPage() {
 
                                 <ResultSection title="Detailed Review" content={detectionResult.detailedReview} icon={TestTube} />
                                 <ResultSection title="Organic Treatment" content={detectionResult.organicTreatment} icon={Leaf} />
-                                <ResultSection title="Chemical Treatment" content={detectionResult.chemicalTreatment} icon={Spray} />
+                                <ResultSection title="Chemical Treatment" content={detectionResult.chemicalTreatment} icon={SprayCan} />
                                 <ResultSection title="Prevention Tips" content={detectionResult.preventionTips} icon={ShieldCheck} />
 
                             </div>
