@@ -18,24 +18,11 @@ import { getDashboardAnalytics, type DashboardAnalyticsOutput } from "@/ai/flows
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import Image from "next/image";
 
 interface UserData {
   name?: string;
   location?: string;
   email?: string;
-}
-
-interface Diagnosis {
-    id: string;
-    imageUrl: string;
-    result: string;
-    createdAt: {
-        seconds: number;
-    }
 }
 
 const demoUsers = [
@@ -72,21 +59,6 @@ const BadgeIcon = ({ iconName, ...props }: { iconName: "Tractor" | "ShieldCheck"
     return <Icon {...props} />;
 };
 
-const parseDiagnosis = (result: string) => {
-    if (!result) {
-        return {
-            crop: "Unknown",
-            issue: "N/A"
-        };
-    }
-    const cropMatch = result.match(/\*\*Crop Detected:\*\*\s*(.*)/);
-    const issueMatch = result.match(/\*\*Disease\/Issue:\*\*\s*(.*)/);
-    return {
-        crop: cropMatch ? cropMatch[1].trim() : "Unknown",
-        issue: issueMatch ? issueMatch[1].trim() : "N/A"
-    };
-};
-
 export default function DashboardPage() {
   const [user, authLoading] = useAuthState(auth);
   const router = useRouter();
@@ -94,14 +66,10 @@ export default function DashboardPage() {
   const [analyticsData, setAnalyticsData] = useState<DashboardAnalyticsOutput | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
   const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
-  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
-  const [isDiagnosesLoading, setIsDiagnosesLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const { t, language } = useTranslation();
   const { toast } = useToast();
-
-  const isDemoUser = user?.email ? demoUsers.includes(user.email) : false;
 
   useEffect(() => {
     if (authLoading) return;
@@ -112,7 +80,6 @@ export default function DashboardPage() {
 
     const fetchAllData = async () => {
         
-        // Fetch user doc and static data in parallel
         getDoc(doc(db, "users", user.uid)).then(userDoc => {
             if (userDoc.exists()) {
                 setUserData(userDoc.data() as UserData);
@@ -126,19 +93,6 @@ export default function DashboardPage() {
 
         getAgriCreditScore({ userId: user.uid, email: user.email || undefined, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
 
-        const diagnosesQuery = query(
-            collection(db, 'diagnoses'),
-            where('userId', '==', user.uid)
-        );
-        getDocs(diagnosesQuery).then(snapshot => {
-            const userDiagnoses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Diagnosis[];
-            // Sort client-side to avoid needing a composite index
-            userDiagnoses.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-            setDiagnoses(userDiagnoses.slice(0, 3)); // Get the most recent 3
-        }).finally(() => setIsDiagnosesLoading(false));
-
-
-        // Fetch weather data
         setLocationStatus("Fetching location...");
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -238,13 +192,13 @@ export default function DashboardPage() {
             </Card>
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
-                    <Leaf className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">{t('nav.equipmentRentals')}</CardTitle>
+                    <Tractor className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{diagnoses.length} {t('profile.active')}</div>
+                    <div className="text-2xl font-bold">5 {t('profile.active')}</div>
                     <p className="text-xs text-muted-foreground">
-                        {t('profile.diagnosesThisWeek')}
+                        2 {t('profile.lending')}, 3 {t('profile.borrowing')}
                     </p>
                 </CardContent>
             </Card>
@@ -273,64 +227,6 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 {isLoading ? <Skeleton className="h-[200px] w-full" /> : <EarningsChart data={analyticsData.monthlyEarnings} />}
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader>
-                <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
-                <CardDescription>
-                  {t('profile.diagnosesDescription')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('profile.diagnosesCrop')}</TableHead>
-                      <TableHead>{t('profile.diagnosesIssue')}</TableHead>
-                      <TableHead className="text-right">{t('profile.diagnosesDate')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isDiagnosesLoading ? (
-                        <TableRow><TableCell colSpan={3} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-                    ) : diagnoses.length > 0 ? (
-                        diagnoses.map(d => {
-                            const { crop, issue } = parseDiagnosis(d.result);
-                            return (
-                                <TableRow key={d.id}>
-                                    <TableCell>
-                                        <div className="font-medium flex items-center gap-2">
-                                            {d.imageUrl ? (
-                                                <Image src={d.imageUrl} alt={crop} width={32} height={32} className="rounded-sm object-cover" />
-                                            ) : (
-                                                <div className="w-8 h-8 flex items-center justify-center bg-muted rounded-sm">
-                                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                                </div>
-                                            )}
-                                            {crop}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={issue === "None detected" ? "default" : "destructive"}>
-                                            {issue}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right text-xs text-muted-foreground">
-                                        {d.createdAt?.seconds ? new Date(d.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={3} className="text-center h-24">
-                                {t('profile.noDiagnoses')} <Link href="/dashboard/crop-diagnosis" className="text-primary underline">Get started</Link>
-                            </TableCell>
-                        </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
               </CardContent>
             </Card>
         </div>

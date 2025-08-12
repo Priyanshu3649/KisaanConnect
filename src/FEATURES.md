@@ -5,7 +5,6 @@ This document outlines the current features implemented in the KisaanConnect app
 ## Core Farming & Financial Tools
 
 - **Farmer Dashboard**: The central hub providing a comprehensive overview of total revenue, monthly earnings charts, recent crop diagnoses, and a personalized Agri-Credit Score.
-- **Crop Diagnosis**: AI-powered disease and pest diagnosis from user-uploaded or camera-captured images, providing confidence scores, organic/chemical treatment plans, and prevention tips.
 - **Digital Twin**: A powerful virtual model of a farmer's field, offering:
     - **Live Field Map & Satellite View**: Interactive map to select and analyze any field location.
     - **Soil & Nutrient Analysis**: Detailed breakdown of soil health, moisture, pH, and key nutrient levels (N, P, K).
