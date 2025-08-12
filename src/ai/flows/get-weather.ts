@@ -2,7 +2,8 @@
 'use server';
 
 /**
- * @fileOverview A service for fetching real-time and forecast weather data using OpenWeatherMap.
+ * @fileOverview A service for fetching real-time and forecast weather data.
+ * It uses the OpenWeatherMap API if a key is provided, otherwise it returns mock data.
  *
  * - getWeather - A function that returns current and forecasted weather conditions for a given location.
  * - GetWeatherInput - The input type for the getWeather function.
@@ -56,33 +57,49 @@ const weatherCodeToIcon: Record<string, GetWeatherOutput["current"]["icon"]> = {
     '50d': 'CloudFog', '50n': 'CloudFog',
 };
 
+const getMockWeatherData = (): GetWeatherOutput => {
+    return {
+        current: {
+            temperature: 28,
+            high: 32,
+            low: 24,
+            condition: "Partly cloudy",
+            cloudCover: 40,
+            humidity: 70,
+            windSpeed: 15,
+            icon: "CloudSun",
+        },
+        forecast: [
+            { date: "Tuesday", high: 33, low: 25, icon: "CloudSun" },
+            { date: "Wednesday", high: 34, low: 26, icon: "Sun" },
+            { date: "Thursday", high: 31, low: 24, icon: "CloudRain" },
+            { date: "Friday", high: 30, low: 23, icon: "CloudRain" },
+            { date: "Saturday", high: 32, low: 24, icon: "CloudSun" },
+        ],
+    };
+};
 
 async function fetchWeatherData(input: GetWeatherInput): Promise<GetWeatherOutput | null> {
     const apiKey = process.env.OPENWEATHERMAP_API_KEY;
-    if (!apiKey) {
-        console.error("OpenWeatherMap API key is not configured.");
-        return null;
+    if (!apiKey || apiKey === "YOUR_API_KEY_HERE") {
+        console.warn("OpenWeatherMap API key is not configured. Returning mock data.");
+        return getMockWeatherData();
     }
 
     let lat: number | undefined = input.latitude;
     let lon: number | undefined = input.longitude;
 
-    // 1. Geocode the location to get latitude and longitude if not provided
     if ((!lat || !lon) && input.location) {
         const geocodeUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(input.location)}&limit=1&appid=${apiKey}`;
         try {
             const geocodeResponse = await fetch(geocodeUrl);
-            if (!geocodeResponse.ok) {
-                console.error("Geocoding API request failed:", geocodeResponse.status, await geocodeResponse.text());
-                return null;
-            }
+            if (!geocodeResponse.ok) throw new Error(`Geocoding failed: ${geocodeResponse.status}`);
             const geocodeData = await geocodeResponse.json();
             if (geocodeData && geocodeData.length > 0) {
                 lat = geocodeData[0].lat;
                 lon = geocodeData[0].lon;
             } else {
-                 console.error("No geocoding results found for location:", input.location);
-                 return null;
+                 throw new Error(`No geocoding results for: ${input.location}`);
             }
         } catch (error) {
             console.error("Failed to fetch from Geocoding API:", error);
@@ -95,8 +112,6 @@ async function fetchWeatherData(input: GetWeatherInput): Promise<GetWeatherOutpu
         return null;
     }
 
-
-    // 2. Fetch current weather and forecast data from OpenWeatherMap using coordinates
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
 
@@ -106,27 +121,19 @@ async function fetchWeatherData(input: GetWeatherInput): Promise<GetWeatherOutpu
             fetch(forecastUrl),
         ]);
 
-        if (!weatherResponse.ok) {
-            console.error("Weather API request failed:", weatherResponse.status, await weatherResponse.text());
-            return null;
-        }
-        if (!forecastResponse.ok) {
-            console.error("Forecast API request failed:", forecastResponse.status, await forecastResponse.text());
-            return null;
-        }
+        if (!weatherResponse.ok) throw new Error(`Weather API failed: ${weatherResponse.status}`);
+        if (!forecastResponse.ok) throw new Error(`Forecast API failed: ${forecastResponse.status}`);
 
         const weatherData = await weatherResponse.json();
         const forecastData = await forecastResponse.json();
 
-        if (!weatherData.main || !weatherData.weather || !weatherData.weather[0]) {
-            console.error("Weather data is missing expected fields:", weatherData);
-            return null;
+        if (!weatherData.main || !weatherData.weather?.[0]) {
+             throw new Error("Weather data missing expected fields.");
         }
         
-        // Process forecast data to get one entry per day
         const dailyForecasts: { [key: string]: { highs: number[], lows: number[], icons: string[] } } = {};
         forecastData.list.forEach((item: any) => {
-            const date = item.dt_txt.split(' ')[0]; // Get just the date part
+            const date = item.dt_txt.split(' ')[0];
             if (!dailyForecasts[date]) {
                 dailyForecasts[date] = { highs: [], lows: [], icons: [] };
             }
@@ -139,7 +146,6 @@ async function fetchWeatherData(input: GetWeatherInput): Promise<GetWeatherOutpu
             const dayData = dailyForecasts[date];
             const high = Math.round(Math.max(...dayData.highs));
             const low = Math.round(Math.min(...dayData.lows));
-            // Find the most frequent icon for the day
             const icon = dayData.icons.sort((a,b) => dayData.icons.filter(v => v===a).length - dayData.icons.filter(v => v===b).length).pop()!;
             return {
                 date: format(new Date(date), 'EEEE'),
@@ -149,11 +155,15 @@ async function fetchWeatherData(input: GetWeatherInput): Promise<GetWeatherOutpu
             };
         });
 
+        const todayKey = new Date().toISOString().split('T')[0];
+        const todayHigh = dailyForecasts[todayKey] ? Math.round(Math.max(...dailyForecasts[todayKey].highs)) : Math.round(weatherData.main.temp_max);
+        const todayLow = dailyForecasts[todayKey] ? Math.round(Math.min(...dailyForecasts[todayKey].lows)) : Math.round(weatherData.main.temp_min);
+
         return {
             current: {
                 temperature: Math.round(weatherData.main.temp),
-                high: Math.round(Math.max(...dailyForecasts[new Date().toISOString().split('T')[0]].highs)),
-                low: Math.round(Math.min(...dailyForecasts[new Date().toISOString().split('T')[0]].lows)),
+                high: todayHigh,
+                low: todayLow,
                 condition: weatherData.weather[0].main,
                 cloudCover: weatherData.clouds.all,
                 humidity: weatherData.main.humidity,
@@ -184,8 +194,7 @@ const getWeatherFlow = ai.defineFlow(
   async (input) => {
     try {
         if (!input || (!input.location && (!input.latitude || !input.longitude))) {
-            console.error("getWeatherFlow called with no location or coordinates.");
-            return null;
+            return getMockWeatherData(); // Return mock data if no location is provided
         }
         const data = await fetchWeatherData(input);
         return data;
