@@ -23,7 +23,7 @@ export type AgriCreditScoreInput = z.infer<typeof AgriCreditScoreInputSchema>;
 
 const AgriCreditScoreOutputSchema = z.object({
     score: z.number().min(0).max(1000).describe('The calculated agri-credit score, from 0 to 1000.'),
-    cibilScore: z.number().describe("The user's CIBIL score. 0 if not available."),
+    cibilScore: z.number().describe("The user's CIBIL score. -1 if not available."),
     trend: z.enum(['up', 'down', 'stable']).describe("The recent trend of the score."),
     trendPoints: z.number().describe("The number of points the score has changed recently."),
     improvementTips: z.array(z.string()).describe('A list of actionable tips for the farmer to improve their score.'),
@@ -90,13 +90,13 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
 
     if (!merchantId || !merchantKey) {
         console.error("Cyrus credentials are not configured in .env file.");
-        return 0;
+        return -1;
     }
 
     // Ensure all required fields are present
     if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone) {
         console.warn("User details incomplete. Cannot fetch CIBIL score.", userDetails);
-        return 0;
+        return -1;
     }
 
     const requestBody = {
@@ -122,7 +122,7 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
         const response = await fetch(url, options);
         if (!response.ok) {
             console.error("Cyrus API request failed with status:", response.status, await response.text());
-            return 0; // Return 0 on API failure
+            return -1;
         }
         const result = await response.json();
         
@@ -141,7 +141,7 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
 
     } catch (error) {
         console.error('Error fetching CIBIL score from Cyrus API:', error);
-        return 0; // Return 0 on any exception
+        return -1;
     }
 }
 
@@ -157,7 +157,7 @@ const agriCreditScoreFlow = ai.defineFlow(
     if (!input.email || !demoUsers.includes(input.email)) {
         return {
             score: 300,
-            cibilScore: 0,
+            cibilScore: -1,
             trend: 'stable',
             trendPoints: 0,
             improvementTips: [
@@ -175,13 +175,13 @@ const agriCreditScoreFlow = ai.defineFlow(
     }
 
     const userDetails = await getUserDetails(input.userId);
-    const fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : 0;
+    const fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
 
     // Use a simulated hash for other metrics to keep them dynamic
     const hash = input.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
     // 1. Use fetched CIBIL score. If API fails, fallback to a simulated score.
-    const cibilScore = fetchedCibilScore !== 0 ? fetchedCibilScore : (650 + (hash % 100));
+    const cibilScore = fetchedCibilScore !== -1 ? fetchedCibilScore : (650 + (hash % 100));
     
     // 2. Simulate Farm Data Analysis score (0-1000 range)
     const simulatedFarmDataScore = 700 + (hash % 150); // 700-850
