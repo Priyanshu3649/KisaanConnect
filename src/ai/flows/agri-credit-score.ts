@@ -134,9 +134,8 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
         } else if (result && result.cibilReport?.data?.score) { // Fallback for nested score
             return parseInt(result.cibilReport.data.score, 10);
         } else {
-             console.warn("CIBIL score field not found in Cyrus API response. Falling back to simulation.");
-             // Fallback to a simulated score if the 'score' field is not present
-             return 750 + Math.floor(Math.random() * 100);
+             console.warn("CIBIL score field not found in Cyrus API response. Falling back to -1.");
+             return -1;
         }
 
     } catch (error) {
@@ -175,13 +174,13 @@ const agriCreditScoreFlow = ai.defineFlow(
     }
 
     const userDetails = await getUserDetails(input.userId);
-    const fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
+    const cibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
 
     // Use a simulated hash for other metrics to keep them dynamic
     const hash = input.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
-    // 1. Use fetched CIBIL score. If API fails, fallback to a simulated score.
-    const cibilScore = fetchedCibilScore !== -1 ? fetchedCibilScore : (650 + (hash % 100));
+    // 1. Use fetched CIBIL score. If API fails, it will be -1. We treat -1 as a low score (e.g., 300) for calculation.
+    const cibilForCalc = cibilScore !== -1 ? cibilScore : 300;
     
     // 2. Simulate Farm Data Analysis score (0-1000 range)
     const simulatedFarmDataScore = 700 + (hash % 150); // 700-850
@@ -191,7 +190,7 @@ const agriCreditScoreFlow = ai.defineFlow(
 
     // Calculate weighted score
     const finalScore = Math.round(
-        (cibilScore * 0.5) +   // 50% from CIBIL (normalized from 900 max)
+        (cibilForCalc * 0.5) +   // 50% from CIBIL (normalized from 900 max)
         (simulatedFarmDataScore * 0.3) + // 30% from Farm Data
         (simulatedPlatformScore * 0.2)   // 20% from Platform Transactions
     );
