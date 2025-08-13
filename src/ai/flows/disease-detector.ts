@@ -18,7 +18,6 @@ const DetectDiseaseInputSchema = z.object({
     .describe(
       "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  description: z.string().optional().describe('An optional description of the plant and its symptoms.'),
   language: z.string().describe('The language for the response (e.g., "en", "hi").'),
 });
 export type DetectDiseaseInput = z.infer<typeof DetectDiseaseInputSchema>;
@@ -41,17 +40,14 @@ const prompt = ai.definePrompt({
   name: 'diseaseDetectorPrompt',
   input: { schema: DetectDiseaseInputSchema },
   output: { schema: DetectDiseaseOutputSchema },
-  prompt: `You are an expert AI plant pathologist. Analyze the following image of a plant and the user's description.
+  prompt: `You are an expert AI plant pathologist. Analyze the following image of a plant.
 
   Image: {{media url=photoDataUri}}
-  {{#if description}}
-  User's Description: {{{description}}}
-  {{/if}}
 
   Your task is to:
   1. Determine if the image contains a plant. If not, set 'isPlant' to false and provide default values for other fields.
   2. Identify the common name of the plant.
-  3. Determine if the plant is healthy. Use the user's description for extra context if provided.
+  3. Determine if the plant is healthy.
   4. If the plant is not healthy, identify the specific disease affecting it. If it is healthy, set the disease name to "None".
   5. Provide a confidence score (0.0 to 1.0) for your diagnosis.
   6. Write a detailed review of the disease, including its common causes and symptoms.
