@@ -1,237 +1,252 @@
 
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import PageHeader from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { Lightbulb, Loader2, UploadCloud, CheckCircle2, AlertCircle, Leaf } from "lucide-react";
-import { diagnoseCropDisease, type DiagnoseCropDiseaseOutput } from "@/ai/flows/crop-disease-diagnosis";
-import { useToast } from "@/hooks/use-toast";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { useTranslation } from "@/context/translation-context";
+import { useState, useRef } from 'react';
+import PageHeader from '@/components/page-header';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Camera, FileUp, Leaf, Loader2, Bot } from 'lucide-react';
+import { useTranslation } from '@/context/translation-context';
+import { useToast } from '@/hooks/use-toast';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db, storage } from '@/lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import Image from 'next/image';
+import { diagnoseCrop } from '@/ai/flows/diagnose-crop';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 
+// Simple markdown parser for the AI response
+const ParseMarkdown = ({ text }: { text: string }) => {
+    const lines = text.split('\\n');
+    return (
+        <div className="space-y-2 text-sm">
+            {lines.map((line, index) => {
+                if (line.startsWith('**')) {
+                    const parts = line.split('**');
+                    return (
+                        <div key={index} className="grid grid-cols-3 gap-2 pt-2">
+                            <span className="font-semibold text-foreground col-span-1">{parts[1]}</span>
+                            <span className="text-muted-foreground col-span-2">{parts.slice(2).join('**')}</span>
+                        </div>
+                    );
+                }
+                return <p key={index} className="text-muted-foreground">{line}</p>;
+            })}
+        </div>
+    );
+};
 
 export default function CropDiagnosisPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [description, setDescription] = useState("");
-  const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  const [user] = useAuthState(auth);
-  const { t, language } = useTranslation();
+    const { t, language } = useTranslation();
+    const [user] = useAuthState(auth);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [dataUri, setDataUri] = useState<string | null>(null);
+    const [isDiagnosing, setIsDiagnosing] = useState(false);
+    const [diagnosisResult, setDiagnosisResult] = useState<string | null>(null);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const { toast } = useToast();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setResult(null);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
-    }
-  };
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setFile(file);
+        }
+    };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!file) {
-      toast({
-        variant: "destructive",
-        title: t('cropDiagnosis.missingInfoTitle'),
-        description: t('cropDiagnosis.missingInfoDesc'),
-      });
-      return;
-    }
-    if (!user) {
-        toast({
-            variant: "destructive",
-            title: t('cropDiagnosis.notLoggedInTitle'),
-            description: t('cropDiagnosis.notLoggedInDesc'),
-        });
-        return;
-    }
-    setIsLoading(true);
-    setResult(null);
-
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const photoDataUri = reader.result as string;
-        const diagnosisResult = await diagnoseCropDisease({
-          photoDataUri,
-          cropDescription: description,
-          language: language,
-        });
-        setResult(diagnosisResult);
-
-        // Save to Firestore
-        const diagnosisData = {
-            userId: user.uid,
-            crop: description.split(' ')[0] || 'Unknown Crop', // Simple crop name extraction
-            disease: diagnosisResult.diseaseIdentification.isDiseased ? diagnosisResult.diseaseIdentification.likelyDisease : 'Healthy',
-            status: diagnosisResult.diseaseIdentification.isDiseased ? 'Active' : 'Resolved',
-            progress: diagnosisResult.diseaseIdentification.isDiseased ? 0 : 100, // Initial progress
-            createdAt: serverTimestamp(),
-            imageUrl: '', // In a real app, you'd upload the image and store the URL
-            isDiseased: diagnosisResult.diseaseIdentification.isDiseased,
-            confidence: diagnosisResult.diseaseIdentification.confidenceLevel,
-            recommendations: diagnosisResult.recommendedActions
+    const setFile = (file: File) => {
+        setImageFile(file);
+        setDiagnosisResult(null); // Clear previous result
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPreviewUrl(reader.result as string);
+            setDataUri(reader.result as string);
         };
-
-        await addDoc(collection(db, "diagnoses"), diagnosisData);
-
-        toast({
-            title: t('cropDiagnosis.savedTitle'),
-            description: t('cropDiagnosis.savedDesc'),
-        });
-
-      };
-      reader.onerror = (error) => {
-        console.error("Error reading file:", error);
-        toast({
-          variant: "destructive",
-          title: t('cropDiagnosis.fileReadErrorTitle'),
-          description: t('cropDiagnosis.fileReadErrorDesc'),
-        });
-      };
-    } catch (error) {
-      console.error("Diagnosis failed:", error);
-      toast({
-        variant: "destructive",
-        title: t('cropDiagnosis.failedTitle'),
-        description: t('cropDiagnosis.failedDesc'),
-      });
-    } finally {
-      setIsLoading(false);
+        reader.readAsDataURL(file);
     }
-  };
 
-  return (
-    <>
-      <PageHeader
-        title={t('nav.cropDiagnosis')}
-        description={t('cropDiagnosis.pageDescription')}
-      />
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <form onSubmit={handleSubmit}>
-            <CardHeader>
-              <CardTitle>{t('cropDiagnosis.submitTitle')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="crop-image">{t('cropDiagnosis.imageLabel')}</Label>
-                <div className="flex items-center justify-center w-full">
-                  <label htmlFor="crop-image-input" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary">
-                      {previewUrl ? (
-                        <Image src={previewUrl} alt={t('cropDiagnosis.previewAlt')} width={192} height={192} className="h-full w-auto object-contain p-2" />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">{t('cropDiagnosis.clickToUpload')}</span> {t('cropDiagnosis.dragAndDrop')}</p>
-                            <p className="text-xs text-muted-foreground">{t('cropDiagnosis.fileTypes')}</p>
-                        </div>
-                      )}
-                      <Input id="crop-image-input" type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
-                  </label>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">{t('cropDiagnosis.descriptionLabel')} <span className="text-xs text-muted-foreground">({t('optional')})</span></Label>
-                <Textarea
-                  id="description"
-                  placeholder={t('cropDiagnosis.descriptionPlaceholder')}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isLoading || !file} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('cropDiagnosis.analyzingButton')}
-                  </>
-                ) : (
-                  t('cropDiagnosis.diagnoseButton')
-                )}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            toast({
+                variant: 'destructive',
+                title: t('cropDiagnosis.cameraErrorTitle'),
+                description: t('cropDiagnosis.cameraErrorDesc'),
+            });
+            setIsCameraOpen(false);
+        }
+    };
 
-        <div className="space-y-4">
-            <h2 className="font-headline text-2xl font-semibold">{t('cropDiagnosis.resultTitle')}</h2>
-            {isLoading && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg bg-card">
-                    <Loader2 className="w-12 h-12 mb-4 text-muted-foreground animate-spin" />
-                    <p className="text-muted-foreground">{t('cropDiagnosis.loadingText')}</p>
-                </div>
-            )}
-            {!isLoading && result && (
-              <Card className="bg-card">
-                 <CardHeader>
-                    {result.diseaseIdentification.isDiseased ? (
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>{t('cropDiagnosis.diseaseDetected')}</AlertTitle>
-                            <AlertDescription>
-                                {t('cropDiagnosis.likelyDisease')}: <span className="font-bold">{result.diseaseIdentification.likelyDisease}</span>
-                            </AlertDescription>
-                        </Alert>
-                    ) : (
-                        <Alert variant="default" className="border-green-500/50 bg-green-500/10 text-foreground">
-                             <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <AlertTitle className="text-green-400">{t('cropDiagnosis.healthy')}</AlertTitle>
-                            <AlertDescription className="text-green-400/80">
-                                {t('cropDiagnosis.noDisease')}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                 </CardHeader>
-                {result.diseaseIdentification.isDiseased && (
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (!imageFile || !user || !dataUri) {
+            toast({
+                variant: 'destructive',
+                title: t('cropDiagnosis.missingInfoTitle'),
+                description: !imageFile ? t('cropDiagnosis.missingInfoDesc') : t('cropDiagnosis.notLoggedInDesc')
+            });
+            return;
+        }
+
+        setIsDiagnosing(true);
+        setDiagnosisResult(null);
+
+        try {
+            const diagnosisPromise = diagnoseCrop({ photoDataUri: dataUri, language });
+            
+            const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
+            const uploadPromise = uploadBytes(storageRef, imageFile);
+
+            const [diagnosis, uploadResult] = await Promise.all([diagnosisPromise, uploadPromise]);
+            const imageUrl = await getDownloadURL(uploadResult.ref);
+            
+            setDiagnosisResult(diagnosis.analysis);
+
+            // Extract key info for dashboard display
+            const plantNameMatch = diagnosis.analysis.match(/\*\*Crop Identification\*\*:\s*(.*?)(\\n|$)/);
+            const statusMatch = diagnosis.analysis.match(/\*\*Health Status\*\*:\s*Diseased - (.*?)(\\n|$)/);
+            const isHealthy = !statusMatch;
+
+            await addDoc(collection(db, 'diagnoses'), {
+                userId: user.uid,
+                imageUrl: imageUrl,
+                result: {
+                    plantName: plantNameMatch ? plantNameMatch[1] : 'Unknown',
+                    diseaseName: statusMatch ? statusMatch[1] : 'Healthy',
+                    isHealthy: isHealthy,
+                },
+                fullResult: diagnosis.analysis,
+                createdAt: serverTimestamp(),
+            });
+            
+            toast({ title: t('cropDiagnosis.savedTitle'), description: t('cropDiagnosis.savedDesc') });
+        } catch (error) {
+            console.error("Diagnosis process failed:", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            toast({ variant: "destructive", title: t('cropDiagnosis.failedTitle'), description: errorMessage || t('cropDiagnosis.failedDesc') });
+        } finally {
+            setIsDiagnosing(false);
+        }
+    };
+
+    const handleTakePhoto = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                    setFile(file);
+                }
+            }, 'image/jpeg');
+            stopCamera();
+            setIsCameraOpen(false);
+        }
+    };
+
+    return (
+        <>
+            <PageHeader
+                title={t('nav.cropDiagnosis')}
+                description={t('cropDiagnosis.pageDescription')}
+            />
+            <div className="grid gap-8 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('cropDiagnosis.uploadTitle')}</CardTitle>
+                    </CardHeader>
                     <CardContent className="space-y-4">
-                        <div>
-                            <Label>{t('cropDiagnosis.confidence')}</Label>
-                            <div className="flex items-center gap-2">
-                                <Progress value={result.diseaseIdentification.confidenceLevel * 100} className="w-full" />
-                                <span className="font-mono text-sm">{(result.diseaseIdentification.confidenceLevel * 100).toFixed(0)}%</span>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> {t('cropDiagnosis.recommendations')}</h3>
-                            <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
-                                {result.recommendedActions.map((action, index) => (
-                                    <li key={index}>{action}</li>
-                                ))}
-                            </ul>
+                       <label htmlFor="file-upload" className="w-full h-64 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 relative overflow-hidden cursor-pointer hover:border-primary">
+                            {previewUrl ? (
+                                <Image src={previewUrl} alt={t('cropDiagnosis.previewAlt')} fill className="object-contain" />
+                            ) : (
+                                <div className="text-center text-muted-foreground">
+                                    <FileUp className="mx-auto h-12 w-12" />
+                                    <p>{t('cropDiagnosis.imagePlaceholder')}</p>
+                                </div>
+                            )}
+                        </label>
+                        <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
+                        <div className="flex gap-2 justify-center">
+                            <Button onClick={() => document.getElementById('file-upload')?.click()} variant="outline">
+                                <FileUp className="mr-2 h-4 w-4" />
+                                {t('cropDiagnosis.browseFiles')}
+                            </Button>
+                            <Button onClick={() => { setIsCameraOpen(true); startCamera(); }}>
+                                <Camera className="mr-2 h-4 w-4" />
+                                {t('cropDiagnosis.takePhoto')}
+                            </Button>
                         </div>
                     </CardContent>
-                )}
-              </Card>
-            )}
-            {!isLoading && !result && (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-dashed rounded-lg bg-card">
-                    <Leaf className="w-12 h-12 mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">{t('cropDiagnosis.resultsPlaceholder')}</p>
-                </div>
-            )}
-        </div>
-      </div>
-    </>
-  );
+                    <CardContent>
+                        <Button onClick={handleSubmit} disabled={isDiagnosing || !imageFile} className="w-full">
+                            {isDiagnosing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                            {isDiagnosing ? t('cropDiagnosis.analyzingButton') : t('cropDiagnosis.diagnoseButton')}
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('cropDiagnosis.resultTitle')}</CardTitle>
+                        <CardDescription>{t('cropDiagnosis.resultDesc')}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="min-h-[300px]">
+                        {isDiagnosing ? (
+                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                                <p>{t('cropDiagnosis.loadingText')}</p>
+                            </div>
+                        ) : diagnosisResult ? (
+                            <ParseMarkdown text={diagnosisResult} />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                <Leaf className="h-8 w-8 mb-4" />
+                                <p>{t('cropDiagnosis.resultsPlaceholder')}</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+            
+             <Dialog open={isCameraOpen} onOpenChange={(isOpen) => { if (!isOpen) stopCamera(); setIsCameraOpen(isOpen); }}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>{t('cropDiagnosis.cameraTitle')}</DialogTitle>
+                        <DialogDescription>{t('cropDiagnosis.cameraDesc')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="relative aspect-video w-full bg-black rounded-md overflow-hidden">
+                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+                        <canvas ref={canvasRef} className="hidden" />
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleTakePhoto} className="w-full">
+                            <Camera className="mr-2 h-4 w-4" />
+                            {t('cropDiagnosis.captureButton')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
 }

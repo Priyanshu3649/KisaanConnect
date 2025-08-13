@@ -13,8 +13,7 @@
     "nav.salesAdvisor": "Sales Advisor",
     "nav.inventory": "Inventory",
     "nav.manageAccount": "Manage Account",
-    "nav.diseaseDetector": "Disease Detector",
-    "nav.cropAiDiagnosis": "Crop AI Diagnosis",
+    "nav.cropDiagnosis": "Crop Diagnosis",
 
     "optional": "optional",
 
@@ -442,5 +441,5 @@
     "cropDiagnosis.failedDesc": "An unexpected error occurred during the analysis.",
     "cropDiagnosis.cameraErrorTitle": "Camera Error",
     "cropDiagnosis.cameraErrorDesc": "Could not access the camera. Please check permissions.",
-    "cropDiagnosis.confidence": "Confidence"
+    "cropDiagnosis.errorResult": "**Analysis Failed**\\n\\nThe AI model could not process the image. Please try again with a clearer photo."
 }
