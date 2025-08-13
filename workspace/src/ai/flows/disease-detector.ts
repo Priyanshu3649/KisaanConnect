@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview An AI plant pathologist that diagnoses diseases from an image.
+ * @fileOverview An AI plant pathologist that diagnoses diseases from an image and an optional description.
  *
  * - detectDisease - A function that handles the plant disease detection process.
  * - DetectDiseaseInput - The input type for the detectDisease function.
