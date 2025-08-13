@@ -110,25 +110,18 @@ export default function DiseaseDetectorPage() {
                         <CardTitle>{t('cropDiagnosis.uploadTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="w-full h-64 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 relative overflow-hidden">
+                         <label htmlFor="file-upload" className="w-full h-64 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 relative overflow-hidden cursor-pointer hover:border-primary transition-colors">
                             {previewUrl ? (
                                 <Image src={previewUrl} alt={t('cropDiagnosis.previewAlt')} fill className="object-contain" />
                             ) : (
-                                <div className="text-center text-muted-foreground">
-                                    <Leaf className="mx-auto h-12 w-12" />
-                                    <p>{t('cropDiagnosis.imagePlaceholder')}</p>
+                                <div className="text-center text-muted-foreground flex flex-col items-center gap-2">
+                                    <FileUp className="h-10 w-10" />
+                                    <span className="font-semibold">{t('cropDiagnosis.browseFiles')}</span>
+                                    <span className="text-xs">{t('cropDiagnosis.imagePlaceholder')}</span>
                                 </div>
                             )}
-                        </div>
-                        <div className="flex gap-2 justify-center">
-                            <Button asChild variant="outline">
-                                <label htmlFor="file-upload" className="cursor-pointer">
-                                    <FileUp className="mr-2 h-4 w-4" />
-                                    {t('cropDiagnosis.browseFiles')}
-                                </label>
-                            </Button>
-                            <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
-                        </div>
+                        </label>
+                        <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
                     </CardContent>
                     <CardContent>
                         <Button onClick={handleSubmit} disabled={isDiagnosing || !imageFile} className="w-full">
