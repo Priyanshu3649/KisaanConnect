@@ -150,7 +150,7 @@ export default function DiseaseDetectorPage() {
                                 </Alert>
 
                                 <div>
-                                    <Label>{t('cropDiagnosis.confidence')}</Label>
+                                    <p className="text-sm font-medium mb-1">{t('cropDiagnosis.confidence')}</p>
                                     <div className="flex items-center gap-2">
                                         <Progress value={diagnosisResult.confidence * 100} className="w-full" />
                                         <span>{(diagnosisResult.confidence * 100).toFixed(0)}%</span>
