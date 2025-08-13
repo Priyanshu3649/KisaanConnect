@@ -5,7 +5,7 @@ import { useState, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, FileUp, Leaf, Loader2, Bot, HeartPulse, CheckCircle2 } from 'lucide-react';
+import { Camera, FileUp, Leaf, Loader2, Bot, HeartPulse, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -98,28 +98,42 @@ export default function CropAnalysisPage() {
         setDiagnosisResult(null);
 
         try {
-            const diagnosisPromise = analyzeCrop({ photoDataUri: dataUri, language });
-            
-            const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
-            const uploadPromise = uploadBytes(storageRef, imageFile);
-
-            const [diagnosis, uploadResult] = await Promise.all([diagnosisPromise, uploadPromise]);
-            const imageUrl = await getDownloadURL(uploadResult.ref);
-            
+            const diagnosis = await analyzeCrop({ photoDataUri: dataUri, language });
             setDiagnosisResult(diagnosis);
-
-            await addDoc(collection(db, 'diagnoses'), {
-                userId: user.uid,
-                imageUrl: imageUrl,
-                result: diagnosis,
-                createdAt: serverTimestamp(),
-            });
             
-            toast({ title: t('cropAnalysis.savedTitle'), description: t('cropAnalysis.savedDesc') });
+            // Do not save failed diagnoses to Firestore
+            if (diagnosis.diseaseName !== "Analysis Failed") {
+                const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
+                const uploadResult = await uploadBytes(storageRef, imageFile);
+                const imageUrl = await getDownloadURL(uploadResult.ref);
+
+                await addDoc(collection(db, 'diagnoses'), {
+                    userId: user.uid,
+                    imageUrl: imageUrl,
+                    result: diagnosis,
+                    createdAt: serverTimestamp(),
+                });
+                
+                toast({ title: t('cropAnalysis.savedTitle'), description: t('cropAnalysis.savedDesc') });
+            } else {
+                 toast({ variant: "destructive", title: t('cropAnalysis.failedTitle'), description: diagnosis.detailedReview });
+            }
+
         } catch (error) {
             console.error("Diagnosis process failed:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             toast({ variant: "destructive", title: t('cropAnalysis.failedTitle'), description: errorMessage || t('cropAnalysis.failedDesc') });
+             setDiagnosisResult({
+                isPlant: false,
+                plantName: "Error",
+                isHealthy: false,
+                diseaseName: "Process Failed",
+                confidence: 0,
+                detailedReview: "An unexpected error occurred on the server. Please check the console for more details and try again.",
+                organicTreatment: "N/A",
+                chemicalTreatment: "N/A",
+                preventionTips: "If the problem persists, please contact support."
+            });
         } finally {
             setIsDiagnosing(false);
         }
@@ -143,6 +157,48 @@ export default function CropAnalysisPage() {
             setIsCameraOpen(false);
         }
     };
+
+    const renderResult = () => {
+        if (!diagnosisResult) return null;
+        
+        const isFailure = diagnosisResult.diseaseName === "Analysis Failed";
+
+        if (isFailure) {
+            return (
+                 <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>{diagnosisResult.diseaseName}</AlertTitle>
+                    <AlertDescription>
+                        {diagnosisResult.detailedReview}
+                    </AlertDescription>
+                </Alert>
+            )
+        }
+        
+        return (
+            <div className="space-y-4">
+                <Alert variant={diagnosisResult.isHealthy ? 'default' : 'destructive'} className={diagnosisResult.isHealthy ? "border-green-500/50 bg-green-500/10" : ""}>
+                    {diagnosisResult.isHealthy ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <HeartPulse className="h-4 w-4" />}
+                    <AlertTitle className="font-bold">
+                        {diagnosisResult.plantName}: {diagnosisResult.isHealthy ? 'Healthy' : diagnosisResult.diseaseName}
+                    </AlertTitle>
+                </Alert>
+
+                <div>
+                    <Label>{t('cropAnalysis.confidence')}</Label>
+                    <div className="flex items-center gap-2">
+                        <Progress value={diagnosisResult.confidence * 100} className="w-full" />
+                        <span>{(diagnosisResult.confidence * 100).toFixed(0)}%</span>
+                    </div>
+                </div>
+
+                <ResultSection title="Detailed Review" content={diagnosisResult.detailedReview} />
+                <ResultSection title="Organic Treatment" content={diagnosisResult.organicTreatment} />
+                <ResultSection title="Chemical Treatment" content={diagnosisResult.chemicalTreatment} />
+                <ResultSection title="Prevention Tips" content={diagnosisResult.preventionTips} />
+            </div>
+        )
+    }
 
     return (
         <>
@@ -196,27 +252,7 @@ export default function CropAnalysisPage() {
                                 <p>{t('cropAnalysis.loadingText')}</p>
                             </div>
                         ) : diagnosisResult ? (
-                           <div className="space-y-4">
-                                <Alert variant={diagnosisResult.isHealthy ? 'default' : 'destructive'} className={diagnosisResult.isHealthy ? "border-green-500/50 bg-green-500/10" : ""}>
-                                    {diagnosisResult.isHealthy ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <HeartPulse className="h-4 w-4" />}
-                                    <AlertTitle className="font-bold">
-                                        {diagnosisResult.plantName}: {diagnosisResult.isHealthy ? 'Healthy' : diagnosisResult.diseaseName}
-                                    </AlertTitle>
-                                </Alert>
-
-                                <div>
-                                    <Label>{t('cropAnalysis.confidence')}</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Progress value={diagnosisResult.confidence * 100} className="w-full" />
-                                        <span>{(diagnosisResult.confidence * 100).toFixed(0)}%</span>
-                                    </div>
-                                </div>
-
-                                <ResultSection title="Detailed Review" content={diagnosisResult.detailedReview} />
-                                <ResultSection title="Organic Treatment" content={diagnosisResult.organicTreatment} />
-                                <ResultSection title="Chemical Treatment" content={diagnosisResult.chemicalTreatment} />
-                                <ResultSection title="Prevention Tips" content={diagnosisResult.preventionTips} />
-                            </div>
+                           renderResult()
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                                 <p>{t('cropAnalysis.resultsPlaceholder')}</p>
