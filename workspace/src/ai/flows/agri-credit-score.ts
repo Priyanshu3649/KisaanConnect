@@ -11,6 +11,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const AgriCreditScoreInputSchema = z.object({
   userId: z.string().describe("The unique identifier for the farmer."),
@@ -47,29 +49,95 @@ const demoUsers = [
     'admin@kissanconnect.com'
 ];
 
-async function fetchCibilScore(): Promise<number> {
-    const url = 'https://credit-score-api.p.rapidapi.com/GetArchiveReport';
-    const options = {
-        method: 'GET',
-        headers: {
-            'x-rapidapi-host': 'credit-score-api.p.rapidapi.com',
-            'x-rapidapi-key': process.env.RAPIDAPI_KEY || ''
+interface UserDetails {
+    name?: string;
+    dob?: string; // Expects "YYYY-MM-DD"
+    pan?: string;
+    address?: string;
+    pincode?: string;
+    phone?: string;
+}
+
+// Helper to fetch user details from Firestore
+async function getUserDetails(userId: string): Promise<UserDetails | null> {
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            return userDoc.data() as UserDetails;
         }
+        return null;
+    } catch (error) {
+        console.error("Error fetching user details from Firestore:", error);
+        return null;
+    }
+}
+
+
+async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
+    const url = 'https://cyrusrecharge.in/api/total-kyc.aspx';
+    const merchantId = process.env.CYRUS_MERCHANT_ID;
+    const merchantKey = process.env.CYRUS_MERCHANT_KEY;
+
+    if (!merchantId || !merchantKey) {
+        console.error("Cyrus credentials are not configured in .env file.");
+        return -1;
+    }
+
+    // Ensure all required fields are present
+    if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone) {
+        console.warn("User details incomplete. Cannot fetch CIBIL score.", userDetails);
+        return -1;
+    }
+
+    const requestBody = {
+        merchantId,
+        merchantKey,
+        full_name: userDetails.name,
+        dob: userDetails.dob, // Assuming YYYY-MM-DD format
+        pan: userDetails.pan,
+        address: userDetails.address || "Not Available",
+        pincode: userDetails.pincode || "000000",
+        mobile: userDetails.phone,
+        type: "CIBIL_REPORT_SCORE",
+        txnid: `KC-${Date.now()}` // Unique transaction ID
+    };
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
     };
 
     try {
         const response = await fetch(url, options);
         if (!response.ok) {
-            console.error("RapidAPI request failed with status:", response.status);
+            console.error("Cyrus API request failed with status:", response.status, await response.text());
             return -1;
         }
         const result = await response.json();
-        // Assuming the API returns a structure like { "creditScore": 750 }
-        // We will safely access this value.
-        const score = result?.creditScore || result?.score || -1;
-        return typeof score === 'number' ? score : -1;
+        
+        console.log("Cyrus API Response:", JSON.stringify(result, null, 2));
+
+        // DEV NOTE: The exact field for CIBIL score is not clear from the sample.
+        // It's likely inside result.cibilReport.data.cCRResponse.cIRReportDataLst[0]
+        // which might be a stringified XML or JSON. For now, we return a simulated score.
+        // Once the actual response structure is known, this parsing logic must be updated.
+        // Example of what it *might* look like:
+        // const reportString = result.cibilReport?.data?.cCRResponse?.cIRReportDataLst?.[0];
+        // if (reportString) {
+        //   const reportData = JSON.parse(reportString);
+        //   const score = reportData?.ScoreSegment?.Score;
+        //   return parseInt(score) || -1;
+        // }
+        
+        // Simulating success for the prototype
+        return 750 + Math.floor(Math.random() * 100);
+
     } catch (error) {
-        console.error('Error fetching CIBIL score:', error);
+        console.error('Error fetching CIBIL score from Cyrus API:', error);
         return -1;
     }
 }
@@ -103,12 +171,11 @@ const agriCreditScoreFlow = ai.defineFlow(
         };
     }
 
-    // Fetch the CIBIL score from the external API for demo users.
-    const fetchedCibilScore = await fetchCibilScore();
+    const userDetails = await getUserDetails(input.userId);
+    const fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
 
     // DEVELOPER: This is a mock implementation using the new 50/30/20 weighted logic.
-    // In a real application, you would fetch real data for each component.
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500)); 
 
     const hash = input.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
@@ -152,7 +219,7 @@ const agriCreditScoreFlow = ai.defineFlow(
         mr: [
             `तुमचा स्कोअर सिबिल (50%), शेती डेटा (30%), आणि प्लॅटफॉर्म व्यवहार (20%) वर आधारित आहे.`,
             "तुमचा पारंपरिक सिबिल स्कोअर सुधारण्याने सर्वात मोठा परिणाम होईल.",
-            "तुमचा व्यवहार स्कोअर वाढवण्यासाठी प्लॅਟफॉर्मवर अधिक भाडे आणि विक्री पूर्ण करा.",
+            "तुमचा व्यवहार स्कोअर वाढवण्यासाठी प्लॅटफॉर्मवर अधिक भाडे आणि विक्री पूर्ण करा.",
             `कोणतेही मंजूर कर्ज पीक विम्यासाठी पंतप्रधान-फसल विमा योजनेअंतर्गत आपोआप नोंदणीकृत होईल.`,
         ],
         ta: [
