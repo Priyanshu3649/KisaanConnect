@@ -53,7 +53,7 @@ interface UserDetails {
     name?: string;
     dob?: string; // Expects "YYYY-MM-DD"
     pan?: string;
-    address?: string;
+    location?: string; // Used for address
     pincode?: string;
     phone?: string;
 }
@@ -64,7 +64,28 @@ async function getUserDetails(userId: string): Promise<UserDetails | null> {
         const userDocRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-            return userDoc.data() as UserDetails;
+            const data = userDoc.data();
+            let location = data.location;
+            let pincode = data.pincode;
+
+            // Extract pincode from location string if it exists and pincode field is empty
+            if (location && !pincode) {
+                const pincodeMatch = location.match(/\b\d{6}\b/);
+                if (pincodeMatch) {
+                    pincode = pincodeMatch[0];
+                    // Set location to the part before the pincode for a cleaner address
+                    location = location.substring(0, pincodeMatch.index).trim().replace(/,$/, '');
+                }
+            }
+            
+            return {
+                name: data.name,
+                dob: data.dob,
+                pan: data.pan,
+                location: location || "Not Available",
+                pincode: pincode,
+                phone: data.phone,
+            };
         }
         return null;
     } catch (error) {
@@ -75,69 +96,53 @@ async function getUserDetails(userId: string): Promise<UserDetails | null> {
 
 
 async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
-    const url = 'https://cyrusrecharge.in/api/total-kyc.aspx';
-    const merchantId = process.env.CYRUS_MERCHANT_ID;
-    const merchantKey = process.env.CYRUS_MERCHANT_KEY;
-
-    if (!merchantId || !merchantKey) {
-        console.error("Cyrus credentials are not configured in .env file.");
-        return -1;
-    }
-
     // Ensure all required fields are present
     if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone) {
         console.warn("User details incomplete. Cannot fetch CIBIL score.", userDetails);
         return -1;
     }
 
-    const requestBody = {
-        merchantId,
-        merchantKey,
-        full_name: userDetails.name,
-        dob: userDetails.dob, // Assuming YYYY-MM-DD format
-        pan: userDetails.pan,
-        address: userDetails.address || "Not Available",
-        pincode: userDetails.pincode || "000000",
-        mobile: userDetails.phone,
-        type: "CIBIL_REPORT_SCORE",
-        txnid: `KC-${Date.now()}` // Unique transaction ID
-    };
-
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-    };
-
     try {
-        const response = await fetch(url, options);
+        // Get the base URL for the current environment
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
+        const response = await fetch(`${baseUrl}/api/cibil`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                full_name: userDetails.name,
+                dob: userDetails.dob,
+                pan: userDetails.pan,
+                address: userDetails.location,
+                pincode: userDetails.pincode,
+                mobile: userDetails.phone,
+            })
+        });
+
         if (!response.ok) {
-            console.error("Cyrus API request failed with status:", response.status, await response.text());
+            const errorData = await response.json();
+            console.error("CIBIL API proxy request failed with status:", response.status, errorData);
             return -1;
         }
+        
         const result = await response.json();
-        
-        console.log("Cyrus API Response:", JSON.stringify(result, null, 2));
+        console.log("CIBIL API Proxy Response:", JSON.stringify(result, null, 2));
 
-        // DEV NOTE: The exact field for CIBIL score is not clear from the sample.
-        // It's likely inside result.cibilReport.data.cCRResponse.cIRReportDataLst[0]
-        // which might be a stringified XML or JSON. For now, we return a simulated score.
-        // Once the actual response structure is known, this parsing logic must be updated.
-        // Example of what it *might* look like:
-        // const reportString = result.cibilReport?.data?.cCRResponse?.cIRReportDataLst?.[0];
-        // if (reportString) {
-        //   const reportData = JSON.parse(reportString);
-        //   const score = reportData?.ScoreSegment?.Score;
-        //   return parseInt(score) || -1;
-        // }
-        
-        // Simulating success for the prototype
-        return 750 + Math.floor(Math.random() * 100);
+        // Assuming the score is in a top-level `score` field as discussed.
+        if (result && typeof result.score === 'number') {
+            return result.score;
+        } else if (result && result.status === "SUCCESS" && result.cibilReport.data) {
+             // Fallback for nested structure if needed, but for now we expect a top-level score
+             // This part might need adjustment based on the actual live response from the proxy
+             // For the demo, let's assume a successful response without a score field is an error for now.
+            console.warn("CIBIL score field not found in successful Cyrus API response. Falling back to -1.");
+            return -1;
+        } else {
+             console.warn("CIBIL score field not found in Cyrus API response. Falling back to -1.");
+             return -1;
+        }
 
     } catch (error) {
-        console.error('Error fetching CIBIL score from Cyrus API:', error);
+        console.error('Error fetching CIBIL score from internal API proxy:', error);
         return -1;
     }
 }
@@ -150,8 +155,25 @@ const agriCreditScoreFlow = ai.defineFlow(
     outputSchema: AgriCreditScoreOutputSchema,
   },
   async (input) => {
-    // For new users, return a default zero state.
-    if (!input.email || !demoUsers.includes(input.email)) {
+    
+    let userDetails: UserDetails | null = null;
+    let fetchedCibilScore = -1;
+
+    // For demo users, use the hardcoded details for testing
+    if (input.email && demoUsers.includes(input.email)) {
+        userDetails = {
+            name: "Jitendra Pandey",
+            pan: "AMRPP2915J",
+            dob: "1974-02-05",
+            phone: "9711135093",
+            location: "Not Available",
+            pincode: "000000"
+        };
+        fetchedCibilScore = await fetchCibilScore(userDetails);
+    } else if (input.email) { // For other logged-in users
+        userDetails = await getUserDetails(input.userId);
+        fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
+    } else { // For new/anonymous users
         return {
             score: 300,
             cibilScore: -1,
@@ -170,17 +192,12 @@ const agriCreditScoreFlow = ai.defineFlow(
             badges: [],
         };
     }
-
-    const userDetails = await getUserDetails(input.userId);
-    const fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
-
-    // DEVELOPER: This is a mock implementation using the new 50/30/20 weighted logic.
-    await new Promise(resolve => setTimeout(resolve, 500)); 
-
+    
+    // Use a simulated hash for other metrics to keep them dynamic
     const hash = input.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
-    // 1. Use fetched CIBIL score. If API fails, fallback to a simulated score.
-    const cibilScore = fetchedCibilScore !== -1 ? fetchedCibilScore : (650 + (hash % 100));
+    // 1. Use fetched CIBIL score. If API fails, it will be -1. We treat -1 as a low score (e.g., 300) for calculation.
+    const cibilForCalc = fetchedCibilScore !== -1 ? fetchedCibilScore : 300;
     
     // 2. Simulate Farm Data Analysis score (0-1000 range)
     const simulatedFarmDataScore = 700 + (hash % 150); // 700-850
@@ -190,7 +207,7 @@ const agriCreditScoreFlow = ai.defineFlow(
 
     // Calculate weighted score
     const finalScore = Math.round(
-        (cibilScore * 0.5) +   // 50% from CIBIL (normalized from 900 max)
+        (cibilForCalc * 0.5) +   // 50% from CIBIL (normalized from 900 max)
         (simulatedFarmDataScore * 0.3) + // 30% from Farm Data
         (simulatedPlatformScore * 0.2)   // 20% from Platform Transactions
     );
@@ -238,12 +255,12 @@ const agriCreditScoreFlow = ai.defineFlow(
 
     return {
         score: finalScore,
-        cibilScore: cibilScore,
+        cibilScore: fetchedCibilScore,
         trend: 'up',
         trendPoints: 15,
         improvementTips: tips[input.language || 'en'],
         loanEligibility: {
-            isEligible: true,
+            isEligible: fetchedCibilScore > 650,
             amount: loanAmount,
             currency: "INR",
         },
