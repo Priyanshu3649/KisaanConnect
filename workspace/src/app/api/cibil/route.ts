@@ -23,21 +23,15 @@ export async function POST(req: NextRequest) {
     });
 
     // 4️⃣ Handle response
-    let data;
     if (!res.ok) {
         const errorText = await res.text();
-        console.error("Cyrus API Error:", errorText);
+        console.error(`Cyrus API Error: Status ${res.status} - ${errorText}`);
         return NextResponse.json({ error: "Failed to fetch from CIBIL API", details: errorText }, { status: res.status });
     }
 
-    try {
-      data = await res.json();
-    } catch (e) {
-      // Handle cases where response is not valid JSON
-      data = { raw: await res.text() };
-    }
-
+    const data = await res.json();
     return NextResponse.json(data);
+
   } catch (error) {
     console.error("Internal server error calling Cyrus API proxy:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
