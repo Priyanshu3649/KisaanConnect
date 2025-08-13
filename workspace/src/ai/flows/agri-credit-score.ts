@@ -24,6 +24,7 @@ export type AgriCreditScoreInput = z.infer<typeof AgriCreditScoreInputSchema>;
 const AgriCreditScoreOutputSchema = z.object({
     score: z.number().min(0).max(1000).describe('The calculated agri-credit score, from 0 to 1000.'),
     cibilScore: z.number().describe("The user's CIBIL score. -1 if not available."),
+    cibilStatus: z.string().describe("The status of the CIBIL API call, e.g., 'Success', 'Not Found', 'API Error'."),
     trend: z.enum(['up', 'down', 'stable']).describe("The recent trend of the score."),
     trendPoints: z.number().describe("The number of points the score has changed recently."),
     improvementTips: z.array(z.string()).describe('A list of actionable tips for the farmer to improve their score.'),
@@ -68,12 +69,10 @@ async function getUserDetails(userId: string): Promise<UserDetails | null> {
             let location = data.location;
             let pincode = data.pincode;
 
-            // Extract pincode from location string if it exists and pincode field is empty
             if (location && !pincode) {
                 const pincodeMatch = location.match(/\b\d{6}\b/);
                 if (pincodeMatch) {
                     pincode = pincodeMatch[0];
-                    // Set location to the part before the pincode for a cleaner address
                     location = location.substring(0, pincodeMatch.index).trim().replace(/,$/, '');
                 }
             }
@@ -94,16 +93,18 @@ async function getUserDetails(userId: string): Promise<UserDetails | null> {
     }
 }
 
+interface CibilResult {
+    score: number;
+    status: string;
+}
 
-async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
-    // Ensure all required fields are present
+async function fetchCibilScore(userDetails: UserDetails): Promise<CibilResult> {
     if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone) {
         console.warn("User details incomplete. Cannot fetch CIBIL score.", userDetails);
-        return -1;
+        return { score: -1, status: "Incomplete user data" };
     }
 
     try {
-        // Get the base URL for the current environment
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
         const response = await fetch(`${baseUrl}/api/cibil`, {
             method: 'POST',
@@ -118,32 +119,24 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
             })
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("CIBIL API proxy request failed with status:", response.status, errorData);
-            return -1;
-        }
-        
         const result = await response.json();
         console.log("CIBIL API Proxy Response:", JSON.stringify(result, null, 2));
 
-        // Assuming the score is in a top-level `score` field as discussed.
-        if (result && typeof result.score === 'number') {
-            return result.score;
-        } else if (result && result.status === "SUCCESS" && result.cibilReport.data) {
-             // Fallback for nested structure if needed, but for now we expect a top-level score
-             // This part might need adjustment based on the actual live response from the proxy
-             // For the demo, let's assume a successful response without a score field is an error for now.
-            console.warn("CIBIL score field not found in successful Cyrus API response. Falling back to -1.");
-            return -1;
+        if (!response.ok) {
+            return { score: -1, status: `API Error: ${response.status}` };
+        }
+        
+        if (result && result.status === "SUCCESS" && typeof result.score === 'number') {
+            return { score: result.score, status: "Success" };
+        } else if (result && result.status === "SUCCESS") {
+            return { score: -1, status: "Score not found in response" };
         } else {
-             console.warn("CIBIL score field not found in Cyrus API response. Falling back to -1.");
-             return -1;
+             return { score: -1, status: result.status || "Failed" };
         }
 
     } catch (error) {
         console.error('Error fetching CIBIL score from internal API proxy:', error);
-        return -1;
+        return { score: -1, status: "Internal API Error" };
     }
 }
 
@@ -157,26 +150,26 @@ const agriCreditScoreFlow = ai.defineFlow(
   async (input) => {
     
     let userDetails: UserDetails | null = null;
-    let fetchedCibilScore = -1;
+    let cibilResult: CibilResult = { score: -1, status: "Not Run" };
 
-    // For demo users, use the hardcoded details for testing
     if (input.email && demoUsers.includes(input.email)) {
         userDetails = {
             name: "Jitendra Pandey",
             pan: "AMRPP2915J",
             dob: "1974-02-05",
             phone: "9711135093",
-            location: "Not Available",
-            pincode: "000000"
+            location: "H. no-151, Khasra no-108/2",
+            pincode: "110082"
         };
-        fetchedCibilScore = await fetchCibilScore(userDetails);
-    } else if (input.email) { // For other logged-in users
+        cibilResult = await fetchCibilScore(userDetails);
+    } else if (input.email) {
         userDetails = await getUserDetails(input.userId);
-        fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
-    } else { // For new/anonymous users
+        cibilResult = userDetails ? await fetchCibilScore(userDetails) : { score: -1, status: "User not found" };
+    } else {
         return {
             score: 300,
             cibilScore: -1,
+            cibilStatus: "New User",
             trend: 'stable',
             trendPoints: 0,
             improvementTips: [
@@ -184,32 +177,21 @@ const agriCreditScoreFlow = ai.defineFlow(
                 "Connect a bank account to start building your credit history.",
                 "Explore the app features to learn more."
             ],
-            loanEligibility: {
-                isEligible: false,
-                amount: 0,
-                currency: "INR",
-            },
+            loanEligibility: { isEligible: false, amount: 0, currency: "INR" },
             badges: [],
         };
     }
     
-    // Use a simulated hash for other metrics to keep them dynamic
     const hash = input.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const cibilForCalc = cibilResult.score !== -1 ? cibilResult.score : 300;
     
-    // 1. Use fetched CIBIL score. If API fails, it will be -1. We treat -1 as a low score (e.g., 300) for calculation.
-    const cibilForCalc = fetchedCibilScore !== -1 ? fetchedCibilScore : 300;
-    
-    // 2. Simulate Farm Data Analysis score (0-1000 range)
-    const simulatedFarmDataScore = 700 + (hash % 150); // 700-850
-    
-    // 3. Simulate Platform Transactions score (0-1000 range)
-    const simulatedPlatformScore = 600 + (hash % 200); // 600-800
+    const simulatedFarmDataScore = 700 + (hash % 150); 
+    const simulatedPlatformScore = 600 + (hash % 200);
 
-    // Calculate weighted score
     const finalScore = Math.round(
-        (cibilForCalc * 0.5) +   // 50% from CIBIL (normalized from 900 max)
-        (simulatedFarmDataScore * 0.3) + // 30% from Farm Data
-        (simulatedPlatformScore * 0.2)   // 20% from Platform Transactions
+        (cibilForCalc * 0.5) +
+        (simulatedFarmDataScore * 0.3) +
+        (simulatedPlatformScore * 0.2)
     );
     
     const loanAmount = finalScore * 150;
@@ -255,12 +237,13 @@ const agriCreditScoreFlow = ai.defineFlow(
 
     return {
         score: finalScore,
-        cibilScore: fetchedCibilScore,
+        cibilScore: cibilResult.score,
+        cibilStatus: cibilResult.status,
         trend: 'up',
         trendPoints: 15,
         improvementTips: tips[input.language || 'en'],
         loanEligibility: {
-            isEligible: fetchedCibilScore > 650,
+            isEligible: cibilResult.score > 650,
             amount: loanAmount,
             currency: "INR",
         },

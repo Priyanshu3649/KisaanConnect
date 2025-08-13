@@ -295,7 +295,7 @@ export default function DashboardPage() {
                                 <div>
                                     <p className="text-xs text-muted-foreground">CIBIL Score</p>
                                     <p className="text-6xl font-bold text-primary/80">{creditScoreData.cibilScore}</p>
-                                    <p className="text-xs text-muted-foreground h-5">{creditScoreData.cibilScore === -1 ? "(Not Available)" : " "}</p>
+                                    <p className="text-xs text-muted-foreground h-5 capitalize">{creditScoreData.cibilStatus}</p>
                                 </div>
                                 <div className="border-l h-auto my-4" />
                                 <div className="flex-1 text-left">
@@ -392,5 +392,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
