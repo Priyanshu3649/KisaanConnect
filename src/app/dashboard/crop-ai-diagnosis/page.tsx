@@ -36,11 +36,12 @@ export default function CropAiDiagnosisPage() {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            setFile(file);
+            handleSelectedFile(file);
         }
     };
-
-    const setFile = (file: File) => {
+    
+    // Renamed for clarity as per code review
+    const handleSelectedFile = (file: File) => {
         setImageFile(file);
         setDiagnosisResult(null); // Clear previous result
         
@@ -92,6 +93,9 @@ export default function CropAiDiagnosisPage() {
             setIsDiagnosing(false);
         }
     };
+    
+    // Validate confidence before display as per code review
+    const confidencePct = Math.round((diagnosisResult?.confidence ?? 0) * 100);
 
     return (
         <>
@@ -149,8 +153,8 @@ export default function CropAiDiagnosisPage() {
                                 <div>
                                     <p className="text-sm font-medium mb-1">{t('cropDiagnosis.confidence')}</p>
                                     <div className="flex items-center gap-2">
-                                        <Progress value={diagnosisResult.confidence * 100} className="w-full" />
-                                        <span>{(diagnosisResult.confidence * 100).toFixed(0)}%</span>
+                                        <Progress value={confidencePct} className="w-full" />
+                                        <span>{confidencePct}%</span>
                                     </div>
                                 </div>
 
