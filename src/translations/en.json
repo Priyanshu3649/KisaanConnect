@@ -147,6 +147,32 @@
     "weather.cloudCover": "Cloud Cover",
     "weather.errorDesc": "Could not retrieve weather data. Please check your location in your profile or try again later.",
     
+    "cropDiagnosis.pageDescription": "Upload an image of your crop to get an AI-powered diagnosis.",
+    "cropDiagnosis.uploadTitle": "Upload Crop Image",
+    "cropDiagnosis.previewAlt": "Crop preview",
+    "cropDiagnosis.imagePlaceholder": "Your uploaded image will appear here.",
+    "cropDiagnosis.browseFiles": "Browse Files",
+    "cropDiagnosis.takePhoto": "Take Photo",
+    "cropDiagnosis.analyzingButton": "Analyzing...",
+    "cropDiagnosis.diagnoseButton": "Diagnose Crop",
+    "cropDiagnosis.resultTitle": "Diagnosis Report",
+    "cropDiagnosis.resultDesc": "AI-powered analysis of your crop's health.",
+    "cropDiagnosis.loadingText": "AI is analyzing your crop. This may take a moment...",
+    "cropDiagnosis.resultsPlaceholder": "Your diagnosis report will appear here.",
+    "cropDiagnosis.missingInfoTitle": "Image Missing",
+    "cropDiagnosis.missingInfoDesc": "Please upload an image to get a diagnosis.",
+    "cropDiagnosis.notLoggedInDesc": "You must be logged in to submit a diagnosis.",
+    "cropDiagnosis.savedTitle": "Diagnosis Saved",
+    "cropDiagnosis.savedDesc": "Your crop diagnosis has been saved to your profile.",
+    "cropDiagnosis.failedTitle": "Diagnosis Failed",
+    "cropDiagnosis.failedDesc": "An error occurred while analyzing the image.",
+    "cropDiagnosis.errorResult": "**Analysis Failed**\nThe system could not process your request. Please try again later.",
+    "cropDiagnosis.cameraTitle": "Take a Photo",
+    "cropDiagnosis.cameraDesc": "Position the affected part of the plant in the center of the frame.",
+    "cropDiagnosis.captureButton": "Capture Photo",
+    "cropDiagnosis.cameraErrorTitle": "Camera Error",
+    "cropDiagnosis.cameraErrorDesc": "Could not access the camera. Please check permissions.",
+
     "mandi.pageDescription": "Real-time market prices for various crops.",
     "mandi.selectCommodity": "Select Commodity",
     "mandi.selectState": "Select State",
@@ -416,5 +442,3 @@
     "manageAccount.pan": "PAN Number",
     "manageAccount.aadhar": "Aadhaar Number"
 }
-
-    
