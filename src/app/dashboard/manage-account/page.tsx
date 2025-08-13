@@ -42,6 +42,16 @@ const formatAadhar = (aadhar?: string) => {
     return aadhar.replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3');
 };
 
+const demoUserEmail = "pandeypriyanshu53@gmail.com";
+const demoUserDetails: UserDetails = {
+    name: "Priyanshu",
+    email: demoUserEmail,
+    phone: "9313686893",
+    location: "P.I.E.T, Haryana",
+    pan: "GHEPP9397E",
+    aadhar: "334116449837"
+};
+
 export default function ManageAccountPage() {
     const { t } = useTranslation();
     const [user, authLoading] = useAuthState(auth);
@@ -51,6 +61,13 @@ export default function ManageAccountPage() {
     useEffect(() => {
         const fetchUserData = async () => {
             if (user) {
+                // If it's the demo user, use the hardcoded details
+                if (user.email === demoUserEmail) {
+                    setUserDetails(demoUserDetails);
+                    setIsFetchingDetails(false);
+                    return;
+                }
+
                 setIsFetchingDetails(true);
                 try {
                     const userDocRef = doc(db, 'users', user.uid);
