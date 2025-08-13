@@ -18,7 +18,6 @@ export interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/dashboard", icon: "LayoutDashboard", labelKey: "nav.dashboard" },
-  { href: "/dashboard/disease-detector", icon: "Leaf", labelKey: "nav.diseaseDetector" },
   { href: "/dashboard/digital-twin", icon: "Map", labelKey: "nav.digitalTwin" },
   { href: "/dashboard/weather", icon: "CloudSun", labelKey: "nav.weather" },
   { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
@@ -34,7 +33,6 @@ const navItems: NavItem[] = [
 // For mobile, we have a different set for the bottom nav
 const mobileNavItems: NavItem[] = [
     { href: "/dashboard", icon: "UserRound", labelKey: "nav.profile" },
-    { href: "/dashboard/disease-detector", icon: "Leaf", labelKey: "nav.diseaseDetector" },
     { href: "/dashboard/mandi-prices", icon: "Warehouse", labelKey: "nav.mandiPrices" },
     { href: "/dashboard/equipment-rentals", icon: "Tractor", labelKey: "nav.equipmentRentals" },
     { href: "/dashboard/help-feedback", icon: "HelpCircle", labelKey: "nav.helpAndFeedback" }

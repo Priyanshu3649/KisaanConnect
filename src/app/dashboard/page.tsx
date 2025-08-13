@@ -3,11 +3,11 @@
 
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc, collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote, Leaf, CheckCircle2, ImageIcon } from "lucide-react";
+import { DollarSign, Tractor, Wheat, Sun, Cloud, Thermometer, Loader2, CloudSun, CloudRain, CloudFog, CloudSnow, CloudLightning, ArrowUp, Share2, ShieldCheck, Star, BadgeCheck, Lightbulb, Banknote } from "lucide-react";
 import EarningsChart from "./earnings-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -19,25 +19,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import Link from "next/link";
-import { DetectDiseaseOutput } from "@/ai/flows/disease-detector";
 
 interface UserData {
   name?: string;
   location?: string;
   email?: string;
-}
-
-interface DiagnosisDoc {
-    id: string;
-    userId: string;
-    imageUrl: string;
-    result: DetectDiseaseOutput;
-    createdAt: {
-        seconds: number;
-        nanoseconds: number;
-    };
 }
 
 const StatCardSkeleton = () => (
@@ -76,9 +62,7 @@ export default function DashboardPage() {
   const [analyticsData, setAnalyticsData] = useState<DashboardAnalyticsOutput | null>(null);
   const [weatherData, setWeatherData] = useState<GetWeatherOutput | null>(null);
   const [creditScoreData, setCreditScoreData] = useState<AgriCreditScoreOutput | null>(null);
-  const [recentDiagnoses, setRecentDiagnoses] = useState<DiagnosisDoc[]>([]);
   const [isCreditScoreLoading, setIsCreditScoreLoading] = useState(true);
-  const [isDiagnosesLoading, setIsDiagnosesLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState("Loading...");
   const { t, language } = useTranslation();
   const { toast } = useToast();
@@ -104,14 +88,6 @@ export default function DashboardPage() {
         });
 
         getAgriCreditScore({ userId: user.uid, email: user.email || undefined, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
-        
-        const diagnosesQuery = query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(3));
-        getDocs(diagnosesQuery).then(snapshot => {
-            const diagnoses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as DiagnosisDoc[];
-            setRecentDiagnoses(diagnoses);
-            setIsDiagnosesLoading(false);
-        });
-
 
         setLocationStatus("Fetching location...");
         navigator.geolocation.getCurrentPosition(
@@ -205,16 +181,16 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{t('profile.activeDiagnoses')}</CardTitle>
-                    <Leaf className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{recentDiagnoses.length}</div>
-                    <p className="text-xs text-muted-foreground">
-                        {t('profile.totalDiagnoses')}
-                    </p>
-                </CardContent>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('profile.equipmentRentals')}</CardTitle>
+                <Tractor className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">3 {t('profile.active')}</div>
+                 <p className="text-xs text-muted-foreground">
+                    1 {t('profile.lending')}, 2 {t('profile.borrowing')}
+                </p>
+              </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -234,89 +210,51 @@ export default function DashboardPage() {
       <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-3 xl:gap-8">
         {/* Left column */}
         <div className="grid auto-rows-max items-start gap-8 xl:col-span-2">
-            <div className="grid gap-8 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
-                        <CardDescription>{t('profile.earningsDescription')}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? <Skeleton className="h-[200px] w-full" /> : <EarningsChart data={analyticsData.monthlyEarnings} />}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{t('profile.weatherTitle')}</CardTitle>
-                        <CardDescription>{locationStatus}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {!weatherData ? (
-                            <div className="flex items-center justify-center h-full">
-                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-primary" />
-                                        <div>
-                                            <div className="text-3xl font-bold">{weatherData.current.temperature}°C</div>
-                                            <div className="text-muted-foreground">{weatherData.current.condition}</div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col items-end text-sm">
-                                        <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
-                                        <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between pt-4 border-t">
-                                    {weatherData.forecast.slice(0, 4).map(day => (
-                                        <div key={day.date} className="flex flex-col items-center gap-1 text-xs text-center">
-                                            <p className="font-semibold">{day.date.substring(0,3)}</p>
-                                            <WeatherIcon iconName={day.icon} className="h-6 w-6" />
-                                            <p className="font-semibold">{day.high}°</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
-                    <CardDescription>{t('profile.diagnosesDescription')}</CardDescription>
+                    <CardTitle>{t('profile.monthlyEarnings')}</CardTitle>
+                    <CardDescription>{t('profile.earningsDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>{t('profile.diagnosesCrop')}</TableHead>
-                                <TableHead>{t('profile.diagnosesIssue')}</TableHead>
-                                <TableHead className="text-right">{t('profile.diagnosesDate')}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isDiagnosesLoading ? (
-                                <TableRow><TableCell colSpan={3} className="text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
-                            ) : recentDiagnoses.length > 0 ? (
-                                recentDiagnoses.map(d => (
-                                    <TableRow key={d.id}>
-                                        <TableCell className="font-medium">{d.result.plantName}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={d.result.isHealthy ? 'default' : 'destructive'} className={cn(d.result.isHealthy && 'bg-green-100 text-green-800 border-green-200')}>
-                                                {d.result.diseaseName}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">{new Date(d.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow><TableCell colSpan={3} className="text-center">{t('profile.noDiagnoses')}</TableCell></TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                    {isLoading ? <Skeleton className="h-[200px] w-full" /> : <EarningsChart data={analyticsData.monthlyEarnings} />}
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('profile.weatherTitle')}</CardTitle>
+                    <CardDescription>{locationStatus}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {!weatherData ? (
+                        <div className="flex items-center justify-center h-full">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <WeatherIcon iconName={weatherData.current.icon} className="h-12 w-12 text-primary" />
+                                    <div>
+                                        <div className="text-3xl font-bold">{weatherData.current.temperature}°C</div>
+                                        <div className="text-muted-foreground">{weatherData.current.condition}</div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end text-sm">
+                                    <div className="flex items-center gap-1"><Thermometer className="h-4 w-4 text-muted-foreground"/> H: {weatherData.current.high}° / L: {weatherData.current.low}°</div>
+                                    <div className="flex items-center gap-1"><Cloud className="h-4 w-4 text-muted-foreground"/> {t('profile.weatherClouds')}: {weatherData.current.cloudCover}%</div>
+                                </div>
+                            </div>
+                            <div className="flex justify-between pt-4 border-t">
+                                {weatherData.forecast.slice(0, 4).map(day => (
+                                    <div key={day.date} className="flex flex-col items-center gap-1 text-xs text-center">
+                                        <p className="font-semibold">{day.date.substring(0,3)}</p>
+                                        <WeatherIcon iconName={day.icon} className="h-6 w-6" />
+                                        <p className="font-semibold">{day.high}°</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
