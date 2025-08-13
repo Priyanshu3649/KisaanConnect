@@ -65,19 +65,24 @@ async function getUserDetails(userId: string): Promise<UserDetails | null> {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
             const data = userDoc.data();
-            // Extract pincode from location if available
+            let location = data.location;
             let pincode = data.pincode;
-            if (data.location && !pincode) {
-                const pincodeMatch = data.location.match(/\b\d{6}\b/);
+
+            // Extract pincode from location string if it exists and pincode field is empty
+            if (location && !pincode) {
+                const pincodeMatch = location.match(/\b\d{6}\b/);
                 if (pincodeMatch) {
                     pincode = pincodeMatch[0];
+                    // Set location to the part before the pincode for a cleaner address
+                    location = location.substring(0, pincodeMatch.index).trim().replace(/,$/, '');
                 }
             }
+            
             return {
                 name: data.name,
                 dob: data.dob,
                 pan: data.pan,
-                location: data.location,
+                location: location || "Not Available",
                 pincode: pincode,
                 phone: data.phone,
             };
