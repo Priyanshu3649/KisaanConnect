@@ -5,7 +5,7 @@ import { useState, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, FileUp, Leaf, Loader2, Bot } from 'lucide-react';
+import { FileUp, Leaf, Loader2, Bot } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -14,7 +14,9 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { detectDisease, type DetectDiseaseOutput } from '@/ai/flows/disease-detector';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle2, HeartPulse } from 'lucide-react';
 
 const ResultSection = ({ title, content }: { title: string; content: string }) => (
     <div>
@@ -32,9 +34,6 @@ export default function DiseaseDetectorPage() {
     const [dataUri, setDataUri] = useState<string | null>(null);
     const [isDiagnosing, setIsDiagnosing] = useState(false);
     const [diagnosisResult, setDiagnosisResult] = useState<DetectDiseaseOutput | null>(null);
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     const { toast } = useToast();
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,30 +55,6 @@ export default function DiseaseDetectorPage() {
         reader.readAsDataURL(file);
     }
 
-    const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            toast({
-                variant: 'destructive',
-                title: t('cropDiagnosis.cameraErrorTitle'),
-                description: t('cropDiagnosis.cameraErrorDesc'),
-            });
-            setIsCameraOpen(false);
-        }
-    };
-
-    const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-    };
 
     const handleSubmit = async () => {
         if (!imageFile || !user || !dataUri) {
@@ -122,25 +97,6 @@ export default function DiseaseDetectorPage() {
         }
     };
 
-    const handleTakePhoto = () => {
-        if (videoRef.current && canvasRef.current) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-                    setFile(file);
-                }
-            }, 'image/jpeg');
-            stopCamera();
-            setIsCameraOpen(false);
-        }
-    };
-
     return (
         <>
             <PageHeader
@@ -171,10 +127,6 @@ export default function DiseaseDetectorPage() {
                                 </label>
                             </Button>
                             <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
-                            <Button onClick={() => { setIsCameraOpen(true); startCamera(); }}>
-                                <Camera className="mr-2 h-4 w-4" />
-                                {t('cropDiagnosis.takePhoto')}
-                            </Button>
                         </div>
                     </CardContent>
                     <CardContent>
@@ -197,13 +149,26 @@ export default function DiseaseDetectorPage() {
                                 <p>{t('cropDiagnosis.loadingText')}</p>
                             </div>
                         ) : diagnosisResult ? (
-                            <div className="space-y-4">
-                                <ResultSection title="Plant" content={diagnosisResult.plantName} />
-                                <ResultSection title="Status" content={diagnosisResult.isHealthy ? 'Healthy' : `Unhealthy - ${diagnosisResult.diseaseName}`} />
-                                <ResultSection title="Review" content={diagnosisResult.detailedReview} />
+                           <div className="space-y-4">
+                                <Alert variant={diagnosisResult.isHealthy ? 'default' : 'destructive'} className={diagnosisResult.isHealthy ? "border-green-500/50 bg-green-500/10" : ""}>
+                                    {diagnosisResult.isHealthy ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <HeartPulse className="h-4 w-4" />}
+                                    <AlertTitle className="font-bold">
+                                        {diagnosisResult.plantName}: {diagnosisResult.isHealthy ? 'Healthy' : diagnosisResult.diseaseName}
+                                    </AlertTitle>
+                                </Alert>
+
+                                <div>
+                                    <Label>{t('cropDiagnosis.confidence')}</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Progress value={diagnosisResult.confidence * 100} className="w-full" />
+                                        <span>{(diagnosisResult.confidence * 100).toFixed(0)}%</span>
+                                    </div>
+                                </div>
+
+                                <ResultSection title="Detailed Review" content={diagnosisResult.detailedReview} />
                                 <ResultSection title="Organic Treatment" content={diagnosisResult.organicTreatment} />
                                 <ResultSection title="Chemical Treatment" content={diagnosisResult.chemicalTreatment} />
-                                <ResultSection title="Prevention" content={diagnosisResult.preventionTips} />
+                                <ResultSection title="Prevention Tips" content={diagnosisResult.preventionTips} />
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -213,25 +178,7 @@ export default function DiseaseDetectorPage() {
                     </CardContent>
                 </Card>
             </div>
-            
-             <Dialog open={isCameraOpen} onOpenChange={(isOpen) => { if (!isOpen) stopCamera(); setIsCameraOpen(isOpen); }}>
-                <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>{t('cropDiagnosis.cameraTitle')}</DialogTitle>
-                        <DialogDescription>{t('cropDiagnosis.cameraDesc')}</DialogDescription>
-                    </DialogHeader>
-                    <div className="relative aspect-video w-full bg-black rounded-md overflow-hidden">
-                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-                        <canvas ref={canvasRef} className="hidden" />
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={handleTakePhoto} className="w-full">
-                            <Camera className="mr-2 h-4 w-4" />
-                            {t('cropDiagnosis.captureButton')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </>
     );
 }
+
