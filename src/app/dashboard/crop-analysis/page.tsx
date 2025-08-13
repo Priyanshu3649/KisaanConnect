@@ -5,7 +5,7 @@ import { useState, useRef } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, FileUp, Leaf, Loader2, Bot, HeartPulse, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Camera, FileUp, Leaf, Loader2, Bot } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -13,19 +13,47 @@ import { auth, db, storage } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
-import { analyzeCrop, type AnalyzeCropOutput } from '@/ai/flows/crop-analysis';
+import { diagnoseCrop } from '@/ai/flows/crop-disease-diagnosis';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { Label } from '@/components/ui/label';
 
-const ResultSection = ({ title, content }: { title: string; content: string }) => (
-    <div>
-        <h3 className="font-semibold text-lg mb-1">{title}</h3>
-        <p className="text-sm text-muted-foreground whitespace-pre-line">{content}</p>
-    </div>
-);
+// Simple markdown parser for the AI response
+const ParseMarkdown = ({ text }: { text: string }) => {
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    return (
+        <div className="space-y-4 text-sm">
+            {lines.map((line, index) => {
+                if (line.startsWith('**')) {
+                    const parts = line.split('**');
+                    const title = parts[1];
+                    const content = parts.slice(2).join('**').trim();
 
+                    // Handle multi-line content for sections
+                    const contentLines = content.split('- ').filter(c => c.trim() !== '');
+
+                    if (contentLines.length > 1) {
+                         return (
+                            <div key={index}>
+                                <h3 className="font-semibold text-foreground text-base">{title}</h3>
+                                <ul className="list-disc pl-5 mt-1 space-y-1 text-muted-foreground">
+                                    {contentLines.map((item, i) => <li key={i}>{item.trim()}</li>)}
+                                </ul>
+                            </div>
+                        );
+                    }
+                    
+                    // Handle single line key-value display
+                    return (
+                         <div key={index} className="grid grid-cols-3 gap-2 items-center">
+                            <span className="font-semibold text-foreground col-span-1">{title}</span>
+                            <span className="text-muted-foreground col-span-2">{content}</span>
+                        </div>
+                    );
+                }
+                return <p key={index} className="text-muted-foreground">{line}</p>;
+            })}
+        </div>
+    );
+};
 
 export default function CropAnalysisPage() {
     const { t, language } = useTranslation();
@@ -34,7 +62,7 @@ export default function CropAnalysisPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [dataUri, setDataUri] = useState<string | null>(null);
     const [isDiagnosing, setIsDiagnosing] = useState(false);
-    const [diagnosisResult, setDiagnosisResult] = useState<AnalyzeCropOutput | null>(null);
+    const [diagnosisResult, setDiagnosisResult] = useState<string | null>(null);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,11 +126,11 @@ export default function CropAnalysisPage() {
         setDiagnosisResult(null);
 
         try {
-            const diagnosis = await analyzeCrop({ photoDataUri: dataUri, language });
-            setDiagnosisResult(diagnosis);
+            const diagnosis = await diagnoseCrop({ photoDataUri: dataUri, language });
+            setDiagnosisResult(diagnosis.analysis);
             
-            // Do not save failed diagnoses to Firestore
-            if (diagnosis.diseaseName !== "Analysis Failed") {
+            // Only save if it's not a failure case
+            if (!diagnosis.analysis.includes("Analysis Failed")) {
                 const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
                 const uploadResult = await uploadBytes(storageRef, imageFile);
                 const imageUrl = await getDownloadURL(uploadResult.ref);
@@ -110,30 +138,25 @@ export default function CropAnalysisPage() {
                 await addDoc(collection(db, 'diagnoses'), {
                     userId: user.uid,
                     imageUrl: imageUrl,
-                    result: diagnosis,
+                    result: {
+                        // Attempt to parse the markdown for structured storage
+                        plantName: diagnosis.analysis.match(/\*\*Crop Detected:\*\* (.*)/)?.[1] || 'Unknown',
+                        diseaseName: diagnosis.analysis.match(/\*\*Disease\/Issue:\*\* (.*)/)?.[1] || 'Unknown',
+                        isHealthy: (diagnosis.analysis.match(/\*\*Disease\/Issue:\*\* (.*)/)?.[1] || '').toLowerCase() === 'healthy',
+                    },
+                    fullAnalysis: diagnosis.analysis,
                     createdAt: serverTimestamp(),
                 });
                 
                 toast({ title: t('cropAnalysis.savedTitle'), description: t('cropAnalysis.savedDesc') });
             } else {
-                 toast({ variant: "destructive", title: t('cropAnalysis.failedTitle'), description: diagnosis.detailedReview });
+                 toast({ variant: "destructive", title: t('cropAnalysis.failedTitle'), description: "The API could not process the image." });
             }
 
         } catch (error) {
             console.error("Diagnosis process failed:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             toast({ variant: "destructive", title: t('cropAnalysis.failedTitle'), description: errorMessage || t('cropAnalysis.failedDesc') });
-             setDiagnosisResult({
-                isPlant: false,
-                plantName: "Error",
-                isHealthy: false,
-                diseaseName: "Process Failed",
-                confidence: 0,
-                detailedReview: "An unexpected error occurred on the server. Please check the console for more details and try again.",
-                organicTreatment: "N/A",
-                chemicalTreatment: "N/A",
-                preventionTips: "If the problem persists, please contact support."
-            });
         } finally {
             setIsDiagnosing(false);
         }
@@ -157,48 +180,6 @@ export default function CropAnalysisPage() {
             setIsCameraOpen(false);
         }
     };
-
-    const renderResult = () => {
-        if (!diagnosisResult) return null;
-        
-        const isFailure = diagnosisResult.diseaseName === "Analysis Failed";
-
-        if (isFailure) {
-            return (
-                 <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>{diagnosisResult.diseaseName}</AlertTitle>
-                    <AlertDescription>
-                        {diagnosisResult.detailedReview}
-                    </AlertDescription>
-                </Alert>
-            )
-        }
-        
-        return (
-            <div className="space-y-4">
-                <Alert variant={diagnosisResult.isHealthy ? 'default' : 'destructive'} className={diagnosisResult.isHealthy ? "border-green-500/50 bg-green-500/10" : ""}>
-                    {diagnosisResult.isHealthy ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <HeartPulse className="h-4 w-4" />}
-                    <AlertTitle className="font-bold">
-                        {diagnosisResult.plantName}: {diagnosisResult.isHealthy ? 'Healthy' : diagnosisResult.diseaseName}
-                    </AlertTitle>
-                </Alert>
-
-                <div>
-                    <Label>{t('cropAnalysis.confidence')}</Label>
-                    <div className="flex items-center gap-2">
-                        <Progress value={diagnosisResult.confidence * 100} className="w-full" />
-                        <span>{(diagnosisResult.confidence * 100).toFixed(0)}%</span>
-                    </div>
-                </div>
-
-                <ResultSection title="Detailed Review" content={diagnosisResult.detailedReview} />
-                <ResultSection title="Organic Treatment" content={diagnosisResult.organicTreatment} />
-                <ResultSection title="Chemical Treatment" content={diagnosisResult.chemicalTreatment} />
-                <ResultSection title="Prevention Tips" content={diagnosisResult.preventionTips} />
-            </div>
-        )
-    }
 
     return (
         <>
@@ -252,7 +233,7 @@ export default function CropAnalysisPage() {
                                 <p>{t('cropAnalysis.loadingText')}</p>
                             </div>
                         ) : diagnosisResult ? (
-                           renderResult()
+                           <ParseMarkdown text={diagnosisResult} />
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                                 <p>{t('cropAnalysis.resultsPlaceholder')}</p>

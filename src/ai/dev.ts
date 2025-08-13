@@ -14,5 +14,5 @@ import '@/ai/flows/sales-advisor.ts';
 import '@/ai/flows/dashboard-analytics.ts';
 import '@/ai/flows/get-satellite-image.ts';
 import '@/ai/flows/ai-assistant.ts';
-import '@/ai/flows/crop-analysis.ts';
+import '@/ai/flows/crop-disease-diagnosis.ts';
 
