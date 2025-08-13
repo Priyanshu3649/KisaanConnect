@@ -65,13 +65,20 @@ async function getUserDetails(userId: string): Promise<UserDetails | null> {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
             const data = userDoc.data();
-            // Basic validation for required fields for the CIBIL check
+            // Extract pincode from location if available
+            let pincode = data.pincode;
+            if (data.location && !pincode) {
+                const pincodeMatch = data.location.match(/\b\d{6}\b/);
+                if (pincodeMatch) {
+                    pincode = pincodeMatch[0];
+                }
+            }
             return {
                 name: data.name,
-                dob: data.dob, // Ensure this field exists in Firestore documents
+                dob: data.dob,
                 pan: data.pan,
                 location: data.location,
-                pincode: data.pincode, // Ensure this field exists
+                pincode: pincode,
                 phone: data.phone,
             };
         }
@@ -94,7 +101,7 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
     }
 
     // Ensure all required fields are present
-    if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone) {
+    if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone || !userDetails.location) {
         console.warn("User details incomplete. Cannot fetch CIBIL score.", userDetails);
         return -1;
     }
@@ -105,7 +112,7 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
         full_name: userDetails.name,
         dob: userDetails.dob,
         pan: userDetails.pan,
-        address: userDetails.location || "Not Available",
+        address: userDetails.location,
         pincode: userDetails.pincode || "000000",
         mobile: userDetails.phone,
         type: "CIBIL_REPORT_SCORE",
@@ -128,11 +135,8 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
         
         console.log("Cyrus API Response:", JSON.stringify(result, null, 2));
 
-        // Parse the score from the top-level 'score' field as per the user's information.
         if (result && typeof result.score === 'number') {
             return result.score;
-        } else if (result && result.cibilReport?.data?.score) { // Fallback for nested score
-            return parseInt(result.cibilReport.data.score, 10);
         } else {
              console.warn("CIBIL score field not found in Cyrus API response. Falling back to -1.");
              return -1;

@@ -10,7 +10,7 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, Mail, Phone, MapPin, Badge, CreditCard, Edit, Loader2 } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Badge, CreditCard, Edit, Loader2, Cake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ interface UserDetails {
     location?: string;
     pan?: string;
     aadhar?: string;
+    dob?: string; // YYYY-MM-DD
 }
 
 const DetailRow = ({ icon: Icon, label, value, loading }: { icon: React.ElementType, label: string, value?: string | null, loading: boolean }) => (
@@ -55,7 +56,8 @@ const demoUserDetails: UserDetails = {
     phone: "9313686893",
     location: "P.I.E.T, Haryana",
     pan: "GHEPP9397E",
-    aadhar: "334116449837"
+    aadhar: "334116449837",
+    dob: "1990-01-01"
 };
 
 export default function ManageAccountPage() {
@@ -98,6 +100,7 @@ export default function ManageAccountPage() {
 
     useEffect(() => {
         fetchUserData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, authLoading]);
 
     const isLoading = authLoading || isFetchingDetails;
@@ -157,6 +160,7 @@ export default function ManageAccountPage() {
                     <CardContent className="px-6 pb-6">
                         <div className="mt-4">
                             <h3 className="text-lg font-semibold mb-2">{t('manageAccount.personalDetails')}</h3>
+                             <DetailRow icon={Cake} label="Date of Birth" value={userDetails?.dob} loading={isLoading} />
                             <DetailRow icon={Phone} label={t('manageAccount.phone')} value={userDetails?.phone} loading={isLoading} />
                             <DetailRow icon={MapPin} label={t('manageAccount.location')} value={userDetails?.location} loading={isLoading} />
                         </div>
@@ -188,6 +192,7 @@ function EditDetailsDialog({ currentUserDetails, onSaveSuccess }: { currentUserD
                 location: currentUserDetails.location || '',
                 pan: currentUserDetails.pan || '',
                 aadhar: currentUserDetails.aadhar?.replace(/\s/g, '') || '',
+                dob: currentUserDetails.dob || '',
             });
         }
     }, [currentUserDetails]);
@@ -220,6 +225,7 @@ function EditDetailsDialog({ currentUserDetails, onSaveSuccess }: { currentUserD
                 location: formData.location,
                 pan: formData.pan,
                 aadhar: formData.aadhar,
+                dob: formData.dob,
             }, { merge: true });
 
             // Also update the auth profile if the name changed
@@ -247,25 +253,35 @@ function EditDetailsDialog({ currentUserDetails, onSaveSuccess }: { currentUserD
             </DialogHeader>
             <form onSubmit={handleSave}>
                 <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" value={formData.name} onChange={handleChange} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Full Name</Label>
+                            <Input id="name" value={formData.name} onChange={handleChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dob">Date of Birth</Label>
+                            <Input id="dob" type="date" value={formData.dob} onChange={handleChange} placeholder="YYYY-MM-DD" />
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input id="phone" value={formData.phone} onChange={handleChange} />
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input id="phone" value={formData.phone} onChange={handleChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="location">Location (Address, Pincode)</Label>
+                            <Input id="location" value={formData.location} onChange={handleChange} />
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="location">Location</Label>
-                        <Input id="location" value={formData.location} onChange={handleChange} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="pan">PAN Number</Label>
-                        <Input id="pan" value={formData.pan} onChange={handlePanChange} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="aadhar">Aadhaar Number</Label>
-                        <Input id="aadhar" value={formData.aadhar} onChange={handleAadharChange} />
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="pan">PAN Number</Label>
+                            <Input id="pan" value={formData.pan} onChange={handlePanChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="aadhar">Aadhaar Number</Label>
+                            <Input id="aadhar" value={formData.aadhar} onChange={handleAadharChange} />
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>
