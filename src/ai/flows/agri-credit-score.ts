@@ -101,7 +101,7 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
     }
 
     // Ensure all required fields are present
-    if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone || !userDetails.location) {
+    if (!userDetails.name || !userDetails.dob || !userDetails.pan || !userDetails.phone) {
         console.warn("User details incomplete. Cannot fetch CIBIL score.", userDetails);
         return -1;
     }
@@ -112,7 +112,7 @@ async function fetchCibilScore(userDetails: UserDetails): Promise<number> {
         full_name: userDetails.name,
         dob: userDetails.dob,
         pan: userDetails.pan,
-        address: userDetails.location,
+        address: userDetails.location || "Not Available",
         pincode: userDetails.pincode || "000000",
         mobile: userDetails.phone,
         type: "CIBIL_REPORT_SCORE",
@@ -156,8 +156,25 @@ const agriCreditScoreFlow = ai.defineFlow(
     outputSchema: AgriCreditScoreOutputSchema,
   },
   async (input) => {
-    // For new users, return a default zero state.
-    if (!input.email || !demoUsers.includes(input.email)) {
+    
+    let userDetails: UserDetails | null = null;
+    let fetchedCibilScore = -1;
+
+    // For demo users, use the hardcoded details for testing
+    if (input.email && demoUsers.includes(input.email)) {
+        userDetails = {
+            name: "Jitendra Pandey",
+            pan: "AMRPP2915J",
+            dob: "1974-02-05",
+            phone: "9711135093",
+            location: "Not Available",
+            pincode: "000000"
+        };
+        fetchedCibilScore = await fetchCibilScore(userDetails);
+    } else if (input.email) { // For other logged-in users
+        userDetails = await getUserDetails(input.userId);
+        fetchedCibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
+    } else { // For new/anonymous users
         return {
             score: 300,
             cibilScore: -1,
@@ -176,15 +193,12 @@ const agriCreditScoreFlow = ai.defineFlow(
             badges: [],
         };
     }
-
-    const userDetails = await getUserDetails(input.userId);
-    const cibilScore = userDetails ? await fetchCibilScore(userDetails) : -1;
-
+    
     // Use a simulated hash for other metrics to keep them dynamic
     const hash = input.userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
     // 1. Use fetched CIBIL score. If API fails, it will be -1. We treat -1 as a low score (e.g., 300) for calculation.
-    const cibilForCalc = cibilScore !== -1 ? cibilScore : 300;
+    const cibilForCalc = fetchedCibilScore !== -1 ? fetchedCibilScore : 300;
     
     // 2. Simulate Farm Data Analysis score (0-1000 range)
     const simulatedFarmDataScore = 700 + (hash % 150); // 700-850
@@ -242,12 +256,12 @@ const agriCreditScoreFlow = ai.defineFlow(
 
     return {
         score: finalScore,
-        cibilScore: cibilScore,
+        cibilScore: fetchedCibilScore,
         trend: 'up',
         trendPoints: 15,
         improvementTips: tips[input.language || 'en'],
         loanEligibility: {
-            isEligible: true,
+            isEligible: fetchedCibilScore > 650,
             amount: loanAmount,
             currency: "INR",
         },
