@@ -19,6 +19,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db, storage } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Textarea } from '@/components/ui/textarea';
 
 const ResultSection = ({ title, content, icon: Icon }: { title: string, content: string, icon: React.ElementType }) => (
     <div>
@@ -34,6 +35,7 @@ export default function DiseaseDetectorPage() {
     const { t, language } = useTranslation();
     const [user] = useAuthState(auth);
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const [description, setDescription] = useState('');
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isDetecting, setIsDetecting] = useState(false);
     const [detectionResult, setDetectionResult] = useState<DetectDiseaseOutput | null>(null);
@@ -132,7 +134,7 @@ export default function DiseaseDetectorPage() {
             const photoDataUri = await convertFileToDataUri(imageFile);
             
             // Run AI detection and image upload in parallel
-            const diagnosisPromise = detectDisease({ photoDataUri, language });
+            const diagnosisPromise = detectDisease({ photoDataUri, description, language });
             
             const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
             const uploadPromise = uploadBytes(storageRef, imageFile);
@@ -146,6 +148,7 @@ export default function DiseaseDetectorPage() {
             await addDoc(collection(db, "diagnoses"), {
                 userId: user.uid,
                 imageUrl,
+                description,
                 result,
                 createdAt: serverTimestamp(),
             });
@@ -201,6 +204,16 @@ export default function DiseaseDetectorPage() {
                             <Button className="w-full" onClick={() => { setIsCameraOpen(true); startCamera(); }}>
                                 <Camera className="mr-2 h-4 w-4" /> Take Photo
                             </Button>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="description">Describe the issue (Optional)</Label>
+                            <Textarea
+                                id="description"
+                                placeholder="e.g., 'Yellow leaves with brown spots, plant seems weak.'"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={3}
+                            />
                         </div>
                         <Button onClick={handleSubmit} disabled={isDetecting || !imageFile} className="w-full">
                             {isDetecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
