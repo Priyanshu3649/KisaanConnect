@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState } from 'react';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, Leaf, Loader2, Bot, CheckCircle2, HeartPulse } from 'lucide-react';
+import { FileUp, Leaf, Loader2, Bot, HeartPulse, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '@/context/translation-context';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -12,16 +13,18 @@ import { auth, db, storage } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
-import { cropAiDiagnosis, type CropAiDiagnosisOutput } from '@/ai/flows/crop-ai-diagnosis';
-import { Progress } from '@/components/ui/progress';
+import { diagnoseCropDisease, type DiagnoseCropDiseaseOutput } from '@/ai/flows/crop-disease-diagnosis';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 
-const ResultSection = ({ title, content }: { title: string; content: string }) => (
+const ResultSection = ({ title, content }: { title: string; content: React.ReactNode }) => (
     <div>
         <h3 className="font-semibold text-lg mb-1">{title}</h3>
-        <p className="text-sm text-muted-foreground whitespace-pre-line">{content}</p>
+        <div className="text-sm text-muted-foreground whitespace-pre-line">{content}</div>
     </div>
 );
+
 
 export default function CropAiDiagnosisPage() {
     const { t, language } = useTranslation();
@@ -30,20 +33,12 @@ export default function CropAiDiagnosisPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [dataUri, setDataUri] = useState<string | null>(null);
     const [isDiagnosing, setIsDiagnosing] = useState(false);
-    const [diagnosisResult, setDiagnosisResult] = useState<CropAiDiagnosisOutput | null>(null);
+    const [diagnosisResult, setDiagnosisResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
     const { toast } = useToast();
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            handleSelectedFile(file);
-        }
-    };
-    
-    // Renamed for clarity as per code review
     const handleSelectedFile = (file: File) => {
         setImageFile(file);
-        setDiagnosisResult(null); // Clear previous result
+        setDiagnosisResult(null);
         
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -53,6 +48,13 @@ export default function CropAiDiagnosisPage() {
         reader.readAsDataURL(file);
     }
 
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            handleSelectedFile(file);
+        }
+    };
+    
     const handleSubmit = async () => {
         if (!imageFile || !user || !dataUri) {
             toast({
@@ -67,7 +69,7 @@ export default function CropAiDiagnosisPage() {
         setDiagnosisResult(null);
 
         try {
-            const diagnosisPromise = cropAiDiagnosis({ photoDataUri: dataUri, language });
+            const diagnosisPromise = diagnoseCropDisease({ photoDataUri: dataUri, language });
             
             const storageRef = ref(storage, `diagnoses/${user.uid}/${Date.now()}_${imageFile.name}`);
             const uploadPromise = uploadBytes(storageRef, imageFile);
@@ -80,7 +82,12 @@ export default function CropAiDiagnosisPage() {
             await addDoc(collection(db, 'diagnoses'), {
                 userId: user.uid,
                 imageUrl: imageUrl,
-                result: diagnosis,
+                result: { // Store a simplified result for dashboard display
+                    plantName: imageFile.name.split('.')[0],
+                    diseaseName: diagnosis.diseaseIdentification.likelyDisease,
+                    isHealthy: !diagnosis.diseaseIdentification.isDiseased,
+                },
+                fullResult: diagnosis,
                 createdAt: serverTimestamp(),
             });
             
@@ -93,9 +100,6 @@ export default function CropAiDiagnosisPage() {
             setIsDiagnosing(false);
         }
     };
-    
-    // Validate confidence before display as per code review
-    const confidencePct = Math.round((diagnosisResult?.confidence ?? 0) * 100);
 
     return (
         <>
@@ -109,14 +113,13 @@ export default function CropAiDiagnosisPage() {
                         <CardTitle>{t('cropDiagnosis.uploadTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                       <label htmlFor="file-upload" className="w-full h-64 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-muted/50 relative overflow-hidden cursor-pointer hover:border-primary">
+                       <label htmlFor="file-upload" className="w-full h-64 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 relative overflow-hidden cursor-pointer hover:border-primary">
                             {previewUrl ? (
                                 <Image src={previewUrl} alt={t('cropDiagnosis.previewAlt')} fill className="object-contain" />
                             ) : (
-                                <div className="text-center text-muted-foreground p-4">
+                                <div className="text-center text-muted-foreground">
                                     <FileUp className="mx-auto h-12 w-12" />
-                                    <p className="mt-2">{t('cropDiagnosis.imagePlaceholder')}</p>
-                                    <p className="text-xs mt-1">{t('cropDiagnosis.browseFiles')}</p>
+                                    <p>{t('cropDiagnosis.imagePlaceholder')}</p>
                                 </div>
                             )}
                         </label>
@@ -143,25 +146,29 @@ export default function CropAiDiagnosisPage() {
                             </div>
                         ) : diagnosisResult ? (
                            <div className="space-y-4">
-                                <Alert variant={diagnosisResult.isHealthy ? 'default' : 'destructive'} className={diagnosisResult.isHealthy ? "border-green-500/50 bg-green-500/10" : ""}>
-                                    {diagnosisResult.isHealthy ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <HeartPulse className="h-4 w-4" />}
+                                <Alert variant={!diagnosisResult.diseaseIdentification.isDiseased ? 'default' : 'destructive'} className={!diagnosisResult.diseaseIdentification.isDiseased ? "border-green-500/50 bg-green-500/10" : ""}>
+                                    {!diagnosisResult.diseaseIdentification.isDiseased ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <HeartPulse className="h-4 w-4" />}
                                     <AlertTitle className="font-bold">
-                                        {diagnosisResult.plantName}: {diagnosisResult.isHealthy ? 'Healthy' : diagnosisResult.diseaseName}
+                                        {diagnosisResult.diseaseIdentification.isDiseased ? diagnosisResult.diseaseIdentification.likelyDisease : 'Healthy'}
                                     </AlertTitle>
                                 </Alert>
 
                                 <div>
-                                    <p className="text-sm font-medium mb-1">{t('cropDiagnosis.confidence')}</p>
+                                    <Label>{t('cropDiagnosis.confidence')}</Label>
                                     <div className="flex items-center gap-2">
-                                        <Progress value={confidencePct} className="w-full" />
-                                        <span>{confidencePct}%</span>
+                                        <Progress value={(diagnosisResult.diseaseIdentification.confidenceLevel ?? 0) * 100} className="w-full" />
+                                        <span>{((diagnosisResult.diseaseIdentification.confidenceLevel ?? 0) * 100).toFixed(0)}%</span>
                                     </div>
                                 </div>
 
-                                <ResultSection title="Detailed Review" content={diagnosisResult.detailedReview} />
-                                <ResultSection title="Organic Treatment" content={diagnosisResult.organicTreatment} />
-                                <ResultSection title="Chemical Treatment" content={diagnosisResult.chemicalTreatment} />
-                                <ResultSection title="Prevention Tips" content={diagnosisResult.preventionTips} />
+                                {diagnosisResult.recommendedActions && (
+                                    <ResultSection title="Recommended Actions" content={
+                                        <ul className="list-disc pl-5 space-y-1">
+                                            {diagnosisResult.recommendedActions.map((action, index) => <li key={index}>{action}</li>)}
+                                        </ul>
+                                    } />
+                                )}
+                                
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
