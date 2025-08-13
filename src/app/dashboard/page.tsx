@@ -257,7 +257,92 @@ export default function DashboardPage() {
                     {isLoading ? <Skeleton className="h-[200px] w-full" /> : <EarningsChart data={analyticsData?.monthlyEarnings ?? []} />}
                 </CardContent>
             </Card>
-             <Card>
+             <Card className="bg-primary/5 border-primary/20">
+              <CardHeader>
+                  <CardTitle>{t('creditScore.title')}</CardTitle>
+                  <CardDescription>{t('creditScore.description')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {isCreditScoreLoading ? (
+                    <div className="space-y-4">
+                        <Skeleton className="h-16 w-1/2 mx-auto" />
+                        <Skeleton className="h-4 w-1/3 mx-auto" />
+                        <div className="pt-4 space-y-2">
+                            <Skeleton className="h-5 w-1/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                        </div>
+                         <div className="pt-4 space-y-2">
+                            <Skeleton className="h-5 w-1/3" />
+                            <div className="flex gap-2">
+                                <Skeleton className="h-6 w-24" />
+                                <Skeleton className="h-6 w-24" />
+                            </div>
+                        </div>
+                    </div>
+                  ) : creditScoreData && (
+                      <div className="space-y-4">
+                           <div className="flex items-start justify-between text-center gap-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">{t('creditScore.title')}</p>
+                                    <p className="text-6xl font-bold text-primary">{creditScoreData.score}</p>
+                                    <div className={cn("flex items-center justify-center font-semibold", creditScoreData.trend === 'up' ? "text-green-600" : "text-red-500", creditScoreData.trend === 'stable' && "text-muted-foreground")}>
+                                        {creditScoreData.trend !== 'stable' && <ArrowUp className={cn("h-4 w-4 mr-1", creditScoreData.trend === 'down' && "transform rotate-180")} />}
+                                        {creditScoreData.trendPoints} {t('creditScore.pointsThisMonth')}
+                                    </div>
+                                </div>
+                                <div className="border-l h-auto my-4" />
+                                <div>
+                                    <p className="text-xs text-muted-foreground">CIBIL Score</p>
+                                    <p className="text-6xl font-bold text-primary/80">{creditScoreData.cibilScore}</p>
+                                    <p className="text-xs text-muted-foreground h-5">{creditScoreData.cibilScore === -1 ? "(Not Available)" : " "}</p>
+                                </div>
+                                <div className="border-l h-auto my-4" />
+                                <div className="flex-1 text-left">
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> {t('creditScore.tipsTitle')}</h4>
+                                    <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                                        {creditScoreData.improvementTips.map((tip, i) => <li key={i}>{tip}</li>)}
+                                    </ul>
+                                </div>
+                           </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                                {creditScoreData.loanEligibility.isEligible && (
+                                     <div className="p-3 rounded-md bg-secondary border border-primary/20">
+                                        <p className="text-sm font-semibold">{t('creditScore.loanEligibleText', { amount: creditScoreData.loanEligibility.amount.toLocaleString('en-IN') })}</p>
+                                        <Button size="sm" className="w-full mt-2" onClick={handleApplyLoan}>
+                                            <Banknote className="mr-2 h-4 w-4" /> {t('creditScore.applyLoan')}
+                                        </Button>
+                                     </div>
+                                )}
+                                
+                                {creditScoreData.badges.length > 0 && (
+                                 <div>
+                                    <h4 className="font-semibold mb-2">{t('creditScore.badgesTitle')}</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {creditScoreData.badges.map(badge => (
+                                            <Badge key={badge.name} variant="secondary" className="pl-2">
+                                                <BadgeIcon iconName={badge.icon} className="h-4 w-4 mr-1 text-primary"/>
+                                                {t(`creditScore.badges.${badge.name.replace(/ /g, '')}` as any, { defaultValue: badge.name })}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                                )}
+                            </div>
+                             <Button className="w-full mt-2" onClick={handleShareScore}>
+                                <Share2 className="mr-2 h-4 w-4" />
+                                {t('creditScore.share')}
+                            </Button>
+                      </div>
+                  )}
+              </CardContent>
+            </Card>
+        </div>
+        
+        {/* Right Column */}
+        <div className="grid auto-rows-max items-start gap-8">
+            <Card>
                 <CardHeader className="flex flex-row items-center">
                   <div className="grid gap-2">
                     <CardTitle>{t('profile.recentDiagnoses')}</CardTitle>
@@ -302,81 +387,6 @@ export default function DashboardPage() {
                   </Table>
                 </CardContent>
               </Card>
-        </div>
-        
-        {/* Right Column */}
-        <div className="grid auto-rows-max items-start gap-8">
-            <Card className="bg-primary/5 border-primary/20">
-              <CardHeader>
-                  <CardTitle>{t('creditScore.title')}</CardTitle>
-                  <CardDescription>{t('creditScore.description')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  {isCreditScoreLoading ? (
-                    <div className="space-y-4">
-                        <Skeleton className="h-16 w-1/2 mx-auto" />
-                        <Skeleton className="h-4 w-1/3 mx-auto" />
-                        <div className="pt-4 space-y-2">
-                            <Skeleton className="h-5 w-1/4" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-full" />
-                        </div>
-                         <div className="pt-4 space-y-2">
-                            <Skeleton className="h-5 w-1/3" />
-                            <div className="flex gap-2">
-                                <Skeleton className="h-6 w-24" />
-                                <Skeleton className="h-6 w-24" />
-                            </div>
-                        </div>
-                    </div>
-                  ) : creditScoreData && (
-                      <div className="space-y-4">
-                           <div className="flex items-center justify-center text-center">
-                                <div>
-                                    <p className="text-6xl font-bold text-primary">{creditScoreData.score}</p>
-                                    <div className={cn("flex items-center justify-center font-semibold", creditScoreData.trend === 'up' ? "text-green-600" : "text-red-500", creditScoreData.trend === 'stable' && "text-muted-foreground")}>
-                                        {creditScoreData.trend !== 'stable' && <ArrowUp className={cn("h-4 w-4 mr-1", creditScoreData.trend === 'down' && "transform rotate-180")} />}
-                                        {creditScoreData.trendPoints} {t('creditScore.pointsThisMonth')}
-                                    </div>
-                                </div>
-                           </div>
-
-                            <div>
-                                <h4 className="font-semibold mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary"/> {t('creditScore.tipsTitle')}</h4>
-                                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                                    {creditScoreData.improvementTips.map((tip, i) => <li key={i}>{tip}</li>)}
-                                </ul>
-                                {creditScoreData.loanEligibility.isEligible && (
-                                     <div className="mt-3 p-3 rounded-md bg-secondary border border-primary/20">
-                                        <p className="text-sm font-semibold">{t('creditScore.loanEligibleText', { amount: creditScoreData.loanEligibility.amount.toLocaleString('en-IN') })}</p>
-                                        <Button size="sm" className="w-full mt-2" onClick={handleApplyLoan}>
-                                            <Banknote className="mr-2 h-4 w-4" /> {t('creditScore.applyLoan')}
-                                        </Button>
-                                     </div>
-                                )}
-                            </div>
-                            
-                            {creditScoreData.badges.length > 0 && (
-                             <div>
-                                <h4 className="font-semibold mb-2">{t('creditScore.badgesTitle')}</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {creditScoreData.badges.map(badge => (
-                                        <Badge key={badge.name} variant="secondary" className="pl-2">
-                                            <BadgeIcon iconName={badge.icon} className="h-4 w-4 mr-1 text-primary"/>
-                                            {t(`creditScore.badges.${badge.name.replace(/ /g, '')}` as any, { defaultValue: badge.name })}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-                            )}
-                             <Button className="w-full mt-2" onClick={handleShareScore}>
-                                <Share2 className="mr-2 h-4 w-4" />
-                                {t('creditScore.share')}
-                            </Button>
-                      </div>
-                  )}
-              </CardContent>
-            </Card>
         </div>
       </div>
     </>
