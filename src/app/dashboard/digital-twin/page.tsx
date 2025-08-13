@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import PageHeader from "@/components/page-header";
 import { useTranslation } from "@/context/translation-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sprout, AlertTriangle, Loader2, TestTube2, Droplets, Leaf, MapPinned, Lightbulb, Satellite, DollarSign, TrendingUp, ShieldAlert } from "lucide-react";
+import { Sprout, AlertTriangle, Loader2, TestTube2, Droplets, Leaf, MapPinned, Lightbulb, Satellite, DollarSign, TrendingUp, ShieldAlert, BadgePercent, Minus, Plus } from "lucide-react";
 import { getDigitalTwinData, type DigitalTwinOutput } from "@/ai/flows/digital-twin";
 import { getSatelliteImage, type GetSatelliteImageOutput } from "@/ai/flows/get-satellite-image";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,9 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 
 const MapComponent = dynamic(() => import('@/components/map'), { 
     ssr: false,
@@ -80,31 +83,42 @@ export default function DigitalTwinPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Default to a location in Haryana, India
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([29.1492, 75.7217]); 
+  const [selectedCrop, setSelectedCrop] = useState<string | undefined>(undefined);
 
-  const fetchData = useCallback(async (lat: number, lng: number) => {
-    setIsLoading(true);
-    setIsImageLoading(true);
-    setError(null);
-    setSatelliteImage(null);
-    setData(null);
+  const fetchData = useCallback(async (lat: number, lng: number, crop?: string) => {
+    // Only show loading spinner for full data, not just financial refresh
+    if (!crop) {
+        setIsLoading(true);
+        setIsImageLoading(true);
+        setError(null);
+        setSatelliteImage(null);
+        setData(null);
+        setSelectedCrop(undefined);
 
-    toast({
-        title: t('digitalTwin.analyzingToastTitle'),
-        description: `${t('digitalTwin.analyzingToastDesc')} ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-    });
+        toast({
+            title: t('digitalTwin.analyzingToastTitle'),
+            description: `${t('digitalTwin.analyzingToastDesc')} ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+        });
+    } else {
+        // When only changing crop, just update the data object
+        toast({ title: "Recalculating...", description: `Fetching financial data for ${crop}.`});
+    }
 
     try {
-      // Fetch both data and image in parallel
-      const dataPromise = getDigitalTwinData({ latitude: lat, longitude: lng });
-      const imagePromise = getSatelliteImage({ latitude: lat, longitude: lng });
+      const dataPromise = getDigitalTwinData({ latitude: lat, longitude: lng, selectedCrop: crop });
+      const imagePromise = crop ? Promise.resolve(satelliteImage) : getSatelliteImage({ latitude: lat, longitude: lng });
       
       const [dataResult, imageResult] = await Promise.all([dataPromise, imagePromise]);
       
       setData(dataResult);
-      setSatelliteImage(imageResult);
 
+      if (!crop) { // Only update non-financials on initial load
+        setSatelliteImage(imageResult);
+        if (dataResult.recommendedCrops.length > 0) {
+            setSelectedCrop(dataResult.recommendedCrops[0]);
+        }
+      }
     } catch (err) {
       console.error("Failed to get digital twin data or image", err);
       const errorMessage = t('digitalTwin.errorDesc');
@@ -117,29 +131,30 @@ export default function DigitalTwinPage() {
       setData(null);
       setSatelliteImage(null);
     } finally {
-      setIsLoading(false);
-      setIsImageLoading(false);
+        setIsLoading(false);
+        setIsImageLoading(false);
     }
-  }, [t, toast]);
+  }, [t, toast, satelliteImage]);
 
-
-  // Effect for initial fetch or when user location is found
   useEffect(() => {
-    // Get user's current location on mount, then fetch data
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setMarkerPosition([latitude, longitude]);
-        fetchData(latitude, longitude); // Fetch for current location
+        fetchData(latitude, longitude);
       },
       (geoError) => {
         console.warn(`Geolocation Error: ${geoError.message}. Using default location.`);
-        fetchData(markerPosition[0], markerPosition[1]); // Fetch for default location
+        fetchData(markerPosition[0], markerPosition[1]);
       }
     );
      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
-  
+  }, []);
+
+  const handleCropChange = (crop: string) => {
+      setSelectedCrop(crop);
+      fetchData(markerPosition[0], markerPosition[1], crop);
+  }
 
   return (
     <>
@@ -148,7 +163,6 @@ export default function DigitalTwinPage() {
         description={t('digitalTwin.pageDescription')}
       />
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left and Middle Columns */}
         <div className="lg:col-span-2 space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
                 <Card>
@@ -195,44 +209,33 @@ export default function DigitalTwinPage() {
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><DollarSign /> {t('digitalTwin.financialAnalysisTitle')}</CardTitle>
+                    <div className="flex items-center gap-2 pt-2">
+                         <Select value={selectedCrop} onValueChange={handleCropChange} disabled={!data || data.recommendedCrops.length === 0}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select a crop" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {data?.recommendedCrops.map(crop => <SelectItem key={crop} value={crop}>{crop}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <CardDescription>Select a crop to see detailed financials.</CardDescription>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? <Skeleton className="w-full h-48" /> : data ? (
-                        <Tabs defaultValue="costs">
+                    {isLoading || (data && !data.financialAnalysis) ? <Skeleton className="w-full h-48" /> : data ? (
+                        <Tabs defaultValue="conventional">
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="costs">{t('digitalTwin.costAnalysisTab')}</TabsTrigger>
-                                <TabsTrigger value="profit">{t('digitalTwin.profitAndRiskTab')}</TabsTrigger>
+                                <TabsTrigger value="conventional">{t('digitalTwin.conventional')}</TabsTrigger>
+                                <TabsTrigger value="organic">{t('digitalTwin.organic')}</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="costs" className="pt-4">
-                                    <div className="flex justify-between items-center mb-2 px-1">
-                                    <span className="text-sm font-semibold invisible">Item</span>
-                                    <div className="flex gap-4 font-semibold text-sm w-1/2 justify-between">
-                                        <span>{t('digitalTwin.conventional')}</span>
-                                        <span>{t('digitalTwin.organic')}</span>
-                                    </div>
-                                </div>
-                                <CostRow label={t('digitalTwin.seedsCost')} conventional={data.costEstimation.seeds} organic={data.organicCostEstimation.seeds} />
-                                <CostRow label={t('digitalTwin.irrigationCost')} conventional={data.costEstimation.irrigation} organic={data.organicCostEstimation.irrigation} />
-                                <CostRow label={t('digitalTwin.fertilizerCost')} conventional={data.costEstimation.fertilizers} organic={data.organicCostEstimation.fertilizers} />
-                                <div className="flex justify-between items-center pt-3 mt-2 border-t">
-                                    <span className="text-sm font-bold">{t('digitalTwin.totalCost')}</span>
-                                    <div className="flex gap-4 font-bold text-sm w-1/2 justify-between">
-                                        <span>₹{(data.costEstimation.seeds + data.costEstimation.irrigation + data.costEstimation.fertilizers).toLocaleString('en-IN')}</span>
-                                        <span>₹{(data.organicCostEstimation.seeds + data.organicCostEstimation.irrigation + data.organicCostEstimation.fertilizers).toLocaleString('en-IN')}</span>
-                                    </div>
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="profit" className="pt-4 space-y-4">
-                                <MetricDisplay icon={TrendingUp} label={t('digitalTwin.expectedProfit')} value={`₹${data.expectedProfit.toLocaleString('en-IN')}`} />
-                                <MetricDisplay icon={ShieldAlert} label={t('digitalTwin.cropFailureRisk')} value={`${data.cropFailureProbability}%`} />
-                            </TabsContent>
+                            <FinancialAnalysisTabContent type="conventional" analysis={data.financialAnalysis.conventional} risk={data.cropFailureProbability} t={t} />
+                            <FinancialAnalysisTabContent type="organic" analysis={data.financialAnalysis.organic} risk={data.cropFailureProbability} t={t} />
                         </Tabs>
                     ) : <p className="text-sm text-destructive">{error}</p>}
                 </CardContent>
             </Card>
         </div>
         
-        {/* Right Column */}
         <div className="lg:col-span-1 space-y-6">
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><TestTube2 /> {t('digitalTwin.soilAnalysis')}</CardTitle></CardHeader>
@@ -287,4 +290,49 @@ export default function DigitalTwinPage() {
   );
 }
 
-    
+const FinancialAnalysisTabContent = ({ type, analysis, risk, t }: { type: string, analysis: DigitalTwinOutput['financialAnalysis']['conventional'], risk: number, t: any }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <TabsContent value={type} className="pt-4 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                    <p className="text-sm text-muted-foreground">Gross Revenue</p>
+                    <p className="font-bold text-lg text-green-600">₹{analysis.grossRevenue.toLocaleString('en-IN')}</p>
+                </div>
+                 <div>
+                    <p className="text-sm text-muted-foreground">Total Costs</p>
+                    <p className="font-bold text-lg text-red-600">₹{analysis.totalCosts.toLocaleString('en-IN')}</p>
+                </div>
+                <div>
+                    <p className="text-sm text-muted-foreground">Net Profit</p>
+                    <p className="font-bold text-lg">₹{analysis.expectedProfit.toLocaleString('en-IN')}</p>
+                </div>
+                 <div>
+                    <p className="text-sm text-muted-foreground">Return on Investment</p>
+                    <p className="font-bold text-lg">{analysis.returnOnInvestment.toFixed(1)}%</p>
+                </div>
+            </div>
+
+            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+                <CollapsibleTrigger asChild>
+                    <Button variant="link" className="p-0 h-auto">
+                        {isOpen ? <Minus className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                        {isOpen ? 'Hide' : 'Show'} Cost Breakdown
+                    </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 pt-2 animate-in fade-in-0 zoom-in-95">
+                     <Card className="p-4 bg-muted/50">
+                        <CostRow label={t('digitalTwin.seedsCost')} conventional={analysis.costBreakdown.seeds} organic={analysis.costBreakdown.seeds} />
+                        <CostRow label={t('digitalTwin.fertilizerCost')} conventional={analysis.costBreakdown.fertilizers} organic={analysis.costBreakdown.fertilizers} />
+                        <CostRow label="Pesticides Cost" conventional={analysis.costBreakdown.pesticides} organic={analysis.costBreakdown.pesticides} />
+                        <CostRow label={t('digitalTwin.irrigationCost')} conventional={analysis.costBreakdown.irrigation} organic={analysis.costBreakdown.irrigation} />
+                        <CostRow label="Labor Cost" conventional={analysis.costBreakdown.labor} organic={analysis.costBreakdown.labor} />
+                        <CostRow label="Harvesting Cost" conventional={analysis.costBreakdown.harvesting} organic={analysis.costBreakdown.harvesting} />
+                    </Card>
+                </CollapsibleContent>
+            </Collapsible>
+            
+            <MetricDisplay icon={ShieldAlert} label={t('digitalTwin.cropFailureRisk')} value={`${risk}%`} />
+        </TabsContent>
+    )
+}
