@@ -32,7 +32,7 @@ interface UserData {
 interface Diagnosis {
     id: string;
     createdAt: { seconds: number; nanoseconds: number; };
-    result: {
+    result?: {
         plantName: string;
         diseaseName: string;
         isHealthy: boolean;
@@ -266,7 +266,7 @@ export default function DashboardPage() {
                     </CardDescription>
                   </div>
                   <Button asChild size="sm" className="ml-auto gap-1">
-                    <Link href="/dashboard/crop-analysis">
+                    <Link href="/dashboard/disease-detector">
                       {t('profile.viewAll')}
                     </Link>
                   </Button>
@@ -286,10 +286,10 @@ export default function DashboardPage() {
                         ) : recentDiagnoses.length > 0 ? (
                             recentDiagnoses.map(d => (
                                 <TableRow key={d.id}>
-                                    <TableCell>{d.result.plantName}</TableCell>
+                                    <TableCell>{d.result?.plantName || 'N/A'}</TableCell>
                                     <TableCell>
-                                        <Badge variant={d.result.isHealthy ? 'default' : 'destructive'} className={d.result.isHealthy ? 'bg-green-500/80' : ''}>
-                                            {d.result.isHealthy ? 'Healthy' : d.result.diseaseName}
+                                        <Badge variant={d.result?.isHealthy ? 'default' : 'destructive'} className={d.result?.isHealthy ? 'bg-green-500/80' : ''}>
+                                            {d.result?.isHealthy ? 'Healthy' : d.result?.diseaseName || 'Unknown'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">{format(new Date(d.createdAt.seconds * 1000), 'dd MMM, yyyy')}</TableCell>
