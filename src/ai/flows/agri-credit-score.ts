@@ -21,6 +21,7 @@ export type AgriCreditScoreInput = z.infer<typeof AgriCreditScoreInputSchema>;
 
 const AgriCreditScoreOutputSchema = z.object({
     score: z.number().min(0).max(1000).describe('The calculated agri-credit score, from 0 to 1000.'),
+    cibilScore: z.number().describe("The user's CIBIL score. -1 if not available."),
     trend: z.enum(['up', 'down', 'stable']).describe("The recent trend of the score."),
     trendPoints: z.number().describe("The number of points the score has changed recently."),
     improvementTips: z.array(z.string()).describe('A list of actionable tips for the farmer to improve their score.'),
@@ -57,6 +58,7 @@ const agriCreditScoreFlow = ai.defineFlow(
     if (!input.email || !demoUsers.includes(input.email)) {
         return {
             score: 300,
+            cibilScore: -1,
             trend: 'stable',
             trendPoints: 0,
             improvementTips: [
@@ -138,6 +140,7 @@ const agriCreditScoreFlow = ai.defineFlow(
 
     return {
         score: finalScore,
+        cibilScore: simulatedCibilScore,
         trend: 'up',
         trendPoints: 15,
         improvementTips: tips[input.language || 'en'],
