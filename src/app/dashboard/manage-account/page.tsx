@@ -7,10 +7,16 @@ import { useTranslation } from '@/context/translation-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, Mail, Phone, MapPin, Badge, CreditCard } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Badge, CreditCard, Edit, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { updateProfile } from 'firebase/auth';
 
 interface UserDetails {
     name?: string;
@@ -57,40 +63,40 @@ export default function ManageAccountPage() {
     const [user, authLoading] = useAuthState(auth);
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
     const [isFetchingDetails, setIsFetchingDetails] = useState(true);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+    const fetchUserData = async () => {
+        if (user) {
+            if (user.email === demoUserEmail) {
+                setUserDetails(demoUserDetails);
+                setIsFetchingDetails(false);
+                return;
+            }
+
+            setIsFetchingDetails(true);
+            try {
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    setUserDetails(userDoc.data() as UserDetails);
+                } else {
+                    setUserDetails({
+                        name: user.displayName || 'Anonymous',
+                        email: user.email || 'No email',
+                        photoURL: user.photoURL || '',
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching user details:", error);
+            } finally {
+                setIsFetchingDetails(false);
+            }
+        } else if (!authLoading) {
+             setIsFetchingDetails(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            if (user) {
-                // If it's the demo user, use the hardcoded details
-                if (user.email === demoUserEmail) {
-                    setUserDetails(demoUserDetails);
-                    setIsFetchingDetails(false);
-                    return;
-                }
-
-                setIsFetchingDetails(true);
-                try {
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists()) {
-                        setUserDetails(userDoc.data() as UserDetails);
-                    } else {
-                        // If no firestore doc, use auth data as a base
-                        setUserDetails({
-                            name: user.displayName || 'Anonymous',
-                            email: user.email || 'No email',
-                            photoURL: user.photoURL || '',
-                        });
-                    }
-                } catch (error) {
-                    console.error("Error fetching user details:", error);
-                } finally {
-                    setIsFetchingDetails(false);
-                }
-            } else if (!authLoading) {
-                 setIsFetchingDetails(false);
-            }
-        };
         fetchUserData();
     }, [user, authLoading]);
 
@@ -107,30 +113,46 @@ export default function ManageAccountPage() {
             />
             <div className="flex justify-center">
                 <Card className="w-full max-w-2xl">
-                    <CardHeader className="text-center">
-                        <div className="flex justify-center mb-4">
+                    <CardHeader className="flex flex-row items-start">
+                        <div className="flex-grow text-center">
+                            <div className="flex justify-center mb-4">
+                                {isLoading ? (
+                                    <Skeleton className="h-24 w-24 rounded-full" />
+                                ) : (
+                                    <Avatar className="h-24 w-24 border-2 border-primary">
+                                        <AvatarImage src={displayPhotoURL || undefined} alt={displayName || 'User'} />
+                                        <AvatarFallback className="text-3xl">
+                                            {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                )}
+                            </div>
                             {isLoading ? (
-                                <Skeleton className="h-24 w-24 rounded-full" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-8 w-48 mx-auto" />
+                                    <Skeleton className="h-5 w-64 mx-auto" />
+                                </div>
                             ) : (
-                                <Avatar className="h-24 w-24 border-2 border-primary">
-                                    <AvatarImage src={displayPhotoURL || undefined} alt={displayName || 'User'} />
-                                    <AvatarFallback className="text-3xl">
-                                        {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
-                                    </AvatarFallback>
-                                </Avatar>
+                                 <>
+                                    <CardTitle className="text-3xl">{displayName}</CardTitle>
+                                    <CardDescription>{displayEmail}</CardDescription>
+                                </>
                             )}
                         </div>
-                        {isLoading ? (
-                            <div className="space-y-2">
-                                <Skeleton className="h-8 w-48 mx-auto" />
-                                <Skeleton className="h-5 w-64 mx-auto" />
-                            </div>
-                        ) : (
-                             <>
-                                <CardTitle className="text-3xl">{displayName}</CardTitle>
-                                <CardDescription>{displayEmail}</CardDescription>
-                            </>
-                        )}
+                         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <Edit className="h-5 w-5" />
+                                </Button>
+                            </DialogTrigger>
+                            <EditDetailsDialog 
+                                currentUserDetails={userDetails}
+                                onSaveSuccess={() => {
+                                    setIsEditDialogOpen(false);
+                                    fetchUserData(); // Refresh data
+                                }}
+                            />
+                        </Dialog>
                     </CardHeader>
                     <CardContent className="px-6 pb-6">
                         <div className="mt-4">
@@ -148,4 +170,111 @@ export default function ManageAccountPage() {
             </div>
         </>
     );
+}
+
+// Edit Details Dialog Component
+function EditDetailsDialog({ currentUserDetails, onSaveSuccess }: { currentUserDetails: UserDetails | null, onSaveSuccess: () => void }) {
+    const { t } = useTranslation();
+    const [user] = useAuthState(auth);
+    const { toast } = useToast();
+    const [formData, setFormData] = useState<UserDetails>({});
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (currentUserDetails) {
+            setFormData({
+                name: currentUserDetails.name || '',
+                phone: currentUserDetails.phone || '',
+                location: currentUserDetails.location || '',
+                pan: currentUserDetails.pan || '',
+                aadhar: currentUserDetails.aadhar?.replace(/\s/g, '') || '',
+            });
+        }
+    }, [currentUserDetails]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleAadharChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        setFormData(prev => ({ ...prev, aadhar: value.slice(0, 12)}));
+    };
+    
+    const handlePanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.toUpperCase();
+        setFormData(prev => ({ ...prev, pan: value.slice(0, 10)}));
+    };
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user) return;
+        setIsSaving(true);
+        
+        try {
+            const userDocRef = doc(db, "users", user.uid);
+            await setDoc(userDocRef, { 
+                name: formData.name,
+                phone: formData.phone,
+                location: formData.location,
+                pan: formData.pan,
+                aadhar: formData.aadhar,
+            }, { merge: true });
+
+            // Also update the auth profile if the name changed
+            if (user.displayName !== formData.name) {
+                await updateProfile(user, { displayName: formData.name });
+            }
+            
+            toast({ title: "Details Updated", description: "Your profile information has been saved successfully." });
+            onSaveSuccess();
+        } catch (error) {
+            console.error("Error updating details:", error);
+            toast({ variant: "destructive", title: "Update Failed", description: "Could not save your changes. Please try again." });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit Your Details</DialogTitle>
+                <DialogDescription>
+                    Update your personal and verification information here. Click save when you're done.
+                </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSave}>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input id="name" value={formData.name} onChange={handleChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input id="phone" value={formData.phone} onChange={handleChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="location">Location</Label>
+                        <Input id="location" value={formData.location} onChange={handleChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="pan">PAN Number</Label>
+                        <Input id="pan" value={formData.pan} onChange={handlePanChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="aadhar">Aadhaar Number</Label>
+                        <Input id="aadhar" value={formData.aadhar} onChange={handleAadharChange} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="submit" disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    )
 }
