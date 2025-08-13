@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc, collection, query, where, getDocs, limit } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,7 +105,7 @@ export default function DashboardPage() {
 
         getAgriCreditScore({ userId: user.uid, email: user.email || undefined, language }).then(setCreditScoreData).finally(() => setIsCreditScoreLoading(false));
         
-        const diagnosesQuery = query(collection(db, "diagnoses"), where("userId", "==", user.uid), limit(3));
+        const diagnosesQuery = query(collection(db, "diagnoses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(3));
         getDocs(diagnosesQuery).then(snapshot => {
             const diagnoses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as DiagnosisDoc[];
             setRecentDiagnoses(diagnoses);
@@ -155,14 +155,14 @@ export default function DashboardPage() {
         title: t('creditScore.shareTitle'),
         description: t('creditScore.shareDesc'),
     });
-  }
+  };
   
   const handleApplyLoan = () => {
       toast({
           title: t('creditScore.loanTitle'),
           description: t('creditScore.loanDesc'),
       });
-  }
+  };
 
   return (
     <>
@@ -325,7 +325,7 @@ export default function DashboardPage() {
         <div className="grid auto-rows-max items-start gap-8">
             <Card className="bg-primary/5 border-primary/20">
               <CardHeader>
-                  <CardTitle>{t('creditScore.title')}</CardHeader>
+                  <CardTitle>{t('creditScore.title')}</CardTitle>
                   <CardDescription>{t('creditScore.description')}</CardDescription>
               </CardHeader>
               <CardContent>
@@ -399,5 +399,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
